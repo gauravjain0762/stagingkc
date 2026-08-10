@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { DEFAULT_STARTER_SECTIONS } from './sectionTemplates';
+import ImageCropper from './ImageCropper';
 import './CreateNewSitePage.css';
 
 function UploadIcon() {
@@ -26,6 +27,8 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated }) {
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cropQueue, setCropQueue] = useState([]);
+  const [cropIndex, setCropIndex] = useState(0);
 
   // Handle input changes
   const handleInputChange = (e) => {
@@ -83,19 +86,47 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated }) {
         return;
       }
 
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setFormData(prev => ({
-          ...prev,
-          coverImage: file,
-          coverImagePreview: event.target.result,
-        }));
-        if (errors.coverImage) {
-          setErrors(prev => ({ ...prev, coverImage: '' }));
-        }
-      };
-      reader.readAsDataURL(file);
+      // Add file to crop queue
+      setCropQueue([file]);
+      setCropIndex(0);
+      if (errors.coverImage) {
+        setErrors(prev => ({ ...prev, coverImage: '' }));
+      }
     }
+  };
+
+  const handleCropSave = (croppedFile) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setFormData(prev => ({
+        ...prev,
+        coverImage: croppedFile,
+        coverImagePreview: event.target.result,
+      }));
+    };
+    reader.readAsDataURL(croppedFile);
+    setCropQueue([]);
+    setCropIndex(0);
+  };
+
+  const handleCropSkip = () => {
+    const original = cropQueue[cropIndex];
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setFormData(prev => ({
+        ...prev,
+        coverImage: original,
+        coverImagePreview: event.target.result,
+      }));
+    };
+    reader.readAsDataURL(original);
+    setCropQueue([]);
+    setCropIndex(0);
+  };
+
+  const handleCropCancel = () => {
+    setCropQueue([]);
+    setCropIndex(0);
   };
 
   // Validate form
@@ -321,6 +352,20 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated }) {
           </div>
         </form>
       </div>
+
+      {cropQueue.length > 0 && (
+        <ImageCropper
+          key={cropIndex}
+          file={cropQueue[cropIndex]}
+          index={cropIndex}
+          total={cropQueue.length}
+          defaultAspect="landscape"
+          cropShape="rect"
+          onCancel={handleCropCancel}
+          onSkip={handleCropSkip}
+          onSave={handleCropSave}
+        />
+      )}
     </div>
   );
 }
