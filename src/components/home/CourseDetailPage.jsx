@@ -5,6 +5,39 @@ import { courseApi } from '../../services/courseApi';
 import './CourseReaderPage.css';
 import './CourseDetailPage.css';
 
+// Authors enter free-text durations per chapter ("15 min", "1h 30m", "45") —
+// parsed leniently so the course-level total can be a real sum instead of a
+// separate (often stale/zero) course.duration field from the backend.
+// Backend rejects a second report from the same user — surfaced either as a
+// structured flag or just in the error message, so check both rather than
+// assuming one exact shape.
+function isAlreadyReportedError(err) {
+  if (err?.alreadyReported) return true;
+  const msg = (err?.message || err?.error || '').toLowerCase();
+  return msg.includes('already reported');
+}
+
+function parseDurationMinutes(str) {
+  if (!str) return 0;
+  const s = String(str).toLowerCase();
+  const hMatch = s.match(/(\d+(?:\.\d+)?)\s*h/);
+  const mMatch = s.match(/(\d+(?:\.\d+)?)\s*m/);
+  if (hMatch || mMatch) {
+    return (hMatch ? parseFloat(hMatch[1]) * 60 : 0) + (mMatch ? parseFloat(mMatch[1]) : 0);
+  }
+  const bare = s.match(/(\d+(?:\.\d+)?)/);
+  return bare ? parseFloat(bare[1]) : 0;
+}
+
+function formatMinutes(totalMinutes) {
+  if (!totalMinutes) return null;
+  const h = Math.floor(totalMinutes / 60);
+  const m = Math.round(totalMinutes % 60);
+  if (h && m) return `${h}h ${m}m`;
+  if (h) return `${h}h`;
+  return `${m} min`;
+}
+
 // Normalizes a real backend {course, chapters} pair into the same shape the
 // mock educationData courses use (modules -> chapters with leftBody /
 // rightSections / callout), so the reader below can stay a single code path.
@@ -28,6 +61,7 @@ function normalizeApiCourse(course, chapters) {
           label: `Chapter ${idx + 1}`,
           title: ch.title,
           description: ch.description || null,
+          duration: ch.duration || null,
           videoUrl: ch.videoUrl || null,
           pdfUrl: ch.pdfUrl || null,
           externalUrl: ch.externalUrl || null,
@@ -58,6 +92,7 @@ function LinkIcon()       { return <svg width="14" height="14" viewBox="0 0 24 2
 function StarIcon()       { return <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>; }
 function ClockIcon()      { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
 function SparkIcon()      { return <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg>; }
+function FlagIcon()       { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>; }
 
 const CALLOUT_STYLE = {
   'PRO TIP':     { border: '#06b6d4', bg: '#06b6d408', label: '#06b6d4', Icon: BulbIcon },
@@ -78,6 +113,30 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
   // client-side. Falls back to the local useEducationProgress hook when
   // this is null (no token, or /progress isn't live yet).
   const [apiProgress, setApiProgress] = useState(null);
+
+  // Rating the user has just submitted this session — overrides whatever
+  // came back from the API until the next full fetch.
+  const [myRating, setMyRating] = useState(null);
+  const [ratingHover, setRatingHover] = useState(0);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [ratingError, setRatingError] = useState(null);
+
+  // Keyed by chapter id — a chapter's video URL can 404/CORS-fail without
+  // throwing, so the <video> tag alone gives no visible signal that it did.
+  const [videoErrorChapterId, setVideoErrorChapterId] = useState(null);
+
+  // Shown once the last chapter is marked complete — otherwise clicking
+  // "Complete Chapter" on the final chapter did nothing visible at all.
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportDone, setReportDone] = useState(false);
+  const [reportError, setReportError] = useState(null);
+  // Set the moment a report succeeds (or the backend says it's a dup) so the
+  // flag button updates immediately, without waiting on a refetch of course.reportedByMe.
+  const [myReported, setMyReported] = useState(false);
 
   useEffect(() => {
     if (!authToken) return;
@@ -121,6 +180,11 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
   const course = resolvedSource === 'api' ? apiCourse : resolvedSource === 'mock' ? getCourseById(courseId) : null;
   const chapters = course ? flattenChapters(course) : [];
   const total = course ? totalChapterCount(course) : 0;
+  // Real courses: sum the author-entered per-chapter durations instead of
+  // trusting a separate course.duration field. Falls back to that field
+  // (mock courses, or a real course with no durations entered yet).
+  const summedMinutes = chapters.reduce((sum, ch) => sum + parseDurationMinutes(ch.duration), 0);
+  const displayDuration = formatMinutes(summedMinutes) ?? course?.duration;
 
   const [selectedChapterId, setSelectedChapterId] = useState(
     () => progress.lastViewedChapter[courseId] ?? chapters[0]?.id
@@ -158,7 +222,10 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
         <header className="cr-topbar">
           <button className="cr-back-btn" onClick={onBack}><BackArrowIcon /><span className="cr-back-label">Back</span></button>
         </header>
-        <div style={{ padding: 40, color: '#94a3b8' }}>Loading course...</div>
+        <div className="cdp-loading">
+          <div className="cdp-loading-spinner" />
+          <p>Loading course...</p>
+        </div>
       </div>
     );
   }
@@ -173,6 +240,11 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
       </div>
     );
   }
+
+  // course.reportedByMe is the backend's source of truth (survives a page
+  // reload); myReported is the optimistic flag set right after a successful
+  // submit in this session, before any refetch would pick that field up.
+  const alreadyReported = myReported || !!course.reportedByMe;
 
   function selectChapter(id) {
     setSelectedChapterId(id);
@@ -202,10 +274,67 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
     progress.markChapterComplete(courseId, chapterId);
   }
 
+  async function submitRating(value) {
+    if (!authToken || resolvedSource !== 'api' || ratingSubmitting) return;
+    setRatingSubmitting(true);
+    setRatingError(null);
+    try {
+      const res = await courseApi.rateCourse(courseId, value, undefined, authToken);
+      if (res.success) {
+        setMyRating(value);
+        setApiCourse(prev => prev ? { ...prev, rating: res.rating ?? prev.rating, ratingCount: res.ratingCount ?? prev.ratingCount } : prev);
+      } else {
+        setRatingError(res.error || 'Failed to submit rating');
+      }
+    } catch (err) {
+      setRatingError(err?.message || err?.error || 'Failed to submit rating');
+    } finally {
+      setRatingSubmitting(false);
+    }
+  }
+
+  function closeReportModal() {
+    setReportOpen(false);
+    setReportReason('');
+    setReportDone(false);
+    setReportError(null);
+  }
+
+  async function submitReportCourse() {
+    if (!reportReason.trim() || !authToken || reportSubmitting) return;
+    setReportSubmitting(true);
+    setReportError(null);
+    try {
+      const res = await courseApi.reportCourse(courseId, reportReason.trim(), authToken);
+      if (res.success) {
+        setReportDone(true);
+        setMyReported(true);
+      } else {
+        setReportError(res.error || 'Failed to submit report.');
+      }
+    } catch (err) {
+      // The backend rejects a second report from the same user (409/duplicate) —
+      // treat that as "already reported" rather than a generic failure, since
+      // functionally the desired state (a report is on file) is already true.
+      if (isAlreadyReportedError(err)) {
+        setMyReported(true);
+        setReportDone(true);
+      } else {
+        setReportError(err?.message || err?.error || 'Failed to submit report.');
+      }
+    } finally {
+      setReportSubmitting(false);
+    }
+  }
+
   function completeAndAdvance() {
     markComplete(chapter.id);
     const next = chapters[chapterIdx + 1];
-    if (next) setSelectedChapterId(next.id);
+    if (next) {
+      setSelectedChapterId(next.id);
+    } else {
+      setShowCompletionModal(true);
+    }
   }
 
   const isLastChapter = chapterIdx >= chapters.length - 1;
@@ -237,8 +366,13 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
         </div>
 
         <div className="cr-topbar-right">
-          <span className="cdp-meta-item cdp-meta-item--rating"><StarIcon /> {course.rating}</span>
-          <span className="cdp-meta-item"><ClockIcon /> {course.duration}</span>
+          {course.rating ? (
+            <span className="cdp-meta-item cdp-meta-item--rating">
+              <StarIcon /> {Number(course.rating).toFixed(1)}
+              {!!course.ratingCount && <span className="cdp-meta-rating-count"> ({course.ratingCount})</span>}
+            </span>
+          ) : null}
+          <span className="cdp-meta-item"><ClockIcon /> {displayDuration}</span>
           <span className="cr-chapter-pill">{course.instructor}</span>
           {isEnrolled ? (
             <span className="cdp-price-badge cdp-price-badge--enrolled">
@@ -248,6 +382,17 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
             <span className={`cdp-price-badge cdp-price-badge--highlight${course.isFree ? ' cdp-price-badge--free' : ''}`}>
               <SparkIcon /> Enroll this course <span className="cdp-enroll-cta-price">{priceLabel(course)}</span>
             </span>
+          )}
+          {authToken && (
+            <button
+              className={`cdp-report-btn${alreadyReported ? ' cdp-report-btn--done' : ''}`}
+              onClick={() => !alreadyReported && setReportOpen(true)}
+              disabled={alreadyReported}
+              aria-label={alreadyReported ? 'You already reported this course' : 'Report this course'}
+              title={alreadyReported ? 'You already reported this course' : 'Report this course'}
+            >
+              <FlagIcon />
+            </button>
           )}
         </div>
       </header>
@@ -277,6 +422,28 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
               })}
             </div>
           ))}
+
+          {isEnrolled && resolvedSource === 'api' && (
+            <div className="cdp-rate-box">
+              <p className="cdp-rate-label">{(myRating ?? course.userRating) ? 'Your rating' : 'Rate this course'}</p>
+              <div className="cdp-rate-stars" onMouseLeave={() => setRatingHover(0)}>
+                {[1, 2, 3, 4, 5].map(n => (
+                  <button
+                    key={n}
+                    type="button"
+                    className={`cdp-rate-star${(ratingHover || myRating || course.userRating || 0) >= n ? ' cdp-rate-star--filled' : ''}`}
+                    disabled={ratingSubmitting}
+                    onMouseEnter={() => setRatingHover(n)}
+                    onClick={() => submitRating(n)}
+                    aria-label={`Rate ${n} star${n > 1 ? 's' : ''}`}
+                  >
+                    <StarIcon />
+                  </button>
+                ))}
+              </div>
+              {ratingError && <p className="cdp-rate-error">{ratingError}</p>}
+            </div>
+          )}
         </aside>
 
         {/* ── Reader Content ── */}
@@ -298,7 +465,14 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
                         poster={chapter.img}
                         controls
                         onEnded={() => markComplete(chapter.id)}
+                        onError={() => setVideoErrorChapterId(chapter.id)}
+                        onLoadedData={() => setVideoErrorChapterId(prev => (prev === chapter.id ? null : prev))}
                       />
+                      {videoErrorChapterId === chapter.id && (
+                        <p className="cdp-video-error">
+                          This video couldn&apos;t be loaded. <a href={chapter.videoUrl} target="_blank" rel="noreferrer">Open it directly</a> to check the link.
+                        </p>
+                      )}
                     </div>
                   ) : chapter.img && (
                     <div className="cr-figure">
@@ -400,6 +574,61 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
           {isLastChapter ? 'Complete Chapter' : 'Next Chapter'} <ChevRightIcon />
         </button>
       </footer>
+
+      {showCompletionModal && (
+        <div className="cdp-complete-overlay" onClick={() => setShowCompletionModal(false)}>
+          <div className="cdp-complete-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="cdp-complete-icon"><SparkIcon /></div>
+            <h3>Course Completed!</h3>
+            <p className="cdp-complete-sub">You've finished every chapter in <strong>{course.title}</strong>. Nice work.</p>
+            <div className="cdp-complete-actions">
+              <button className="cdp-complete-primary-btn" onClick={onBack}>Back to My Courses</button>
+              <button className="cdp-complete-secondary-btn" onClick={() => setShowCompletionModal(false)}>Keep Reviewing</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {reportOpen && (
+        <div className="cdp-report-overlay" onClick={(e) => { if (e.target === e.currentTarget) closeReportModal(); }}>
+          <div className="cdp-report-modal">
+            <div className="cdp-report-modal-header">
+              <h2 className="cdp-report-modal-title">Report Course</h2>
+              <button className="cdp-report-close-btn" onClick={closeReportModal} aria-label="Close">✕</button>
+            </div>
+            {reportDone ? (
+              <div className="cdp-report-success">
+                <div className="cdp-report-success-icon">✓</div>
+                <p>Thank you for your report. We&apos;ll review it and take action if it violates our community guidelines.</p>
+                <button className="cdp-report-success-close" onClick={closeReportModal}>Done</button>
+              </div>
+            ) : (
+              <>
+                <div className="cdp-report-modal-body">
+                  <h3 className="cdp-report-question">What&apos;s going on?</h3>
+                  <p className="cdp-report-subtitle">Tell us why you&apos;re reporting this course, so we can look into it.</p>
+                  <textarea
+                    className="cdp-report-textarea"
+                    value={reportReason}
+                    onChange={(e) => setReportReason(e.target.value)}
+                    placeholder="Describe the issue..."
+                    rows={4}
+                    maxLength={500}
+                    autoFocus
+                  />
+                  <p className="cdp-report-hint">{reportReason.length}/500</p>
+                  {reportError && <p className="cdp-report-error">{reportError}</p>}
+                </div>
+                <div className="cdp-report-modal-footer">
+                  <button className="cdp-report-submit-btn" onClick={submitReportCourse} disabled={!reportReason.trim() || reportSubmitting}>
+                    {reportSubmitting ? 'Submitting…' : 'Submit'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -27,6 +27,7 @@ const DEFAULT_STATE = {
   },
   enrolledCourseIds: ['advanced-ui-design-systems', 'product-management-fundamentals', 'react-performance-patterns'],
   savedResourceIds: [],
+  wishlistCourseIds: [],
   history: [],
 };
 
@@ -50,6 +51,7 @@ export default function useEducationProgress() {
 
   const enrolledCourseIds = new Set(state.enrolledCourseIds);
   const savedResourceIds = new Set(state.savedResourceIds);
+  const wishlistCourseIds = new Set(state.wishlistCourseIds ?? []);
 
   function isChapterComplete(courseId, chapterId) {
     return (state.completedChapters[courseId] ?? []).includes(chapterId);
@@ -99,6 +101,21 @@ export default function useEducationProgress() {
     setState(prev => ({ ...prev, enrolledCourseIds: prev.enrolledCourseIds.filter(id => id !== courseId) }));
   }
 
+  function isWishlisted(courseId) {
+    return wishlistCourseIds.has(courseId);
+  }
+
+  function toggleWishlistCourse(courseId) {
+    setState(prev => {
+      const existing = prev.wishlistCourseIds ?? [];
+      const has = existing.includes(courseId);
+      return {
+        ...prev,
+        wishlistCourseIds: has ? existing.filter(id => id !== courseId) : [...existing, courseId],
+      };
+    });
+  }
+
   function toggleSaveResource(resourceId) {
     setState(prev => {
       const has = prev.savedResourceIds.includes(resourceId);
@@ -141,12 +158,14 @@ export default function useEducationProgress() {
     lastViewedChapter: state.lastViewedChapter,
     enrolledCourseIds,
     savedResourceIds,
+    wishlistCourseIds,
     history: state.history,
 
     isChapterComplete,
     getCourseProgressPct,
     isEnrolled,
     isSaved,
+    isWishlisted,
 
     markChapterComplete,
     markChapterIncomplete,
@@ -154,6 +173,7 @@ export default function useEducationProgress() {
     enrollCourse,
     unenrollCourse,
     toggleSaveResource,
+    toggleWishlistCourse,
     logCourseView,
     logResourceView,
     clearHistory,

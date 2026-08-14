@@ -29,6 +29,46 @@
   font-size: 13px;
 }
 
+.mcp-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.mcp-course-publish-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.mcp-course-publish-btn--publish {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+.mcp-course-publish-btn--publish:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
+}
+
+.mcp-course-publish-btn--unpublish {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.mcp-course-publish-btn--unpublish:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.25);
+}
+
+.mcp-course-publish-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .mcp-body {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
@@ -55,6 +95,30 @@
 .mcp-muted {
   color: #64748b;
   font-size: 13px;
+}
+
+.mcp-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 20px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.mcp-loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(59, 130, 246, 0.2);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: mcp-spin 0.8s linear infinite;
+}
+
+@keyframes mcp-spin {
+  to { transform: rotate(360deg); }
 }
 
 .mcp-chapter-list {
@@ -130,11 +194,24 @@
   margin: 0;
   font-size: 12px;
   color: #8b95a5;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.mcp-see-more-btn {
+  display: inline;
+  margin-left: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #a78bfa;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mcp-see-more-btn:hover {
+  text-decoration: underline;
 }
 
 .mcp-chapter-desc {
@@ -226,6 +303,38 @@
 
 .mcp-preview-link:hover {
   color: #e2e8f0;
+}
+
+.mcp-chapter-publish-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mcp-chapter-publish-btn--publish {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+.mcp-chapter-publish-btn--publish:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+.mcp-chapter-publish-btn--unpublish {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.mcp-chapter-publish-btn--unpublish:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.25);
+}
+
+.mcp-chapter-publish-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .mcp-delete-btn {

@@ -5,7 +5,18 @@ import CourseDetailPage from './CourseDetailPage';
 import ManageChaptersPage from './ManageChaptersPage';
 import { ALEX_AVATAR } from './mockData';
 import { courseApi } from '../../services/courseApi';
+import useEducationProgress from './useEducationProgress';
 import './LearningActivityPage.css';
+
+const HEART_BURST_PATHS = [
+  { dx: -36, dy: -52, rot: -30 },
+  { dx: -16, dy: -62, rot:  15 },
+  { dx:   6, dy: -66, rot: -10 },
+  { dx:  28, dy: -52, rot:  25 },
+  { dx:  40, dy: -32, rot: -20 },
+  { dx: -44, dy: -28, rot:  30 },
+  { dx:  -8, dy: -58, rot: -18 },
+];
 
 function PlusIcon() {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
@@ -43,6 +54,23 @@ function CheckIcon() {
   return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
 }
 
+function HeartIcon({ filled }) {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>;
+}
+
+// Only renders once the backend has a real average — no more showing a
+// fake/static star value for courses nobody has rated. ratingCount is shown
+// alongside it when the endpoint provides one, but isn't required to render.
+function RatingBadge({ course }) {
+  if (!course.rating) return null;
+  return (
+    <span className="lap-rating">
+      <StarIcon /> {Number(course.rating).toFixed(1)}
+      {!!course.ratingCount && <span className="lap-rating-count"> ({course.ratingCount})</span>}
+    </span>
+  );
+}
+
 export default function LearningActivityPage({ onBack, onMessagesClick, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onMinisitesClick, onNavigateEducation }) {
   const { profile } = useSelector(s => s.profile);
   const authToken = useSelector(s => s.auth?.token);
@@ -54,6 +82,25 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
   const [selectedCategory, setSelectedCategory] = useState('All Topics');
   const [activeTab, setActiveTab] = useState('all');
   const [filterType, setFilterType] = useState('all');
+
+  // Wishlist is purely client-side (no backend endpoint for it) — persisted
+  // the same way enrollment/progress already are, via useEducationProgress.
+  const wishlist = useEducationProgress();
+  const [heartingIds, setHeartingIds] = useState(new Set());
+  const [heartParticles, setHeartParticles] = useState({});
+
+  function toggleWishlist(id) {
+    const adding = !wishlist.isWishlisted(id);
+    wishlist.toggleWishlistCourse(id);
+    if (adding) {
+      setHeartingIds(h => new Set(h).add(id));
+      setHeartParticles(prev => ({ ...prev, [id]: HEART_BURST_PATHS.map((bp, i) => ({ id: Date.now() + i, ...bp })) }));
+      setTimeout(() => {
+        setHeartingIds(h => { const nh = new Set(h); nh.delete(id); return nh; });
+        setHeartParticles(prev => { const next = { ...prev }; delete next[id]; return next; });
+      }, 700);
+    }
+  }
 
   // API Data
   const [enrolledCourses, setEnrolledCourses] = useState([]);
@@ -97,7 +144,9 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
       }
 
       // Fetch explore courses with filters
-      const exploreRes = await courseApi.getAllCourses(filterType, selectedCategory, authToken);
+      // "Favorites" is a purely client-side wishlist, not a backend filter —
+      // fetch the normal "all" list and filter it down to wishlisted ids below.
+      const exploreRes = await courseApi.getAllCourses(filterType === 'favorites' ? 'all' : filterType, selectedCategory, authToken);
       if (exploreRes.success) {
         setExploreCourses(exploreRes.courses || []);
       }
@@ -132,6 +181,9 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
 
   const myCreatedCourseIds = new Set(createdCourses.map(c => c.id));
   const otherAuthorsCourses = exploreCourses.filter(course => !myCreatedCourseIds.has(course.id));
+  const visibleCourses = filterType === 'favorites'
+    ? otherAuthorsCourses.filter(course => wishlist.isWishlisted(course.id))
+    : otherAuthorsCourses;
   const enrolledCourseIds = new Set(enrolledCourses.map(c => c.id));
   const isPaidCourse = (course) => course.pricingType === 'paid' || Number(course.price) > 0;
 
@@ -190,12 +242,20 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
   };
 
   if (managingCourse) {
-    return <ManageChaptersPage course={managingCourse} authToken={authToken} onBack={() => setManagingCourse(null)} />;
+    return (
+      <ManageChaptersPage
+        course={managingCourse}
+        authToken={authToken}
+        onBack={() => setManagingCourse(null)}
+        onCourseUpdated={(updated) => setCreatedCourses(prev => prev.map(c => (c.id === updated.id ? { ...c, ...updated } : c)))}
+      />
+    );
   }
 
   if (activeCourseId) {
     return (
       <CourseDetailPage
+        key={activeCourseId}
         courseId={activeCourseId}
         authToken={authToken}
         onBack={() => setActiveCourseId(null)}
@@ -292,7 +352,11 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
                     </div>
                     <div className="lap-course-content">
                       <h3 className="lap-course-title">{course.title}</h3>
-                      <p className="lap-course-price">{course.price || 'Free'}</p>
+                      <div className="lap-card-meta">
+                        <p className="lap-course-price">{course.price || 'Free'}</p>
+                        {course.duration && <span className="lap-duration"><DurationIcon /> {course.duration}</span>}
+                        <RatingBadge course={course} />
+                      </div>
                       <div className="lap-progress-section">
                         <span className="lap-progress-label">Progress</span>
                         <span className="lap-progress-pct">{course.progress || 0}%</span>
@@ -336,6 +400,13 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
             >
               Popular
             </button>
+            <button
+              className={`lap-filter-btn ${filterType === 'favorites' ? 'lap-filter-btn--active' : ''}`}
+              onClick={() => setFilterType('favorites')}
+            >
+              <HeartIcon filled={filterType === 'favorites'} /> Favorites
+              {wishlist.wishlistCourseIds.size > 0 && <span className="lap-fav-count">{wishlist.wishlistCourseIds.size}</span>}
+            </button>
           </div>
           {filterType === 'all' && (
             <div className="lap-categories">
@@ -352,39 +423,65 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
           )}
           <div className="lap-courses-grid">
             {loading ? (
-              <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#8b95a5' }}>Loading courses...</p>
+              <div className="lap-loading" style={{ gridColumn: '1 / -1' }}>
+                <div className="lap-loading-spinner" />
+                <p>Loading courses...</p>
+              </div>
             ) : error ? (
               <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#ef4444' }}>{error}</p>
-            ) : otherAuthorsCourses.length === 0 ? (
-              <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#8b95a5' }}>No courses found</p>
+            ) : visibleCourses.length === 0 ? (
+              <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#8b95a5' }}>
+                {filterType === 'favorites' ? 'No favorites yet — tap the heart on a course to save it here.' : 'No courses found'}
+              </p>
             ) : (
-              otherAuthorsCourses.map(course => {
+              visibleCourses.map(course => {
                 const enrolled = enrolledCourseIds.has(course.id);
                 const busy = enrollingId === course.id;
                 const paid = isPaidCourse(course);
+                const wishlisted = wishlist.isWishlisted(course.id);
                 return (
                   <div key={course.id} className="lap-explore-card">
-                    <div className="lap-card-img-wrapper">
+                    <div className="lap-card-img-wrapper" onClick={() => setActiveCourseId(course.id)} style={{ cursor: 'pointer' }}>
                       <img src={course.img} alt={course.title} className="lap-card-img" />
+                      <div className="lap-heart-burst-wrap">
+                        <button
+                          type="button"
+                          className={`lap-heart-btn${wishlisted ? ' lap-heart-btn--active' : ''}${heartingIds.has(course.id) ? ' lap-heart-btn--spring' : ''}`}
+                          onClick={(e) => { e.stopPropagation(); toggleWishlist(course.id); }}
+                          aria-label={wishlisted ? 'Remove from favorites' : 'Add to favorites'}
+                        >
+                          <HeartIcon filled={wishlisted} />
+                        </button>
+                        {(heartParticles[course.id] || []).map(p => (
+                          <span key={p.id} className="lap-heart-particle" style={{ '--dx': `${p.dx}px`, '--dy': `${p.dy}px`, '--rot': `${p.rot}deg` }}>❤️</span>
+                        ))}
+                      </div>
                     </div>
                     <div className="lap-card-content">
-                      <h3 className="lap-card-title">{course.title}</h3>
+                      <h3 className="lap-card-title" onClick={() => setActiveCourseId(course.id)} style={{ cursor: 'pointer' }}>{course.title}</h3>
                       <div className="lap-card-meta">
                         <span className="lap-instructor"><PersonIcon /> {course.instructor}</span>
-                        <span className="lap-rating"><StarIcon /> {course.rating}</span>
+                        <RatingBadge course={course} />
                       </div>
                       <p className="lap-duration"><DurationIcon /> {course.duration}</p>
-                      <button
-                        className={`lap-enroll-btn ${enrolled ? 'lap-enroll-btn--enrolled' : ''}`}
-                        disabled={busy}
-                        onClick={() => enrolled ? setActiveCourseId(course.id) : handleEnrollClick(course)}
-                      >
-                        {enrolled
-                          ? <><CheckIcon /> Continue Learning</>
-                          : busy
-                            ? 'Enrolling...'
-                            : `Enroll this course · ${paid ? `$${course.price}` : 'Free'}`}
-                      </button>
+                      {enrolled ? (
+                        <button className="lap-enroll-btn lap-enroll-btn--enrolled" onClick={() => setActiveCourseId(course.id)}>
+                          <CheckIcon /> Continue Learning
+                        </button>
+                      ) : (
+                        <div className="lap-card-actions">
+                          <button className="lap-details-btn" onClick={() => setActiveCourseId(course.id)}>
+                            View Details
+                          </button>
+                          <button
+                            className="lap-enroll-btn"
+                            disabled={busy}
+                            onClick={() => handleEnrollClick(course)}
+                          >
+                            {busy ? 'Enrolling...' : paid ? `Buy · $${course.price}` : 'Enroll · Free'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -428,11 +525,11 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
                       <h3 className="lap-card-title">{course.title}</h3>
                       <div className="lap-card-meta">
                         <span className="lap-instructor"><PersonIcon /> You</span>
-                        <span className="lap-rating"><StarIcon /> {course.rating}</span>
+                        <RatingBadge course={course} />
                       </div>
                       <p className="lap-duration"><DurationIcon /> {course.duration}</p>
                       <div className="lap-course-stats">
-                        <span className="lap-students">{course.students} students</span>
+                        <span className="lap-students">{course.students} {course.students === 1 ? 'student' : 'students'}</span>
                         <span className="lap-price">{course.price}</span>
                       </div>
                       <div className="lap-course-actions">

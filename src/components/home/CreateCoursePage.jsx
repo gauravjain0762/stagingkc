@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import ImageCropper from './ImageCropper';
 import { courseApi } from '../../services/courseApi';
@@ -32,6 +32,27 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
   const [cropperFile, setCropperFile] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState(null);
+  const [imageError, setImageError] = useState(null);
+
+  const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
+  const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
+  // A File/Blob can't be used directly as an <img src> — it needs a blob
+  // URL. Derived once per file (not inline in JSX, which created — and
+  // leaked — a new one on every render) and revoked when it's replaced.
+  const coverPreviewUrl = useMemo(() => {
+    const coverImage = courseData.coverImage;
+    if (coverImage instanceof Blob || coverImage instanceof File) {
+      return URL.createObjectURL(coverImage);
+    }
+    return coverImage || null;
+  }, [courseData.coverImage]);
+
+  useEffect(() => {
+    return () => {
+      if (coverPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(coverPreviewUrl);
+    };
+  }, [coverPreviewUrl]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -43,9 +64,19 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
 
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setCropperFile(file);
+    e.target.value = '';
+    if (!file) return;
+
+    setImageError(null);
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setImageError('Unsupported file format. Please upload a PNG, JPG, GIF, or WEBP image.');
+      return;
     }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setImageError('Image is too large. Please upload a file under 10MB.');
+      return;
+    }
+    setCropperFile(file);
   };
 
   const handleCropSave = (croppedFile) => {
@@ -70,7 +101,7 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
     setCropperFile(null);
   };
 
-  const handleCreateCourse = async () => {
+  const handleCreateCourse = async (publishNow) => {
     if (!authToken) {
       setError('User not authenticated. Please login first.');
       return;
@@ -100,13 +131,31 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
         coverImage: fileToUpload,
       }, authToken);
 
-      if (response.success) {
-        setTimeout(() => {
-          onBack?.();
-        }, 2000);
-      } else {
+      if (!response.success) {
         setError(response.error || 'Failed to create course');
+        return;
       }
+
+      // Courses are always created as a draft first (that's the endpoint
+      // contract); publishing immediately just chains the publish call so
+      // the user only has to make one choice up front instead of two trips.
+      if (publishNow) {
+        const newCourseId = response.course?.id ?? response.course?._id;
+        if (newCourseId) {
+          try {
+            await courseApi.publishCourse(newCourseId, authToken);
+          } catch (publishErr) {
+            console.error('Course created but publish failed:', publishErr);
+            setError('Course saved as draft, but publishing failed. You can publish it from My Courses.');
+            setTimeout(() => onBack?.(), 2500);
+            return;
+          }
+        }
+      }
+
+      setTimeout(() => {
+        onBack?.();
+      }, 1500);
     } catch (err) {
       console.error('Error creating course:', err);
       setError(err?.message || err?.error || 'Failed to create course');
@@ -234,9 +283,9 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
             <p className="ccp-section-desc">Upload a professional cover image (recommended: 1200x600px)</p>
 
             <div className="ccp-image-upload">
-              {courseData.coverImage ? (
+              {coverPreviewUrl ? (
                 <div className="ccp-image-preview">
-                  <img src={courseData.coverImage} alt="Cover" className="ccp-preview-img" />
+                  <img src={coverPreviewUrl} alt="Cover" className="ccp-preview-img" />
                   <button
                     type="button"
                     className="ccp-change-btn"
@@ -255,22 +304,20 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
               <input
                 id="imageInput"
                 type="file"
-                accept="image/*"
+                accept="image/png,image/jpeg,image/gif,image/webp"
                 onChange={handleImageUpload}
                 style={{ display: 'none' }}
               />
             </div>
+            {imageError && <p className="ccp-image-error">{imageError}</p>}
 
-            {/* Course Preview */}
-            {(courseData.title || courseData.coverImage) && (
+            {/* Course Preview — only once there's a real cover image to show;
+                no stock-photo stand-in for a course that has none yet. */}
+            {coverPreviewUrl && (
               <div className="ccp-preview-card">
                 <div className="ccp-preview-wrapper">
                   <img
-                    src={
-                      courseData.coverImage instanceof Blob || courseData.coverImage instanceof File
-                        ? URL.createObjectURL(courseData.coverImage)
-                        : courseData.coverImage || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&q=80'
-                    }
+                    src={coverPreviewUrl}
                     alt="Preview"
                     className="ccp-preview-cover"
                   />
@@ -292,11 +339,18 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
             Cancel
           </button>
           <button
-            className="ccp-btn ccp-btn--success"
-            onClick={handleCreateCourse}
+            className="ccp-btn ccp-btn--draft"
+            onClick={() => handleCreateCourse(false)}
             disabled={!isFormValid || isCreating}
           >
-            <PlusIcon /> Create Course
+            <CheckIcon /> Draft
+          </button>
+          <button
+            className="ccp-btn ccp-btn--publish"
+            onClick={() => handleCreateCourse(true)}
+            disabled={!isFormValid || isCreating}
+          >
+            <PlusIcon /> Publish
           </button>
         </div>
       </div>

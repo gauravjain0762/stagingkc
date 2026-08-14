@@ -22,7 +22,26 @@ const BASE_FORM = { title: '', description: '', content: '', externalUrl: '', du
 const isLocalOnly = (id) => typeof id === 'string' && id.startsWith('local-');
 const byOrder = (a, b) => (a.order ?? 0) - (b.order ?? 0);
 
-export default function ManageChaptersPage({ course, authToken, onBack }) {
+const CONTENT_PREVIEW_LENGTH = 160;
+
+function ChapterContentPreview({ content }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!content) return null;
+  const truncatable = content.length > CONTENT_PREVIEW_LENGTH;
+  const shown = expanded || !truncatable ? content : `${content.slice(0, CONTENT_PREVIEW_LENGTH)}…`;
+  return (
+    <p className="mcp-chapter-preview">
+      {shown}
+      {truncatable && (
+        <button type="button" className="mcp-see-more-btn" onClick={() => setExpanded(e => !e)}>
+          {expanded ? 'See less' : 'See more'}
+        </button>
+      )}
+    </p>
+  );
+}
+
+export default function ManageChaptersPage({ course, authToken, onBack, onCourseUpdated }) {
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -32,6 +51,31 @@ export default function ManageChaptersPage({ course, authToken, onBack }) {
   const [deletingId, setDeletingId] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [previewChapter, setPreviewChapter] = useState(null);
+
+  // Tracked locally so the button reflects the change immediately — the
+  // `course` prop itself won't update until the parent's list is refetched.
+  const [courseStatus, setCourseStatus] = useState(course.status);
+  const [publishing, setPublishing] = useState(false);
+
+  const handleTogglePublish = async () => {
+    if (!authToken || publishing) return;
+    const isPublished = courseStatus === 'published';
+    setPublishing(true);
+    try {
+      const res = isPublished
+        ? await courseApi.unpublishCourse(course.id, authToken)
+        : await courseApi.publishCourse(course.id, authToken);
+      if (res.success) {
+        const nextStatus = res.course?.status ?? (isPublished ? 'draft' : 'published');
+        setCourseStatus(nextStatus);
+        onCourseUpdated?.({ ...course, status: nextStatus });
+      }
+    } catch (err) {
+      console.error('Error toggling course publish state:', err);
+    } finally {
+      setPublishing(false);
+    }
+  };
 
   useEffect(() => {
     fetchChapters();
@@ -74,9 +118,44 @@ export default function ManageChaptersPage({ course, authToken, onBack }) {
     });
   };
 
+  const isFormValid = form.title.trim() && form.duration.trim();
+
+  const [togglingChapterId, setTogglingChapterId] = useState(null);
+
+  // Quick publish/unpublish right from the chapter row — no need to open
+  // Edit, flip the status toggle, and save just to change this one field.
+  const handleToggleChapterPublish = async (ch) => {
+    if (togglingChapterId) return;
+    const nextStatus = ch.status === 'published' ? 'draft' : 'published';
+    setTogglingChapterId(ch.id);
+    try {
+      let updated = { ...ch, status: nextStatus };
+      if (!isLocalOnly(ch.id)) {
+        try {
+          const res = await courseApi.updateChapter(course.id, ch.id, {
+            title: ch.title,
+            description: ch.description,
+            content: ch.content,
+            order: ch.order,
+            status: nextStatus,
+            duration: ch.duration,
+            learningObjectives: ch.learningObjectives,
+            externalUrl: ch.externalUrl,
+          }, authToken);
+          if (res.success) updated = res.chapter;
+        } catch {
+          // fall back to the local toggle already computed above
+        }
+      }
+      setChapters(prev => prev.map(c => (c.id === ch.id ? updated : c)).sort(byOrder));
+    } finally {
+      setTogglingChapterId(null);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.title.trim() || saving) return;
+    if (!isFormValid || saving) return;
     setSaving(true);
     const order = Number(form.order) || chapters.length + 1;
     try {
@@ -158,13 +237,28 @@ export default function ManageChaptersPage({ course, authToken, onBack }) {
           <span>{course.title}</span>
         </button>
         <span className="mcp-topbar-sub">Manage Chapters</span>
+        <div className="mcp-topbar-right">
+          <span className={`mcp-status-pill ${courseStatus === 'published' ? 'mcp-status-pill--published' : 'mcp-status-pill--draft'}`}>
+            {courseStatus === 'published' ? 'Published' : 'Draft'}
+          </span>
+          <button
+            className={`mcp-course-publish-btn ${courseStatus === 'published' ? 'mcp-course-publish-btn--unpublish' : 'mcp-course-publish-btn--publish'}`}
+            disabled={publishing}
+            onClick={handleTogglePublish}
+          >
+            {publishing ? '...' : courseStatus === 'published' ? 'Unpublish Course' : 'Publish Course'}
+          </button>
+        </div>
       </header>
 
       <div className="mcp-body">
         <div className="mcp-list-col">
           <h3 className="mcp-col-title">Chapters ({chapters.length})</h3>
           {loading ? (
-            <p className="mcp-muted">Loading chapters...</p>
+            <div className="mcp-loading">
+              <div className="mcp-loading-spinner" />
+              <p>Loading chapters...</p>
+            </div>
           ) : chapters.length === 0 ? (
             <p className="mcp-muted">No chapters yet — add the first one.</p>
           ) : (
@@ -181,7 +275,7 @@ export default function ManageChaptersPage({ course, authToken, onBack }) {
                       {isLocalOnly(ch.id) && <span className="mcp-local-badge">Not saved to server</span>}
                     </p>
                     {ch.description && <p className="mcp-chapter-desc">{ch.description}</p>}
-                    <p className="mcp-chapter-preview">{ch.content}</p>
+                    <ChapterContentPreview content={ch.content} />
                     <div className="mcp-chapter-badges">
                       {ch.duration && <span className="mcp-duration-badge"><ClockIcon /> {ch.duration}</span>}
                       {ch.videoUrl && (
@@ -200,6 +294,13 @@ export default function ManageChaptersPage({ course, authToken, onBack }) {
                       <EyeIcon /> Preview
                     </button>
                     <button className="mcp-edit-link" onClick={() => startEdit(ch)}>Edit</button>
+                    <button
+                      className={`mcp-chapter-publish-btn ${ch.status === 'published' ? 'mcp-chapter-publish-btn--unpublish' : 'mcp-chapter-publish-btn--publish'}`}
+                      disabled={togglingChapterId === ch.id}
+                      onClick={() => handleToggleChapterPublish(ch)}
+                    >
+                      {togglingChapterId === ch.id ? '...' : ch.status === 'published' ? 'Unpublish' : 'Publish'}
+                    </button>
                     <button
                       className="mcp-delete-btn"
                       disabled={deletingId === ch.id}
@@ -255,7 +356,7 @@ export default function ManageChaptersPage({ course, authToken, onBack }) {
                 className={`mcp-status-btn ${form.status === 'published' ? 'mcp-status-btn--active' : ''}`}
                 onClick={() => setForm(f => ({ ...f, status: 'published' }))}
               >
-                Published
+                Publish
               </button>
             </div>
 
@@ -287,12 +388,13 @@ export default function ManageChaptersPage({ course, authToken, onBack }) {
 
             <div className="mcp-form-row">
               <div className="mcp-form-field">
-                <label className="mcp-label">Estimated Duration (optional)</label>
+                <label className="mcp-label">Estimated Duration *</label>
                 <input
                   className="mcp-input"
                   value={form.duration}
                   onChange={(e) => setForm(f => ({ ...f, duration: e.target.value }))}
                   placeholder="e.g., 15 min"
+                  required
                 />
               </div>
               <div className="mcp-form-field">
@@ -324,7 +426,7 @@ export default function ManageChaptersPage({ course, authToken, onBack }) {
             />
 
             <div className="mcp-form-actions">
-              <button className="mcp-submit-btn" type="submit" disabled={saving}>
+              <button className="mcp-submit-btn" type="submit" disabled={!isFormValid || saving}>
                 {saving ? 'Saving...' : editingId ? 'Save Changes' : 'Add Chapter'}
               </button>
               {editingId && (
