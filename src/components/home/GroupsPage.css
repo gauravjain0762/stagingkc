@@ -2304,14 +2304,6 @@
 @media (max-width: 1300px) { .grp-hub-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 960px)  { .grp-hub-grid { grid-template-columns: repeat(2, 1fr); } }
 
-.grp-hub-empty {
-  grid-column: 1 / -1;
-  text-align: center;
-  color: #4a5270;
-  font-size: 14px;
-  padding: 48px 0;
-}
-
 .grp-hub-empty-state {
   grid-column: 1 / -1;
   display: flex;

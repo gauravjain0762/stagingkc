@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { getCourseById, flattenChapters, totalChapterCount, priceLabel } from './educationData';
 import useEducationProgress from './useEducationProgress';
+import Loader from '../Loader';
 import { courseApi } from '../../services/courseApi';
 import './CourseReaderPage.css';
 import './CourseDetailPage.css';
@@ -380,9 +381,8 @@ export default function CourseDetailPage({ courseId, authToken, onBack, initialM
         <header className="cr-topbar">
           <button className="cr-back-btn" onClick={onBack}><BackArrowIcon /><span className="cr-back-label">Back</span></button>
         </header>
-        <div className="cdp-loading">
-          <div className="cdp-loading-spinner" />
-          <p>Loading course...</p>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Loader inline />
         </div>
       </div>
     );

@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import AnimatedNav from './AnimatedNav';
 import CreateNewSitePage from './CreateNewSitePage';
 import SiteBuilderPage from './SiteBuilderPage';
+import Loader from '../Loader';
 import SiteAnalyticsModal from './SiteAnalyticsModal';
 import { ALEX_AVATAR } from './mockData';
 import { apiRequest } from '../../services/api';
@@ -483,7 +484,7 @@ export default function MiniSitesPage({
         )}
 
         {activeTab === 'my-sites' && loading && sites.length === 0 && (
-          <div className="ms-empty-state"><p className="ms-empty-text">Loading your sites…</p></div>
+          <Loader inline />
         )}
 
         {activeTab === 'my-sites' && !loading && loadError && sites.length === 0 && (
@@ -582,7 +583,7 @@ export default function MiniSitesPage({
         )}
 
         {activeTab === 'all-sites' && allSitesLoading && allSites.length === 0 && (
-          <div className="ms-empty-state"><p className="ms-empty-text">Loading sites from everyone…</p></div>
+          <Loader inline />
         )}
 
         {activeTab === 'all-sites' && !allSitesLoading && allSitesError && allSites.length === 0 && (

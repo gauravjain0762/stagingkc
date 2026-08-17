@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import WebsitePreview from './WebsitePreview';
+import Loader from '../Loader';
 import { apiRequest } from '../../services/api';
 import { normalizeSite } from './miniSiteUtils';
 import './PublicSitePage.css';
@@ -92,12 +93,7 @@ export default function PublicSitePage({ slug }) {
   }
 
   if (status === 'loading') {
-    return (
-      <div className="pub-site-state">
-        <div className="pub-site-spinner" />
-        <p>Loading site…</p>
-      </div>
-    );
+    return <Loader />;
   }
 
   if (status === 'notfound') {

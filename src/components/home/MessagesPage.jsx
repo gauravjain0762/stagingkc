@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import './MessagesPage.css';
 import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
+import Loader from '../Loader';
 import {
   fetchConversations, fetchMessages, sendMessage, markRead,
   startDM, createGroup, fetchAssets,
@@ -2080,10 +2081,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
           {tab === 'Blocked' ? (
             <>
               {blockedUsersLoading && blockedUsers.length === 0 && (
-                <div className="msg-list-loading">
-                  <span className="msg-spinner" />
-                  <p>Loading blocked users…</p>
-                </div>
+                <Loader inline />
               )}
               {!blockedUsersLoading && blockedUsers.length === 0 && (
                 <div className="msg-list-empty">
@@ -2128,10 +2126,7 @@ export default function MessagesPage({ onBack, onEventsClick, onGroupsClick, onC
           ) : (
             <>
           {conversationsLoading && conversations.length === 0 && (
-            <div className="msg-list-loading">
-              <span className="msg-spinner" />
-              <p>Loading conversations…</p>
-            </div>
+            <Loader inline />
           )}
           {!conversationsLoading && conversations.length === 0 && tab === 'Unread' && (
             <div className="msg-list-empty">

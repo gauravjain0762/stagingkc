@@ -10,53 +10,6 @@
   position: relative;
 }
 
-/* ── Loading state — shown in place of the week/month grid while
-   fetchEvents/fetchMyCalendar is in flight ── */
-.cal-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  padding: 140px 0;
-  color: #5c6a8c;
-  font-size: 14px;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  animation: calLoadingFadeIn 0.25s ease both;
-}
-
-.cal-loading p { margin: 0; }
-
-.cal-loading-spinner {
-  position: relative;
-  width: 40px;
-  height: 40px;
-}
-
-.cal-loading-spinner::before,
-.cal-loading-spinner::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 3px solid transparent;
-}
-
-.cal-loading-spinner::before {
-  border-top-color: #3b82f6;
-  border-right-color: #3b82f6;
-  animation: calLoadingSpin 0.85s cubic-bezier(0.5, 0.05, 0.5, 0.95) infinite;
-}
-
-.cal-loading-spinner::after {
-  border-bottom-color: rgba(59, 130, 246, 0.25);
-  border-left-color: rgba(59, 130, 246, 0.25);
-  animation: calLoadingSpin 1.35s linear infinite reverse;
-}
-
-@keyframes calLoadingSpin { to { transform: rotate(360deg); } }
-@keyframes calLoadingFadeIn { from { opacity: 0; } to { opacity: 1; } }
-
 /* ── Left sidebar ── */
 .cal-sidebar {
   width: 196px;

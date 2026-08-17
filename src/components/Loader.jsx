@@ -1,57 +1,67 @@
-﻿export default function Loader() {
+// Single shared "Kink Catalyst" branded loader — used both as a full-page
+// splash (default) and, via `inline`, as a smaller loader embedded inside a
+// section/list/grid that keeps the rest of the page visible around it. No
+// contextual subtitle by default — just the spinner and the brand mark.
+export default function Loader({ subtitle = null, inline = false }) {
   return (
-    <div className="loader-container">
-      <div className="loader-content">
-        <div className="loader-spinner">
-          <div className="spinner"></div>
-        </div>
-        <h1 className="loader-title">Kink Catalyst</h1>
-        <p className="loader-subtitle">Loading...</p>
+    <div className={`kc-loader-container${inline ? ' kc-loader-container--inline' : ''}`}>
+      <div className="kc-loader-content">
+        <div className="kc-spinner" />
+        <h1 className="kc-loader-title">Kink Catalyst</h1>
+        {subtitle && <p className="kc-loader-subtitle">{subtitle}</p>}
       </div>
       <style>{`
-        .loader-container {
+        .kc-loader-container {
           display: flex;
           justify-content: center;
           align-items: center;
           position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
+          inset: 0;
           background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
           font-family: 'Plus Jakarta Sans', sans-serif;
           z-index: 9999;
         }
 
-        .loader-content {
+        .kc-loader-container--inline {
+          position: static;
+          inset: auto;
+          background: none;
+          padding: 56px 20px;
+          z-index: auto;
+        }
+
+        .kc-loader-content {
           display: flex;
           flex-direction: column;
           align-items: center;
           gap: 24px;
         }
 
-        .loader-spinner {
-          display: flex;
-          justify-content: center;
-          align-items: center;
+        .kc-loader-container--inline .kc-loader-content {
+          gap: 12px;
         }
 
-        .spinner {
+        .kc-spinner {
           width: 60px;
           height: 60px;
           border: 4px solid rgba(59, 130, 246, 0.2);
           border-top-color: #3b82f6;
           border-radius: 50%;
-          animation: spin 1s linear infinite;
+          animation: kc-spin 1s linear infinite;
         }
 
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
+        .kc-loader-container--inline .kc-spinner {
+          width: 28px;
+          height: 28px;
+          border-width: 3px;
+          animation-duration: 0.8s;
         }
 
-        .loader-title {
+        @keyframes kc-spin {
+          to { transform: rotate(360deg); }
+        }
+
+        .kc-loader-title {
           font-size: 32px;
           font-weight: 700;
           color: #ffffff;
@@ -59,23 +69,27 @@
           letter-spacing: -0.5px;
         }
 
-        .loader-subtitle {
+        .kc-loader-container--inline .kc-loader-title {
+          font-size: 15px;
+          letter-spacing: -0.2px;
+        }
+
+        .kc-loader-subtitle {
           font-size: 14px;
           color: #94a3b8;
           margin: 0;
-          animation: pulse 1.5s ease-in-out infinite;
+          animation: kc-pulse 1.5s ease-in-out infinite;
         }
 
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 0.6;
-          }
-          50% {
-            opacity: 1;
-          }
+        .kc-loader-container--inline .kc-loader-subtitle {
+          font-size: 12.5px;
+        }
+
+        @keyframes kc-pulse {
+          0%, 100% { opacity: 0.6; }
+          50% { opacity: 1; }
         }
       `}</style>
     </div>
   );
 }
-

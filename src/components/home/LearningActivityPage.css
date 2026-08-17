@@ -313,30 +313,6 @@
   transform: translateY(-4px);
 }
 
-.lap-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding: 60px 20px;
-  color: #8b95a5;
-  font-size: 13px;
-}
-
-.lap-loading-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid rgba(59, 130, 246, 0.2);
-  border-top-color: #3b82f6;
-  border-radius: 50%;
-  animation: lap-spin 0.8s linear infinite;
-}
-
-@keyframes lap-spin {
-  to { transform: rotate(360deg); }
-}
-
 .lap-card-img-wrapper {
   position: relative;
   width: 100%;
@@ -808,23 +784,6 @@
   text-transform: uppercase;
 }
 
-/* My Created Courses */
-.lap-create-new-btn {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.lap-create-new-btn:hover {
-  transform: translateY(-2px);
-}
-
 .lap-empty-state {
   text-align: center;
   padding: 60px 20px;
@@ -887,7 +846,7 @@
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  margin: 8px 0 12px 0;
+  margin: 2px 0 12px 0;
 }
 
 .lap-students {

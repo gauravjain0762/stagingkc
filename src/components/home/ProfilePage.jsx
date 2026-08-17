@@ -16,6 +16,7 @@ import { fetchEvents } from '../../store/slices/eventsSlice';
 import { showToast } from '../../store/slices/toastSlice';
 import { PROFILE_TABS } from './mockData';
 import SkeletonImg from '../SkeletonImg';
+import Loader from '../Loader';
 import { CustomDatePicker } from './DateTimePicker';
 import ImageCropper from './ImageCropper';
 import { apiRequest } from '../../services/api';
@@ -2145,10 +2146,7 @@ function BackArrowIcon()    { return <svg width="18" height="18" viewBox="0 0 24
             </div>
             <div className="fp-list">
               {listLoading && list.length === 0 && (
-                <div className="fp-loading">
-                  <span className="fp-spinner" />
-                  <p style={{ margin: 0 }}>Loading {followPanel}…</p>
-                </div>
+                <Loader inline />
               )}
               {!listLoading && list.length === 0 && <p className="fp-empty">No results found</p>}
               {list.map(person => {

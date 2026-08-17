@@ -11,6 +11,7 @@ import UserInvitations from './UserInvitations';
 import ImageCropper from './ImageCropper';
 import UserProfilePage from './UserProfilePage';
 import GlobalSearch from './GlobalSearch';
+import Loader from '../Loader';
 import {
   fetchGroups, createGroup, updateGroup, fetchGroupPosts, fetchGroupMembers,
   changeMemberRole, removeMember, joinGroup, leaveGroup, reportGroup,
@@ -2828,7 +2829,9 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
         {/* Group cards grid */}
         <div className="grp-hub-grid">
           {groupsLoading && (
-            <p className="grp-hub-empty">Loading groups...</p>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <Loader inline />
+            </div>
           )}
           {!groupsLoading && displayGroups.map(g => {
             const gOwned = !!myId && (g.admin === myId || g.admin?._id === myId);

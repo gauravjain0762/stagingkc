@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import AnimatedNav from './AnimatedNav';
 import CourseDetailPage from './CourseDetailPage';
 import ManageChaptersPage from './ManageChaptersPage';
+import Loader from '../Loader';
 import { ALEX_AVATAR } from './mockData';
 import { courseApi } from '../../services/courseApi';
 import useEducationProgress from './useEducationProgress';
@@ -440,9 +441,8 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
           )}
           <div className="lap-courses-grid">
             {loading ? (
-              <div className="lap-loading" style={{ gridColumn: '1 / -1' }}>
-                <div className="lap-loading-spinner" />
-                <p>Loading courses...</p>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <Loader inline />
               </div>
             ) : error ? (
               <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#ef4444' }}>{error}</p>
@@ -512,9 +512,6 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
         <div className="lap-section">
           <div className="lap-section-header">
             <h2>My Courses</h2>
-            <button className="lap-create-new-btn" onClick={() => onNavigateEducation?.('create')}>
-              + Create New
-            </button>
           </div>
           {error && <p className="lap-publish-error">{error}</p>}
           {createdCourses.length === 0 ? (

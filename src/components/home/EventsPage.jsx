@@ -7,6 +7,7 @@ import ImageCropper from './ImageCropper';
 import { CustomDatePicker, CustomTimePicker } from './DateTimePicker';
 import { CountrySelect, PhoneInput } from './CountryPicker';
 import SkeletonImg from '../SkeletonImg';
+import Loader from '../Loader';
 import ShareSheet from './ShareSheet';
 import './ShareSheet.css';
 import {
@@ -2527,10 +2528,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
           {/* Event cards — grid or list */}
           {currentTabLoading ? (
-            <div className="ev-disc-loading">
-              <div className="ev-disc-spinner" />
-              <p>Loading events…</p>
-            </div>
+            <Loader inline />
           ) : (
           <>
           {filteredEvents.length === 0 && (

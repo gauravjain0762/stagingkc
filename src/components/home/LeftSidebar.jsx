@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import SkeletonImg from '../SkeletonImg';
+import Loader from '../Loader';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchSuggestions, sendFriendRequest, dismissSuggestion, fetchGroups, followUser, unfollowUser, fetchAllUsers } from '../../store/slices/usersSlice';
 import { fetchUserProfile } from '../../store/slices/profileSlice';
@@ -102,10 +103,7 @@ function MutualFriendsModal({ userId, token, onClose, onUserClick }) {
         </div>
         <div className="fp-list">
           {loading && list.length === 0 && (
-            <div className="fp-loading">
-              <span className="fp-spinner" />
-              <p style={{ margin: 0 }}>Loading mutual friends…</p>
-            </div>
+            <Loader inline />
           )}
           {!loading && list.length === 0 && <p className="fp-empty">No mutual friends</p>}
           {list.map(person => (

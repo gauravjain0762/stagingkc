@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import './CalendarPage.css';
 import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
+import Loader from '../Loader';
 import { fetchEvents, fetchMyCalendar } from '../../store/slices/eventsSlice';
 
 /* ── Sidebar nav icons ── */
@@ -358,9 +359,8 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
         </div>
 
         {isLoading ? (
-          <div className="cal-loading">
-            <div className="cal-loading-spinner" />
-            <p>{scope === 'mine' ? 'Loading your calendar…' : 'Loading events…'}</p>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Loader inline />
           </div>
         ) : (
         <>

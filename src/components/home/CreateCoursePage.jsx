@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import ImageCropper from './ImageCropper';
+import Loader from '../Loader';
 import { courseApi } from '../../services/courseApi';
 import { showToast } from '../../store/slices/toastSlice';
 import './CreateCoursePage.css';
@@ -359,17 +360,7 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
       )}
 
       {/* Creating Course Loader */}
-      {isCreating && (
-        <div className="ccp-loader-container">
-          <div className="ccp-loader-content">
-            <div className="ccp-loader-spinner">
-              <div className="ccp-spinner"></div>
-            </div>
-            <h1 className="ccp-loader-title">Kink Catalyst</h1>
-            <p className="ccp-loader-subtitle">Creating course...</p>
-          </div>
-        </div>
-      )}
+      {isCreating && <Loader />}
     </div>
   );
 }
