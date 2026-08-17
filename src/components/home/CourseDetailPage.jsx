@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { getCourseById, flattenChapters, totalChapterCount, priceLabel } from './educationData';
 import useEducationProgress from './useEducationProgress';
 import { courseApi } from '../../services/courseApi';
 import './CourseReaderPage.css';
 import './CourseDetailPage.css';
+// Reuses the .lap-checkout-* classes so the paid-course checkout modal here
+// is visually identical to the one on the course list / explore page.
+import './LearningActivityPage.css';
 
 // Authors enter free-text durations per chapter ("15 min", "1h 30m", "45") —
 // parsed leniently so the course-level total can be a real sum instead of a
@@ -102,6 +106,7 @@ const CALLOUT_STYLE = {
 
 export default function CourseDetailPage({ courseId, authToken, onBack }) {
   const progress = useEducationProgress();
+  const userId = useSelector(s => s.auth?.user?._id ?? s.auth?.user?.id);
 
   // 'loading' while a real fetch is in flight, 'api' once it succeeds,
   // 'mock' once it fails (or there's no token) so old callers of this page
@@ -113,6 +118,14 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
   // client-side. Falls back to the local useEducationProgress hook when
   // this is null (no token, or /progress isn't live yet).
   const [apiProgress, setApiProgress] = useState(null);
+  // Real enrollment, confirmed against the backend's enrolled-courses list —
+  // reaching this reader (e.g. via "View Details") does NOT imply enrollment,
+  // so this must never be assumed true just because the course loaded.
+  const [apiEnrolled, setApiEnrolled] = useState(false);
+  // Paid-course checkout — mirrors the same mock-payment flow used on the
+  // course list page, so a paid course can't be "enrolled" into for free.
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [checkoutStep, setCheckoutStep] = useState('idle'); // idle | processing | success | error
 
   // Rating the user has just submitted this session — overrides whatever
   // came back from the API until the next full fetch.
@@ -164,6 +177,16 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
             // /progress isn't live yet — apiProgress stays null, UI falls
             // back to local completion tracking below.
           }
+          if (userId) {
+            try {
+              const enrolledRes = await courseApi.getUserEnrolledCourses(userId, authToken);
+              if (!cancelled && enrolledRes.success) {
+                setApiEnrolled((enrolledRes.courses || []).some(c => c.id === courseId));
+              }
+            } catch {
+              // Enrollment check failed — leave apiEnrolled false, the safe default.
+            }
+          }
         } else {
           setSource('mock');
         }
@@ -172,7 +195,7 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
       }
     })();
     return () => { cancelled = true; };
-  }, [courseId, authToken]);
+  }, [courseId, authToken, userId]);
 
   // No token means we never fetch, so never sit in 'loading' waiting on a
   // request that isn't happening.
@@ -257,6 +280,8 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
 
   async function markComplete(chapterId) {
     if (resolvedSource === 'api') {
+      // Not enrolled — the backend rejects /complete with 403, so don't even try.
+      if (!apiEnrolled) return false;
       try {
         const res = await courseApi.completeChapter(courseId, chapterId, authToken);
         if (res.success) {
@@ -265,13 +290,64 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
             percentComplete: res.percentComplete ?? prev?.percentComplete ?? 0,
             lastViewedChapterId: chapterId,
           }));
-          return;
+          return true;
         }
+        return false;
       } catch {
-        // /complete isn't live yet — fall back to local tracking below
+        return false;
       }
     }
     progress.markChapterComplete(courseId, chapterId);
+    return true;
+  }
+
+  // Enrolls against the real backend for API courses (progress.enrollCourse
+  // only ever touched local storage, which let the reader think a user was
+  // enrolled when the backend had no record of it at all). Paid courses open
+  // the same checkout modal as the course list instead of enrolling for free.
+  function handleEnroll() {
+    if (resolvedSource === 'api') {
+      if (!course.isFree) {
+        setCheckoutStep('idle');
+        setShowCheckout(true);
+        return;
+      }
+      performFreeEnroll();
+    } else {
+      progress.enrollCourse(courseId);
+    }
+  }
+
+  async function performFreeEnroll() {
+    try {
+      const res = await courseApi.enrollCourse(courseId, authToken);
+      if (res.success !== false) setApiEnrolled(true);
+    } catch {
+      // leave apiEnrolled false — enroll CTA stays visible so the user can retry
+    }
+  }
+
+  // No real payment gateway yet — hits the same mock /purchase endpoint the
+  // course list checkout uses, which validates + records a transaction and
+  // enrolls in one step.
+  async function handlePurchase() {
+    setCheckoutStep('processing');
+    try {
+      const res = await courseApi.purchaseCourse(courseId, authToken);
+      if (res.success) {
+        setApiEnrolled(true);
+        setCheckoutStep('success');
+      } else {
+        setCheckoutStep('error');
+      }
+    } catch {
+      setCheckoutStep('error');
+    }
+  }
+
+  function closeCheckout() {
+    setShowCheckout(false);
+    setCheckoutStep('idle');
   }
 
   async function submitRating(value) {
@@ -327,8 +403,9 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
     }
   }
 
-  function completeAndAdvance() {
-    markComplete(chapter.id);
+  async function completeAndAdvance() {
+    const ok = await markComplete(chapter.id);
+    if (!ok) return;
     const next = chapters[chapterIdx + 1];
     if (next) {
       setSelectedChapterId(next.id);
@@ -338,10 +415,9 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
   }
 
   const isLastChapter = chapterIdx >= chapters.length - 1;
-  // Real-API courses only reach this reader once already enrolled (via the
-  // explore-card flow), so treat that path as enrolled outright; the mock
-  // progress check only applies to the legacy mock-data pages.
-  const isEnrolled = resolvedSource === 'api' || progress.isEnrolled(courseId);
+  // API courses can be reached without enrolling (e.g. "View Details"), so
+  // enrollment must come from a real backend check, not just the source.
+  const isEnrolled = resolvedSource === 'api' ? apiEnrolled : progress.isEnrolled(courseId);
 
   return (
     <div className="cr-page">
@@ -357,7 +433,7 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
 
         <div className="cr-topbar-center">
           {!isEnrolled && (
-            <button className="cdp-enroll-cta" onClick={() => progress.enrollCourse(courseId)}>
+            <button className="cdp-enroll-cta" onClick={handleEnroll}>
               <SparkIcon />
               Enroll this course
               <span className="cdp-enroll-cta-price">{priceLabel(course)}</span>
@@ -561,18 +637,29 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
         </button>
 
         <div className="cr-progress-area">
-          <div className="cr-progress-track">
-            <div className="cr-progress-fill" style={{ width: `${pct}%` }} />
-          </div>
+          {isEnrolled && (
+            <div className="cr-progress-track">
+              <div className="cr-progress-fill" style={{ width: `${pct}%` }} />
+            </div>
+          )}
           <span className="cr-page-label">Chapter {chapterIdx + 1} of {total}</span>
         </div>
 
-        <button
-          className="cr-nav-btn cr-nav-btn--next"
-          onClick={completeAndAdvance}
-        >
-          {isLastChapter ? 'Complete Chapter' : 'Next Chapter'} <ChevRightIcon />
-        </button>
+        {isEnrolled ? (
+          <button
+            className="cr-nav-btn cr-nav-btn--next"
+            onClick={completeAndAdvance}
+          >
+            {isLastChapter ? 'Complete Chapter' : 'Next Chapter'} <ChevRightIcon />
+          </button>
+        ) : (
+          <button
+            className="cr-nav-btn cr-nav-btn--next"
+            onClick={handleEnroll}
+          >
+            Enroll to Continue <ChevRightIcon />
+          </button>
+        )}
       </footer>
 
       {showCompletionModal && (
@@ -585,6 +672,47 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
               <button className="cdp-complete-primary-btn" onClick={onBack}>Back to My Courses</button>
               <button className="cdp-complete-secondary-btn" onClick={() => setShowCompletionModal(false)}>Keep Reviewing</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showCheckout && (
+        <div className="lap-checkout-overlay" onClick={() => checkoutStep !== 'processing' && closeCheckout()}>
+          <div className="lap-checkout-modal" onClick={(e) => e.stopPropagation()}>
+            {checkoutStep === 'success' ? (
+              <>
+                <div className="lap-checkout-success-icon"><CheckIcon /></div>
+                <h3>Payment Successful</h3>
+                <p className="lap-checkout-sub">You're enrolled in <strong>{course.title}</strong>.</p>
+                <div className="lap-checkout-actions">
+                  <button className="lap-checkout-primary-btn" onClick={closeCheckout}>Continue</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3>Checkout</h3>
+                <p className="lap-checkout-sub">{course.title}</p>
+                <div className="lap-checkout-price-row">
+                  <span>Total</span>
+                  <span className="lap-checkout-price">{priceLabel(course)}</span>
+                </div>
+                {checkoutStep === 'error' && (
+                  <p className="lap-checkout-error">Payment failed. Please try again.</p>
+                )}
+                <div className="lap-checkout-actions">
+                  <button
+                    className="lap-checkout-primary-btn"
+                    disabled={checkoutStep === 'processing'}
+                    onClick={handlePurchase}
+                  >
+                    {checkoutStep === 'processing' ? 'Processing…' : `Pay ${priceLabel(course)}`}
+                  </button>
+                  <button className="lap-checkout-secondary-btn" disabled={checkoutStep === 'processing'} onClick={closeCheckout}>
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

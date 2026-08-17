@@ -67,3 +67,22 @@
   .qp-stats { grid-template-columns: 1fr; }
   .qp-modal { padding: 24px; }
 }
+
+@media (max-width: 700px) {
+  /* Icon rail becomes a bottom tab bar (AnimatedNav.css) — drop the
+     reserved space and leave room at the bottom instead. */
+  .qp-container {
+    padding: 20px 16px calc(96px + env(safe-area-inset-bottom));
+  }
+
+  .qp-quiz-header { flex-wrap: wrap; gap: 8px; }
+  .qp-quiz-footer { flex-wrap: wrap; }
+  .qp-modal { width: calc(100% - 32px); }
+}
+
+@media (max-width: 480px) {
+  .qp-title { font-size: 22px; }
+  .qp-modal { padding: 18px; }
+  .qp-stat-card { padding: 16px; gap: 12px; }
+  .qp-stat-icon { font-size: 26px; }
+}

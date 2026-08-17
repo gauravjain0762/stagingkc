@@ -446,19 +446,12 @@
   border-color: rgba(16,185,129,0.35);
 }
 
+/* Duplicates the real, clickable .cdp-enroll-cta button in the topbar
+   center with identical "Enroll this course + price" text — kept out of
+   layout everywhere rather than just on mobile, since two enroll prompts
+   read as confusing regardless of screen width. */
 .cdp-price-badge--highlight {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12.5px;
-  font-weight: 700;
-  padding: 6px 14px 6px 12px;
-  border-radius: 20px;
-  background: linear-gradient(135deg, #2563eb, #7c3aed);
-  color: #fff;
-  border: none;
-  box-shadow: 0 4px 16px rgba(37,99,235,0.35);
-  letter-spacing: -0.1px;
+  display: none;
 }
 .cdp-price-badge--highlight.cdp-price-badge--free {
   background: linear-gradient(135deg, #10b981, #059669);
@@ -516,6 +509,39 @@
 }
 
 @media (max-width: 760px) {
-  .cdp-body { flex-direction: column; }
-  .cdp-sidebar { width: 100%; max-height: 180px; border-right: none; border-bottom: 1px solid #1e293b; }
+  /* Desktop nests three independent scroll regions (sidebar, left page,
+     right page) inside a fixed-height, non-scrolling .cdp-body — a "book"
+     UX that works with a mouse but turns into a stack of tiny nested
+     scrollboxes on a phone. Flatten it to one natural page scroll instead:
+     .cdp-body itself scrolls, and everything inside just sizes to its
+     content instead of independently clipping/scrolling. */
+  .cdp-body { flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+  .cdp-sidebar {
+    width: 100%;
+    max-height: none;
+    overflow-y: visible;
+    border-right: none;
+    border-bottom: 1px solid #1e293b;
+  }
+}
+
+@media (max-width: 700px) {
+  .cdp-reader { padding: 16px; }
+  .cdp-chapter-resources { gap: 8px; }
+  .cdp-enroll-cta { font-size: 12px; padding: 7px 9px 7px 14px; }
+}
+
+@media (max-width: 480px) {
+  .cdp-complete-modal { padding: 24px 20px; }
+  .cdp-sidebar { padding: 14px 10px; }
+  .cdp-report-overlay { padding: 12px; }
+
+  /* Rating stars were only ~16px of tappable area (12px icon + 2px
+     padding) — comfortably tap-able needs closer to 40px. */
+  .cdp-rate-star { padding: 8px; }
+  .cdp-rate-star svg { width: 16px; height: 16px; }
+
+  /* Chapter rows in the sidebar are a plain list on a phone now (no more
+     forced inner scroll), so give them a bit more breathing room. */
+  .cdp-chapter-row { padding: 11px 10px; }
 }

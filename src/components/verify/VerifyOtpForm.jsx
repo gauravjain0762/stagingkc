@@ -99,7 +99,7 @@ export default function VerifyOtpForm() {
 
   return (
     <div className="signup-left-panel">
-      <div className="signup-logo">Kink Analyst</div>
+      <div className="signup-logo">Kink Catalyst</div>
 
       <div className="signup-form-wrapper">
         <div className="signup-card verify-card">

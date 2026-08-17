@@ -5,7 +5,7 @@
         <div className="loader-spinner">
           <div className="spinner"></div>
         </div>
-        <h1 className="loader-title">Kink Analyst</h1>
+        <h1 className="loader-title">Kink Catalyst</h1>
         <p className="loader-subtitle">Loading...</p>
       </div>
       <style>{`

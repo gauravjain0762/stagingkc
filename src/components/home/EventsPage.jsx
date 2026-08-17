@@ -71,7 +71,7 @@ function EventImgPlaceholder({ size = 32 }) {
   return (
     <div className="ev-img-placeholder" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '8px', color: 'rgba(255, 255, 255, 0.3)' }}>
       <CalendarIcon size={size} />
-      <span style={{ fontSize: '12px', fontWeight: '500' }}>Kink Analyst</span>
+      <span style={{ fontSize: '12px', fontWeight: '500' }}>Kink Catalyst</span>
     </div>
   );
 }
@@ -2521,8 +2521,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 key={cat.label}
                 className={`ev-disc-cat${discCat === cat.label ? ' ev-disc-cat--active' : ''}`}
                 onClick={() => setDiscCat(cat.label)}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-              >{cat.icon} {cat.label}</button>
+              >{cat.label}</button>
             ))}
           </div>
 
@@ -3676,7 +3675,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
         <ShareSheet
           url={eventPermalink(selectedEvent.id)}
           title={selectedEvent.title || 'Check out this event'}
-          text={`${selectedEvent.title || 'Check out this event'} on Kink Analyst`}
+          text={`${selectedEvent.title || 'Check out this event'} on Kink Catalyst`}
           heading="Share event"
           onClose={() => setShareOpen(false)}
         />

@@ -580,3 +580,13 @@
     font-size: 18px;
   }
 }
+
+@media (max-width: 480px) {
+  .ccp-container { padding: 24px 14px; }
+  .ccp-form { padding: 20px; }
+  .ccp-title { font-size: 26px; }
+  .ccp-upload-area { padding: 36px 16px; }
+  .ccp-preview-img { height: 180px; }
+  .ccp-preview-overlay { padding: 18px; }
+  .ccp-module-summary, .ccp-quick-tips { padding: 18px; }
+}

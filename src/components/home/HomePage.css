@@ -38,7 +38,12 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  flex-shrink: 0;
+  /* Was flex-shrink:0 on the whole block, including the search box below —
+     with the search box's width previously fixed via an inline style, this
+     left the navbar unable to shrink at all on a narrow screen, forcing
+     .navbar-right off the visible edge. The logo alone should never shrink
+     (see its own flex-shrink below); the search box now can. */
+  min-width: 0;
 }
 
 .navbar-logo {
@@ -48,27 +53,35 @@
   letter-spacing: -0.2px;
   white-space: nowrap;
   margin-left: 72px;
+  flex-shrink: 0;
 }
 
-.navbar-search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #131626;
-  border: 1px solid #1e2238;
-  border-radius: 8px;
-  padding: 7px 14px;
-  width: 200px;
+/* Positioning context for the search-results dropdown. The box's own
+   visual styling (border/background/padding) lives on .navbar-search-input
+   below — flex:1 + max-width lets it shrink to fit a narrow screen instead
+   of the fixed 200px it used to be pinned to via an inline style, which is
+   what was overflowing the navbar on mobile. */
+.navbar-search-wrap {
+  position: relative;
+  margin-left: 24px;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 200px;
 }
 
 .navbar-search-input {
-  background: none;
-  border: none;
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 20px;
+  border: 1px solid #3b4556;
+  background-color: #1a202c;
   outline: none;
-  color: #c8cfe0;
+  color: #d0d6ec;
   font-size: 13px;
   font-family: inherit;
-  width: 100%;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
 }
 
 .navbar-search-input::placeholder { color: #3e4460; }
@@ -2160,11 +2173,21 @@
   .navbar-stat-pill { padding: 6px 10px; }
   .navbar-user-info { display: none; }
   .navbar-chevron { display: none; }
+
+  /* Shrink instead of overflow — was a fixed 200px box that didn't fit
+     next to the logo + 3 icon buttons on a phone-width screen. */
+  .navbar-search-wrap { max-width: 130px; margin-left: 10px; }
+  .navbar-search-input { padding: 7px 10px; font-size: 12.5px; }
 }
 
 @media (max-width: 480px) {
   .navbar-center { display: none; }
   .navbar-logo { font-size: 16px; }
+
+  /* No room left for it once the logo, search box, and 3 icon buttons all
+     have to share a ~360px phone width — drop it rather than let it keep
+     shrinking into an unusable sliver. */
+  .navbar-search-wrap { display: none; }
 
   /* .navbar-center's margin:0 auto was the only thing pushing .navbar-right
      to the edge — hiding it collapsed the icons back next to the logo. */

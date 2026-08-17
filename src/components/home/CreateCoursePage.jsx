@@ -374,7 +374,7 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
             <div className="ccp-loader-spinner">
               <div className="ccp-spinner"></div>
             </div>
-            <h1 className="ccp-loader-title">Kink Analyst</h1>
+            <h1 className="ccp-loader-title">Kink Catalyst</h1>
             <p className="ccp-loader-subtitle">Creating course...</p>
           </div>
         </div>

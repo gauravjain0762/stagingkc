@@ -147,7 +147,7 @@ export default function PublicSitePage({ slug }) {
   return (
     <div className="pub-site-page">
       <WebsitePreview sections={site?.sections || []} device="desktop" interactive={false} />
-      <div className="pub-site-footer">Made with Kick Analyst Mini Sites</div>
+      <div className="pub-site-footer">Made with Kink Catalyst Mini Sites</div>
     </div>
   );
 }

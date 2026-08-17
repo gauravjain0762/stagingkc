@@ -975,10 +975,6 @@
     flex-direction: column;
   }
 
-  .lap-stats-container {
-    grid-template-columns: 1fr;
-  }
-
   .lap-courses-grid {
     grid-template-columns: 1fr;
   }
@@ -986,4 +982,59 @@
   .lap-resources-grid {
     grid-template-columns: 1fr;
   }
+}
+
+@media (max-width: 700px) {
+  /* Icon rail becomes a bottom tab bar (AnimatedNav.css) — drop the
+     reserved left padding and leave room at the bottom instead. */
+  .lap-main {
+    padding: 20px 16px calc(96px + env(safe-area-inset-bottom));
+  }
+
+  /* Tab strip can be tight against 3 labels on a narrow phone — let it
+     scroll horizontally instead of forcing the whole page to. */
+  .lap-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+    margin-left: -16px;
+    margin-right: -16px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .lap-tabs::-webkit-scrollbar { display: none; }
+  .lap-tab { white-space: nowrap; flex-shrink: 0; }
+
+  .lap-header-section { margin-bottom: 32px; gap: 16px; }
+  .lap-section { margin-bottom: 32px; }
+  .lap-section-header h2 { font-size: 18px; }
+
+  .lap-create-course-btn { width: 100%; justify-content: center; }
+
+  /* Stacking the 3 stat cards full-width (one per row) burned a huge amount
+     of scroll before reaching any course content. Keep them as a compact
+     3-across row instead — icon-over-number-over-label, like a standard
+     mobile stat tile, rather than desktop's icon-beside-text layout. */
+  .lap-stats-container { gap: 8px; }
+  .lap-stat {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 10px 6px;
+    gap: 6px;
+    border-radius: 10px;
+  }
+  .lap-stat-icon svg { width: 18px; height: 18px; }
+  .lap-stat-info { align-items: center; gap: 2px; }
+  .lap-stat-label { font-size: 8.5px; letter-spacing: 0.3px; }
+  .lap-stat-value { font-size: 17px; }
+}
+
+@media (max-width: 480px) {
+  .lap-checkout-modal { padding: 20px; }
+  .lap-empty-state { padding: 40px 16px; }
+  .lap-filter-buttons, .lap-categories { gap: 8px; }
+  .lap-filter-btn, .lap-category-btn { padding: 7px 12px; font-size: 12px; }
 }

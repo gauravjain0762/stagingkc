@@ -6,6 +6,10 @@
   position: fixed;
   inset: 0;
   z-index: 300;
+  /* Belt-and-suspenders against horizontal scroll on this fixed, full-screen
+     overlay — see the matching note in CreateNewSitePage.css. */
+  max-width: 100vw;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   background: #080c14;
@@ -300,9 +304,59 @@
 }
 
 @media (max-width: 760px) {
-  .cr-spread { grid-template-columns: 1fr; }
+  .cr-spread { grid-template-columns: 1fr; overflow: visible; }
   .cr-spine  { display: none; }
   .cr-page-right { border-top: 1px solid #1e293b; }
-  .cr-reader { padding: 12px; }
-  .cr-page-left, .cr-page-right { padding: 24px 20px; }
+  .cr-reader { padding: 12px; overflow: visible; align-items: stretch; }
+  /* The book layout gave each page its own internal scrollbar for a
+     fixed-height parent — now that .cdp-body scrolls as one page (see
+     CourseDetailPage.css), let these just grow to their content instead
+     of also clipping/scrolling internally. */
+  .cr-page-left, .cr-page-right { padding: 24px 20px; overflow-y: visible; }
+}
+
+@media (max-width: 700px) {
+  /* Topbar packs a back button, an enroll CTA, and a cluster of badges
+     into three flex:1 sections — on a phone that overflows, so let it
+     wrap onto stacked rows instead of forcing the page to scroll sideways. */
+  .cr-topbar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 56px;
+    padding: 10px 12px;
+    gap: 8px;
+    row-gap: 8px;
+  }
+  .cr-topbar-left { flex: 1 1 100%; }
+  .cr-topbar-center { flex: 1 1 100%; order: 3; justify-content: flex-start; }
+  .cr-topbar-right { flex: 1 1 100%; order: 2; flex-wrap: wrap; justify-content: flex-start; gap: 8px; }
+  .cr-back-label { max-width: 60vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Instructor pill is decorative on a phone — the price/enrollment badge
+     next to it already carries the info that matters. */
+  .cr-chapter-pill { display: none; }
+
+  .cr-reader { padding: 10px; }
+  .cr-page-left, .cr-page-right { padding: 18px 16px; }
+  .cr-chapter-title { font-size: 22px; }
+
+  /* Footer packs Previous/Next buttons + a progress bar in one row —
+     wrap so nothing gets clipped, and clear the home-indicator on notched
+     phones (this reader is position:fixed over the whole viewport, so it
+     already sits above the app's own bottom tab bar). */
+  .cr-footer {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    gap: 8px;
+  }
+  .cr-progress-area { order: 3; flex: 1 1 100%; }
+  .cr-progress-track { max-width: none; }
+  .cr-nav-btn { flex: 1; justify-content: center; padding: 9px 10px; font-size: 12px; }
+}
+
+@media (max-width: 480px) {
+  .cr-topbar-right { gap: 6px; }
+  .cr-chapter-title { font-size: 19px; }
+  .cr-section-heading { font-size: 17px; }
+  .cr-nav-btn { font-size: 11.5px; padding: 8px; }
 }

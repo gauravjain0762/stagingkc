@@ -86,3 +86,26 @@
   .cp-certificates { grid-template-columns: 1fr; }
   .dp-modal { padding: 20px; }
 }
+
+@media (max-width: 700px) {
+  /* Icon rail becomes a bottom tab bar (AnimatedNav.css) — drop the
+     reserved space and leave room at the bottom instead. */
+  .ep-container {
+    padding: 20px 16px calc(96px + env(safe-area-inset-bottom));
+  }
+
+  .ep-card-header { flex-wrap: wrap; gap: 8px; }
+  .dp-thread-header { flex-wrap: wrap; gap: 6px; }
+  .dp-thread-meta { flex-wrap: wrap; row-gap: 4px; }
+  .dp-modal { width: calc(100% - 32px); }
+}
+
+@media (max-width: 480px) {
+  .ep-title { font-size: 20px; }
+  .ep-card { padding: 16px; }
+  .pa-stats-grid { grid-template-columns: 1fr; }
+  .pa-stat-value { font-size: 26px; }
+  .pa-section { padding: 18px; }
+  .cp-cert-card { padding: 24px 18px; }
+  .dp-modal { padding: 18px; }
+}

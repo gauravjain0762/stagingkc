@@ -244,8 +244,8 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
   return (
     <nav className="home-navbar">
       <div className="navbar-left">
-        <span className="navbar-logo">Kink Analyst</span>
-        <div className="navbar-search-wrap" ref={searchRef} style={{ position: 'relative', marginLeft: '24px' }}>
+        <span className="navbar-logo">Kink Catalyst</span>
+        <div className="navbar-search-wrap" ref={searchRef}>
           <input
             type="text"
             placeholder="Search users"
@@ -253,17 +253,6 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
             onChange={handleSearchChange}
             onFocus={() => setSearchOpen(true)}
             className="navbar-search-input"
-            style={{
-              padding: '8px 12px',
-              borderRadius: '20px',
-              border: '1px solid #3b4556',
-              backgroundColor: '#1a202c',
-              color: '#d0d6ec',
-              width: '200px',
-              fontSize: '13px',
-              outline: 'none',
-              transition: 'all 0.2s',
-            }}
           />
           {searchOpen && searchResults.length > 0 && (
             <div className="navbar-search-dropdown">

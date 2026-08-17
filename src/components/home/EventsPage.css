@@ -2569,12 +2569,84 @@
   }
   .ev-disc-tabs::-webkit-scrollbar { display: none; }
   .ev-disc-tab { padding: 8px 14px; font-size: 12.5px; }
+
+  /* Search bar + action buttons row (Create Event / Filters / view toggle) —
+     no wrap on this sub-flex-container meant a 200px search input plus every
+     button forced total width past a phone's viewport, overflowing the page.
+     Let it wrap and let the search box take a full row of its own. */
+  .ev-disc-topbar-right {
+    flex-wrap: wrap;
+    row-gap: 8px;
+    width: 100%;
+  }
+  .ev-disc-search-wrap,
+  .ev-disc-search-wrap:focus-within {
+    width: 100%;
+  }
+
+  /* List view row — fixed 220px image column left almost nothing for the
+     body text on a phone-width screen. Stack image over content instead. */
+  .ev-list-card { flex-direction: column; }
+  .ev-list-img-wrap { width: 100%; height: 180px; }
+  .ev-list-body { padding: 14px 16px; }
+
+  /* Filters drawer was a fixed 420px panel — wider than any phone viewport,
+     forcing horizontal scroll. Let it fill the screen instead. Also raised
+     above the mobile bottom tab bar (z-index:150 in AnimatedNav.css) so the
+     drawer isn't rendered underneath it. */
+  .ev-filter-backdrop { z-index: 210; }
+  .ev-filter-panel { width: 100vw; max-width: 100vw; z-index: 211; }
+
+  /* Create-event stepper — 4 fixed 120px columns plus connecting lines never
+     had a mobile fallback and forced ~576px of minimum width, which got
+     silently clipped by .ev-page's overflow:hidden on a phone screen.
+     Shrink circles/columns/lines down so all 4 steps fit and stay clickable. */
+  .ev-stepper { padding: 20px 12px 24px; }
+  .ev-step-col { width: 70px; gap: 6px; }
+  .ev-step-circle { width: 34px; height: 34px; font-size: 12px; }
+  .ev-step-label { font-size: 10px; }
+  .ev-step-line { min-width: 10px; max-width: 24px; margin-top: 16px; }
+
+  /* Form card's desktop paddings (32px sides) left almost no room for
+     content on a 360-430px phone. */
+  .ev-form-header { padding: 18px 16px 14px; }
+  .ev-form-title { font-size: 17px; }
+  .ev-form-body { padding: 16px; gap: 16px; }
+  .ev-form-footer { padding: 14px 16px 18px; flex-wrap: wrap; row-gap: 12px; }
+  .ev-s4-wrap { padding: 16px; }
+  .ev-s2-layout { flex-direction: column; }
+  .ev-s2-left { padding: 16px; }
+
+  /* Step 4 footer — publish notice + Save Draft + Publish button crammed
+     into one row next to Back never fit on a phone; stack them instead. */
+  .ev-s4-footer-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 10px;
+  }
+  .ev-publish-notice--inline { text-align: left; max-width: 100%; }
+  .ev-publish-btn--footer,
+  .ev-draft-btn--footer { width: 100%; }
+
+  /* Review step's venue text + map thumbnail side-by-side row — stack on
+     phones so the address text isn't squeezed into ~200px. */
+  .ev-review-location-row { flex-direction: column; }
+  .ev-review-map-thumb { width: 100%; height: 140px; }
 }
 
 @media (max-width: 600px) {
   .ev-field-row { grid-template-columns: 1fr; }
   .ev-sidebar { display: none; }
   .ev-disc-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Extra-small-phone refinement ── */
+@media (max-width: 480px) {
+  .ev-date-grid { grid-template-columns: 1fr; }
+  .ev-form-title { font-size: 16px; }
+  .ev-s4-title { font-size: 18px; }
+  .ev-step-col { width: 60px; }
 }
 
 /* ══════════════════════════
@@ -3309,6 +3381,21 @@
     gap: 16px;
   }
   .ev-detail-sidebar { position: static; }
+
+  /* Tabs + Going/Join/More actions row never wrapped — on a narrow phone
+     the two tabs plus action buttons don't fit on one line and were
+     overflowing off the right edge. Let it wrap onto a second line. */
+  .ev-detail-tab-row { flex-wrap: wrap; row-gap: 10px; }
+  .ev-detail-actions { flex-wrap: wrap; row-gap: 8px; }
+
+  /* "More" dropdown — raise above the mobile bottom tab bar (z-index:150 in
+     AnimatedNav.css) so it isn't rendered underneath it, and cap its width
+     so the 280px min-width menu can't push past a narrow viewport. */
+  .ev-more-backdrop { z-index: 199; }
+  .ev-more-menu {
+    z-index: 200;
+    max-width: calc(100vw - 32px);
+  }
 }
 
 /* ── "+ Join" ticket → attendee details modal ── */

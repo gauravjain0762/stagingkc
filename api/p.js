@@ -23,7 +23,7 @@ const API_BASE =
 // not supported by any of the crawlers, so /favicon.svg is not a usable value.
 const DEFAULT_OG_IMAGE = process.env.DEFAULT_OG_IMAGE || '';
 
-const SITE_NAME = 'Kick Analyst';
+const SITE_NAME = 'Kink Catalyst';
 
 /** Escapes text before it goes into an HTML attribute — captions are user input. */
 function esc(str) {

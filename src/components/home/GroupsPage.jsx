@@ -1847,7 +1847,7 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
     setSharing(true);
     const groupName = group.name ?? 'Group';
     const groupUrl = `${window.location.origin}/groups/${groupId}`;
-    const shareText = `Check out "${groupName}" on Kick Analyst!`;
+    const shareText = `Check out "${groupName}" on Kink Catalyst!`;
 
     if (navigator.share) {
       navigator.share({

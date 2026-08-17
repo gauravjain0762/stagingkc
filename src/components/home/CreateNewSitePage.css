@@ -1,10 +1,18 @@
 .create-site-page {
   position: fixed;
   inset: 0;
-  width: 100%;
+  width: 100vw;
   height: 100%;
+  /* Belt-and-suspenders against horizontal scroll: this is a fixed,
+     full-screen overlay, so it must never be wider than the true visual
+     viewport even if something inside it or elsewhere on the page
+     miscalculates width. */
+  max-width: 100vw;
+  overflow-x: hidden;
   background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
-  padding: 40px;
+  /* Fluid instead of snapping at a breakpoint — scales continuously with
+     the viewport so it never depends on landing exactly on 600px/400px. */
+  padding: clamp(16px, 4vw, 40px);
   display: flex;
   flex-direction: column;
   color: #e0e6ed;
@@ -28,7 +36,7 @@
 }
 
 .csp-title {
-  font-size: 32px;
+  font-size: clamp(22px, 4vw, 32px);
   font-weight: 700;
   margin: 0 0 8px 0;
   color: #fff;
@@ -58,7 +66,7 @@
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(75, 85, 99, 0.2);
   border-radius: 16px;
-  padding: 32px;
+  padding: clamp(16px, 4vw, 32px);
   backdrop-filter: blur(10px);
   max-width: 100%;
 }
@@ -177,8 +185,8 @@
 .csp-visibility-card {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px;
+  gap: clamp(12px, 3vw, 16px);
+  padding: clamp(12px, 3vw, 16px);
   border: 2px solid rgba(75, 85, 99, 0.2);
   background: rgba(255, 255, 255, 0.02);
   border-radius: 12px;
@@ -255,7 +263,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 40px 24px;
+  padding: clamp(24px, 8vw, 40px) clamp(16px, 5vw, 24px);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -367,10 +375,10 @@
 }
 
 .csp-btn {
-  padding: 12px 28px;
+  padding: clamp(10px, 2.5vw, 12px) clamp(16px, 6vw, 28px);
   border: none;
   border-radius: 10px;
-  font-size: 14px;
+  font-size: clamp(13px, 3vw, 14px);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -404,31 +412,16 @@
   cursor: not-allowed;
 }
 
-/* Responsive */
+/* Responsive — structural changes only (stacking, hiding, layout direction).
+   Sizing (padding/font-size) is fluid via clamp() on the base rules above,
+   so it scales continuously instead of only at these two widths. */
 @media (max-width: 600px) {
-  .create-site-page {
-    padding: 24px 16px;
-  }
-
   .csp-container {
     max-width: 100%;
   }
 
-  .csp-form {
-    padding: 24px;
-  }
-
-  .csp-title {
-    font-size: 24px;
-  }
-
   .csp-visibility-options {
     gap: 10px;
-  }
-
-  .csp-visibility-card {
-    padding: 12px;
-    gap: 12px;
   }
 
   .csp-visibility-icon svg {
@@ -443,17 +436,9 @@
   .csp-btn {
     width: 100%;
   }
-
-  .csp-upload-area {
-    padding: 32px 16px;
-  }
 }
 
 @media (max-width: 400px) {
-  .csp-form {
-    padding: 20px 16px;
-  }
-
   .csp-label {
     font-size: 13px;
   }
@@ -462,10 +447,5 @@
   .csp-textarea {
     font-size: 13px;
     padding: 10px 12px;
-  }
-
-  .csp-btn {
-    padding: 10px 20px;
-    font-size: 13px;
   }
 }
