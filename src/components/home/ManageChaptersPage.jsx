@@ -56,10 +56,25 @@ export default function ManageChaptersPage({ course, authToken, onBack, onCourse
   // `course` prop itself won't update until the parent's list is refetched.
   const [courseStatus, setCourseStatus] = useState(course.status);
   const [publishing, setPublishing] = useState(false);
+  // Set on a blocked publish attempt; the banner itself is derived below so
+  // it disappears automatically once a chapter gets published, without
+  // needing an effect to explicitly clear it.
+  const [publishBlocked, setPublishBlocked] = useState(false);
+
+  // Draft chapters aren't visible to students (normalizeApiCourse filters
+  // them out of the reader), so a course with zero *published* chapters
+  // would publish into an empty, blank-looking course.
+  const hasPublishedChapter = chapters.some(ch => ch.status === 'published');
+  const showPublishError = publishBlocked && !hasPublishedChapter;
 
   const handleTogglePublish = async () => {
     if (!authToken || publishing) return;
     const isPublished = courseStatus === 'published';
+    if (!isPublished && !hasPublishedChapter) {
+      setPublishBlocked(true);
+      return;
+    }
+    setPublishBlocked(false);
     setPublishing(true);
     try {
       const res = isPublished
@@ -250,6 +265,10 @@ export default function ManageChaptersPage({ course, authToken, onBack, onCourse
           </button>
         </div>
       </header>
+
+      {showPublishError && (
+        <div className="mcp-publish-error-banner">Add and publish at least one chapter before publishing this course.</div>
+      )}
 
       <div className="mcp-body">
         <div className="mcp-list-col">

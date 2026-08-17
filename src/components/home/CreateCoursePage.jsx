@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import ImageCropper from './ImageCropper';
 import { courseApi } from '../../services/courseApi';
+import { showToast } from '../../store/slices/toastSlice';
 import './CreateCoursePage.css';
 
 function PlusIcon() {
@@ -17,6 +18,7 @@ function CheckIcon() {
 }
 
 export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onMinisitesClick }) {
+  const dispatch = useDispatch();
   const authToken = useSelector(s => s.auth?.token);
   const [courseData, setCourseData] = useState({
     title: '',
@@ -136,26 +138,26 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
         return;
       }
 
-      // Courses are always created as a draft first (that's the endpoint
-      // contract); publishing immediately just chains the publish call so
-      // the user only has to make one choice up front instead of two trips.
+      // A brand-new course has zero chapters by definition — there's nothing
+      // to add a chapter *to* until the course itself exists — so it can
+      // never satisfy "needs at least one published chapter" at this point
+      // (the same rule ManageChaptersPage enforces before letting a course
+      // go live). Publishing here immediately would always produce a blank,
+      // chapter-less published course, so land it as a draft either way and
+      // point the author at Manage Chapters to finish the job.
       if (publishNow) {
-        const newCourseId = response.course?.id ?? response.course?._id;
-        if (newCourseId) {
-          try {
-            await courseApi.publishCourse(newCourseId, authToken);
-          } catch (publishErr) {
-            console.error('Course created but publish failed:', publishErr);
-            setError('Course saved as draft, but publishing failed. You can publish it from My Courses.');
-            setTimeout(() => onBack?.(), 2500);
-            return;
-          }
-        }
+        dispatch(showToast({
+          message: 'Course saved as a draft. Add at least one chapter, then publish it from Manage Chapters.',
+          type: 'info',
+        }));
+      } else {
+        dispatch(showToast({ message: 'Course created as a draft.', type: 'success' }));
       }
 
-      setTimeout(() => {
-        onBack?.();
-      }, 1500);
+      // Land back on "My Created", not wherever the author happened to be
+      // before starting the wizard — that's the list this course now shows
+      // up in, and where Manage Chapters is reached from.
+      onBack?.('created');
     } catch (err) {
       console.error('Error creating course:', err);
       setError(err?.message || err?.error || 'Failed to create course');
@@ -335,7 +337,7 @@ export default function CreateCoursePage({ onBack, onMessagesClick, onEventsClic
 
         {/* Action Buttons */}
         <div className="ccp-actions">
-          <button className="ccp-btn ccp-btn--secondary" onClick={onBack}>
+          <button className="ccp-btn ccp-btn--secondary" onClick={() => onBack?.()}>
             Cancel
           </button>
           <button

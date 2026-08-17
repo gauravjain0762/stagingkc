@@ -41,6 +41,11 @@ function ChatIcon() {
 export default function EducationHubPage({ onBack, onMessagesClick, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onMinisitesClick }) {
   const avatarUrl = ALEX_AVATAR;
   const [currentView, setCurrentView] = useState('dashboard');
+  // Set when returning from "Create Course" so the dashboard opens on "My
+  // Created" instead of always defaulting back to "All" — consumed once by
+  // LearningActivityPage the same way other one-shot initial values in this
+  // app are (see onInitEventConsumed / onInitUserConsumed in HomePage.jsx).
+  const [pendingTab, setPendingTab] = useState(null);
 
   const handleNav = (id) => {
     if (id === 'home') onBack?.();
@@ -72,7 +77,17 @@ export default function EducationHubPage({ onBack, onMessagesClick, onEventsClic
   const renderPage = () => {
     switch(currentView) {
       case 'create':
-        return <CreateCoursePage onBack={() => setCurrentView('dashboard')} onMessagesClick={onMessagesClick} onEventsClick={onEventsClick} onGroupsClick={onGroupsClick} onCalendarClick={onCalendarClick} onLibraryClick={onLibraryClick} onMinisitesClick={onMinisitesClick} />;
+        return (
+          <CreateCoursePage
+            onBack={(nextTab) => { setCurrentView('dashboard'); if (nextTab) setPendingTab(nextTab); }}
+            onMessagesClick={onMessagesClick}
+            onEventsClick={onEventsClick}
+            onGroupsClick={onGroupsClick}
+            onCalendarClick={onCalendarClick}
+            onLibraryClick={onLibraryClick}
+            onMinisitesClick={onMinisitesClick}
+          />
+        );
       case 'quizzes':
         return <QuizzesPage onBack={() => setCurrentView('dashboard')} onMessagesClick={onMessagesClick} onEventsClick={onEventsClick} onGroupsClick={onGroupsClick} onCalendarClick={onCalendarClick} onLibraryClick={onLibraryClick} onMinisitesClick={onMinisitesClick} />;
       case 'assignments':
@@ -104,6 +119,8 @@ export default function EducationHubPage({ onBack, onMessagesClick, onEventsClic
         onLibraryClick={onLibraryClick}
         onMinisitesClick={onMinisitesClick}
         onNavigateEducation={handleViewChange}
+        initialTab={pendingTab}
+        onInitialTabConsumed={() => setPendingTab(null)}
       />
     </div>
   );

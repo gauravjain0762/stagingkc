@@ -202,6 +202,7 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
   const resolvedSource = authToken ? source : 'mock';
   const course = resolvedSource === 'api' ? apiCourse : resolvedSource === 'mock' ? getCourseById(courseId) : null;
   const chapters = course ? flattenChapters(course) : [];
+  const hasChapters = chapters.length > 0;
   const total = course ? totalChapterCount(course) : 0;
   // Real courses: sum the author-entered per-chapter durations instead of
   // trusting a separate course.duration field. Falls back to that field
@@ -527,7 +528,7 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
           <div className="cr-spread">
 
             <div className="cr-page-left">
-              {chapter && (
+              {chapter ? (
                 <>
                   <p className="cr-chapter-label">{chapter.label}</p>
                   <h1 className="cr-chapter-title">{chapter.title}</h1>
@@ -572,7 +573,13 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
                     </div>
                   )}
                 </>
-              )}
+              ) : !hasChapters ? (
+                <div className="cdp-empty-chapters">
+                  <NoteIcon />
+                  <p className="cdp-empty-chapters-title">No chapters yet</p>
+                  <p className="cdp-empty-chapters-sub">The instructor hasn&apos;t added any chapters to this course yet. Check back soon.</p>
+                </div>
+              ) : null}
             </div>
 
             <div className="cr-spine" />
@@ -626,41 +633,43 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
         </div>
       </div>
 
-      {/* ── Bottom Bar ── */}
-      <footer className="cr-footer">
-        <button
-          className="cr-nav-btn cr-nav-btn--prev"
-          onClick={prevChapter}
-          disabled={chapterIdx <= 0}
-        >
-          <ChevLeftIcon /> Previous Chapter
-        </button>
+      {/* ── Bottom Bar — nothing to navigate/complete in a chapter-less course ── */}
+      {hasChapters && (
+        <footer className="cr-footer">
+          <button
+            className="cr-nav-btn cr-nav-btn--prev"
+            onClick={prevChapter}
+            disabled={chapterIdx <= 0}
+          >
+            <ChevLeftIcon /> Previous Chapter
+          </button>
 
-        <div className="cr-progress-area">
-          {isEnrolled && (
-            <div className="cr-progress-track">
-              <div className="cr-progress-fill" style={{ width: `${pct}%` }} />
-            </div>
+          <div className="cr-progress-area">
+            {isEnrolled && (
+              <div className="cr-progress-track">
+                <div className="cr-progress-fill" style={{ width: `${pct}%` }} />
+              </div>
+            )}
+            <span className="cr-page-label">Chapter {chapterIdx + 1} of {total}</span>
+          </div>
+
+          {isEnrolled ? (
+            <button
+              className="cr-nav-btn cr-nav-btn--next"
+              onClick={completeAndAdvance}
+            >
+              {isLastChapter ? 'Complete Chapter' : 'Next Chapter'} <ChevRightIcon />
+            </button>
+          ) : (
+            <button
+              className="cr-nav-btn cr-nav-btn--next"
+              onClick={handleEnroll}
+            >
+              Enroll to Continue <ChevRightIcon />
+            </button>
           )}
-          <span className="cr-page-label">Chapter {chapterIdx + 1} of {total}</span>
-        </div>
-
-        {isEnrolled ? (
-          <button
-            className="cr-nav-btn cr-nav-btn--next"
-            onClick={completeAndAdvance}
-          >
-            {isLastChapter ? 'Complete Chapter' : 'Next Chapter'} <ChevRightIcon />
-          </button>
-        ) : (
-          <button
-            className="cr-nav-btn cr-nav-btn--next"
-            onClick={handleEnroll}
-          >
-            Enroll to Continue <ChevRightIcon />
-          </button>
-        )}
-      </footer>
+        </footer>
+      )}
 
       {showCompletionModal && (
         <div className="cdp-complete-overlay" onClick={() => setShowCompletionModal(false)}>

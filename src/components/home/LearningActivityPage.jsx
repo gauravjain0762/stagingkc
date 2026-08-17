@@ -71,7 +71,7 @@ function RatingBadge({ course }) {
   );
 }
 
-export default function LearningActivityPage({ onBack, onMessagesClick, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onMinisitesClick, onNavigateEducation }) {
+export default function LearningActivityPage({ onBack, onMessagesClick, onEventsClick, onGroupsClick, onCalendarClick, onLibraryClick, onMinisitesClick, onNavigateEducation, initialTab, onInitialTabConsumed }) {
   const { profile } = useSelector(s => s.profile);
   const authToken = useSelector(s => s.auth?.token);
   const userId = useSelector(s => s.auth?.user?._id ?? s.auth?.user?.id);
@@ -80,7 +80,14 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
   const [activeCourseId, setActiveCourseId] = useState(null);
   const [managingCourse, setManagingCourse] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('All Topics');
-  const [activeTab, setActiveTab] = useState('all');
+  // Opens on "created" when arriving fresh from creating a course, otherwise
+  // the usual default — a one-shot initial value, reported back as consumed
+  // immediately so returning to this page later doesn't keep forcing it.
+  const [activeTab, setActiveTab] = useState(() => initialTab || 'all');
+  useEffect(() => {
+    if (initialTab) onInitialTabConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [filterType, setFilterType] = useState('all');
 
   // Wishlist is purely client-side (no backend endpoint for it) — persisted
@@ -164,6 +171,21 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
     const isPublished = course.status === 'published';
     try {
       setPublishingId(course.id);
+      setError(null);
+
+      // This card list never loads chapters, so a zero-chapter course could
+      // otherwise be published straight into a blank-looking reader (the
+      // same rule ManageChaptersPage enforces inline, checked lazily here
+      // since it only matters at the moment of publishing).
+      if (!isPublished) {
+        const chaptersRes = await courseApi.getChapters(course.id, authToken);
+        const hasPublishedChapter = (chaptersRes.chapters || []).some(ch => ch.status === 'published');
+        if (!hasPublishedChapter) {
+          setError('Add and publish at least one chapter before publishing this course.');
+          return;
+        }
+      }
+
       const res = isPublished
         ? await courseApi.unpublishCourse(course.id, authToken)
         : await courseApi.publishCourse(course.id, authToken);
@@ -500,6 +522,7 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
               + Create New
             </button>
           </div>
+          {error && <p className="lap-publish-error">{error}</p>}
           {createdCourses.length === 0 ? (
             <div className="lap-empty-state">
               <p className="lap-empty-icon"><BookIcon /></p>
