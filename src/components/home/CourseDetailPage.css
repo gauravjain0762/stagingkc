@@ -532,6 +532,165 @@
   color: #64748b;
 }
 
+/* ── "View Details" summary (CourseInfoView) ── */
+.cdp-info-page {
+  flex: 1;
+  overflow-y: auto;
+  padding: 40px 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.cdp-info-card {
+  width: 100%;
+  max-width: 760px;
+  height: fit-content;
+  background: #0d1117;
+  border: 1px solid #1e293b;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.cdp-info-cover {
+  width: 100%;
+  aspect-ratio: 16 / 7;
+  background: #111827;
+  overflow: hidden;
+}
+.cdp-info-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cdp-info-body {
+  padding: 28px 32px 32px;
+}
+
+.cdp-info-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.cdp-info-badge {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.cdp-info-badge--level {
+  background: rgba(139, 92, 246, 0.12);
+  color: #a78bfa;
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.cdp-info-title {
+  margin: 0 0 14px;
+  font-size: 28px;
+  font-weight: 800;
+  color: #f1f5f9;
+  line-height: 1.25;
+}
+
+.cdp-info-desc {
+  margin: 0 0 28px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #94a3b8;
+  white-space: pre-wrap;
+}
+
+.cdp-info-footer {
+  display: flex;
+  align-items: center;
+  padding-top: 20px;
+  border-top: 1px solid #1e293b;
+}
+
+.cdp-info-price {
+  font-size: 14px;
+  padding: 8px 16px;
+}
+
+.cdp-info-chapters {
+  margin-top: 24px;
+}
+
+.cdp-info-chapters-title {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.cdp-info-chapter-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cdp-info-chapter-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  border: 1px solid transparent;
+  background: rgba(148, 163, 184, 0.05);
+  color: #e2e8f0;
+  font-size: 14px;
+  font-family: inherit;
+  padding: 12px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.cdp-info-chapter-item:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Not enrolled — the title is shown but there's nothing to click into. */
+.cdp-info-chapter-item--static {
+  cursor: default;
+  color: #94a3b8;
+}
+
+.cdp-info-chapter-idx {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cdp-info-chapter-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 760px) {
   /* Desktop nests three independent scroll regions (sidebar, left page,
      right page) inside a fixed-height, non-scrolling .cdp-body — a "book"
@@ -553,6 +712,12 @@
   .cdp-reader { padding: 16px; }
   .cdp-chapter-resources { gap: 8px; }
   .cdp-enroll-cta { font-size: 12px; padding: 7px 9px 7px 14px; }
+
+  .cdp-info-page { padding: 20px 14px; }
+  .cdp-info-cover { aspect-ratio: 16 / 9; }
+  .cdp-info-body { padding: 20px 20px 24px; }
+  .cdp-info-title { font-size: 21px; }
+  .cdp-info-desc { font-size: 14px; margin-bottom: 22px; }
 }
 
 @media (max-width: 480px) {
@@ -568,4 +733,9 @@
   /* Chapter rows in the sidebar are a plain list on a phone now (no more
      forced inner scroll), so give them a bit more breathing room. */
   .cdp-chapter-row { padding: 11px 10px; }
+
+  .cdp-info-page { padding: 16px 10px; }
+  .cdp-info-body { padding: 18px 16px 20px; }
+  .cdp-info-title { font-size: 19px; }
+  .cdp-info-chapter-item { padding: 11px 12px; font-size: 13.5px; }
 }

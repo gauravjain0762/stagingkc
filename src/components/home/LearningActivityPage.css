@@ -459,7 +459,7 @@
   font-size: 15px;
   font-weight: 700;
   line-height: 1.35;
-  margin: 0 0 12px 0;
+  margin: 0 0 6px 0;
   color: #fff;
   /* Reserve the same 2-line block regardless of actual title length, so
      every card's meta/duration/buttons start at the same height. */
@@ -479,8 +479,7 @@
 }
 
 .lap-instructor,
-.lap-rating,
-.lap-duration {
+.lap-rating {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -497,12 +496,6 @@
 .lap-rating-count {
   color: #8b95a5;
   font-weight: 400;
-}
-
-.lap-duration {
-  font-size: 12px;
-  color: #8b95a5;
-  margin: 8px 0 16px 0;
 }
 
 .lap-enroll-btn {

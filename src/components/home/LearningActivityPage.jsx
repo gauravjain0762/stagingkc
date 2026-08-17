@@ -38,10 +38,6 @@ function ClockIcon() {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
 }
 
-function DurationIcon() {
-  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
-}
-
 function PersonIcon() {
   return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
 }
@@ -78,6 +74,18 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
   const avatarUrl = profile?.avatar ?? ALEX_AVATAR;
 
   const [activeCourseId, setActiveCourseId] = useState(null);
+  // "View Details" opens the course-info summary first instead of jumping
+  // straight into the chapter reader; every other entry point (thumbnail,
+  // title, Resume/Continue) still opens directly into the reader as before.
+  const [courseViewMode, setCourseViewMode] = useState('reader');
+  const openCourseDetails = (courseId) => {
+    setCourseViewMode('info');
+    setActiveCourseId(courseId);
+  };
+  const openCourseReader = (courseId) => {
+    setCourseViewMode('reader');
+    setActiveCourseId(courseId);
+  };
   const [managingCourse, setManagingCourse] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('All Topics');
   // Opens on "created" when arriving fresh from creating a course, otherwise
@@ -173,19 +181,6 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
       setPublishingId(course.id);
       setError(null);
 
-      // This card list never loads chapters, so a zero-chapter course could
-      // otherwise be published straight into a blank-looking reader (the
-      // same rule ManageChaptersPage enforces inline, checked lazily here
-      // since it only matters at the moment of publishing).
-      if (!isPublished) {
-        const chaptersRes = await courseApi.getChapters(course.id, authToken);
-        const hasPublishedChapter = (chaptersRes.chapters || []).some(ch => ch.status === 'published');
-        if (!hasPublishedChapter) {
-          setError('Add and publish at least one chapter before publishing this course.');
-          return;
-        }
-      }
-
       const res = isPublished
         ? await courseApi.unpublishCourse(course.id, authToken)
         : await courseApi.publishCourse(course.id, authToken);
@@ -277,8 +272,9 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
   if (activeCourseId) {
     return (
       <CourseDetailPage
-        key={activeCourseId}
+        key={`${activeCourseId}-${courseViewMode}`}
         courseId={activeCourseId}
+        initialMode={courseViewMode}
         authToken={authToken}
         onBack={() => setActiveCourseId(null)}
       />
@@ -376,7 +372,6 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
                       <h3 className="lap-course-title">{course.title}</h3>
                       <div className="lap-card-meta">
                         <p className="lap-course-price">{course.price || 'Free'}</p>
-                        {course.duration && <span className="lap-duration"><DurationIcon /> {course.duration}</span>}
                         <RatingBadge course={course} />
                       </div>
                       <div className="lap-progress-section">
@@ -386,7 +381,7 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
                       <div className="lap-progress-bar">
                         <div className="lap-progress-fill" style={{ width: `${course.progress || 0}%` }} />
                       </div>
-                      <button className="lap-resume-btn" onClick={() => setActiveCourseId(course.id)}>
+                      <button className="lap-resume-btn" onClick={() => openCourseReader(course.id)}>
                         <PlayIcon /> Resume
                       </button>
                     </div>
@@ -463,7 +458,7 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
                 const wishlisted = wishlist.isWishlisted(course.id);
                 return (
                   <div key={course.id} className="lap-explore-card">
-                    <div className="lap-card-img-wrapper" onClick={() => setActiveCourseId(course.id)} style={{ cursor: 'pointer' }}>
+                    <div className="lap-card-img-wrapper" onClick={() => (enrolled ? openCourseReader(course.id) : openCourseDetails(course.id))} style={{ cursor: 'pointer' }}>
                       <img src={course.img} alt={course.title} className="lap-card-img" />
                       <div className="lap-heart-burst-wrap">
                         <button
@@ -480,19 +475,18 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
                       </div>
                     </div>
                     <div className="lap-card-content">
-                      <h3 className="lap-card-title" onClick={() => setActiveCourseId(course.id)} style={{ cursor: 'pointer' }}>{course.title}</h3>
+                      <h3 className="lap-card-title" onClick={() => (enrolled ? openCourseReader(course.id) : openCourseDetails(course.id))} style={{ cursor: 'pointer' }}>{course.title}</h3>
                       <div className="lap-card-meta">
                         <span className="lap-instructor"><PersonIcon /> {course.instructor}</span>
                         <RatingBadge course={course} />
                       </div>
-                      <p className="lap-duration"><DurationIcon /> {course.duration}</p>
                       {enrolled ? (
-                        <button className="lap-enroll-btn lap-enroll-btn--enrolled" onClick={() => setActiveCourseId(course.id)}>
-                          <CheckIcon /> Continue Learning
+                        <button className="lap-enroll-btn lap-enroll-btn--enrolled" onClick={() => openCourseReader(course.id)}>
+                          Continue Learning
                         </button>
                       ) : (
                         <div className="lap-card-actions">
-                          <button className="lap-details-btn" onClick={() => setActiveCourseId(course.id)}>
+                          <button className="lap-details-btn" onClick={() => openCourseDetails(course.id)}>
                             View Details
                           </button>
                           <button
@@ -550,13 +544,12 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
                         <span className="lap-instructor"><PersonIcon /> You</span>
                         <RatingBadge course={course} />
                       </div>
-                      <p className="lap-duration"><DurationIcon /> {course.duration}</p>
                       <div className="lap-course-stats">
                         <span className="lap-students">{course.students} {course.students === 1 ? 'student' : 'students'}</span>
                         <span className="lap-price">{course.price}</span>
                       </div>
                       <div className="lap-course-actions">
-                        <button className="lap-edit-btn" onClick={() => setManagingCourse(course)}>Edit</button>
+                        <button className="lap-edit-btn" onClick={() => setManagingCourse(course)}>Add Chapter</button>
                         <button
                           className={`lap-publish-btn ${isPublished ? 'lap-publish-btn--unpublish' : 'lap-publish-btn--publish'}`}
                           disabled={isBusy}
@@ -585,7 +578,7 @@ export default function LearningActivityPage({ onBack, onMessagesClick, onEvents
                 <h3>Payment Successful</h3>
                 <p className="lap-checkout-sub">You're enrolled in <strong>{checkoutCourse.title}</strong>.</p>
                 <div className="lap-checkout-actions">
-                  <button className="lap-checkout-primary-btn" onClick={() => { setActiveCourseId(checkoutCourse.id); closeCheckout(); }}>
+                  <button className="lap-checkout-primary-btn" onClick={() => { openCourseReader(checkoutCourse.id); closeCheckout(); }}>
                     Start Course
                   </button>
                   <button className="lap-checkout-secondary-btn" onClick={closeCheckout}>Close</button>

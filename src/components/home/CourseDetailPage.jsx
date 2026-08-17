@@ -104,7 +104,124 @@ const CALLOUT_STYLE = {
   'NOTE':        { border: '#f59e0b', bg: '#f59e0b08', label: '#f59e0b', Icon: NoteIcon },
 };
 
-export default function CourseDetailPage({ courseId, authToken, onBack }) {
+// Pulled out of the main return below so the paid-course checkout markup
+// isn't duplicated inline.
+function CheckoutModal({ course, checkoutStep, onPurchase, onClose }) {
+  return (
+    <div className="lap-checkout-overlay" onClick={() => checkoutStep !== 'processing' && onClose()}>
+      <div className="lap-checkout-modal" onClick={(e) => e.stopPropagation()}>
+        {checkoutStep === 'success' ? (
+          <>
+            <div className="lap-checkout-success-icon"><CheckIcon /></div>
+            <h3>Payment Successful</h3>
+            <p className="lap-checkout-sub">You're enrolled in <strong>{course.title}</strong>.</p>
+            <div className="lap-checkout-actions">
+              <button className="lap-checkout-primary-btn" onClick={onClose}>Continue</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h3>Checkout</h3>
+            <p className="lap-checkout-sub">{course.title}</p>
+            <div className="lap-checkout-price-row">
+              <span>Total</span>
+              <span className="lap-checkout-price">{priceLabel(course)}</span>
+            </div>
+            {checkoutStep === 'error' && (
+              <p className="lap-checkout-error">Payment failed. Please try again.</p>
+            )}
+            <div className="lap-checkout-actions">
+              <button
+                className="lap-checkout-primary-btn"
+                disabled={checkoutStep === 'processing'}
+                onClick={onPurchase}
+              >
+                {checkoutStep === 'processing' ? 'Processing…' : `Pay ${priceLabel(course)}`}
+              </button>
+              <button className="lap-checkout-secondary-btn" disabled={checkoutStep === 'processing'} onClick={onClose}>
+                Cancel
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// "View Details" only — a summary of exactly what the author filled in on
+// CreateCoursePage (cover image, title, description, category, level,
+// price), plus just the chapter titles if any have been added yet — no
+// chapter body/video/reader UI here. Chapter titles are only clickable once
+// enrolled; browsing this screen without enrolling shows what's there, not
+// a way into it. Enrolling itself happens from the course card, not here.
+function CourseInfoView({ course, chapters, isEnrolled, onBack, onSelectChapter }) {
+  const cover = course.coverImage || course.img;
+  const levelLabel = course.level || course.difficulty;
+  return (
+    <div className="cr-page">
+      <header className="cr-topbar">
+        <div className="cr-topbar-left">
+          <button className="cr-back-btn" onClick={onBack}>
+            <BackArrowIcon />
+            <span className="cr-back-label">Back</span>
+          </button>
+        </div>
+      </header>
+
+      <div className="cdp-info-page">
+        <div className="cdp-info-card">
+          {cover && (
+            <div className="cdp-info-cover">
+              <img src={cover} alt={course.title} />
+            </div>
+          )}
+          <div className="cdp-info-body">
+            {(course.category || levelLabel) && (
+              <div className="cdp-info-badges">
+                {course.category && <span className="cdp-info-badge">{course.category}</span>}
+                {levelLabel && <span className="cdp-info-badge cdp-info-badge--level">{levelLabel}</span>}
+              </div>
+            )}
+            <h1 className="cdp-info-title">{course.title}</h1>
+            {course.description && <p className="cdp-info-desc">{course.description}</p>}
+            <div className="cdp-info-footer">
+              <span className={`cdp-price-badge cdp-info-price${course.isFree ? ' cdp-price-badge--free' : ''}`}>
+                {priceLabel(course)}
+              </span>
+            </div>
+
+            {chapters.length > 0 && (
+              <div className="cdp-info-chapters">
+                <p className="cdp-info-chapters-title">Chapters</p>
+                <ul className="cdp-info-chapter-list">
+                  {chapters.map((ch, i) => (
+                    <li key={ch.id}>
+                      {isEnrolled ? (
+                        <button className="cdp-info-chapter-item" onClick={() => onSelectChapter(ch.id)}>
+                          <span className="cdp-info-chapter-idx">{i + 1}</span>
+                          <span className="cdp-info-chapter-name">{ch.title}</span>
+                        </button>
+                      ) : (
+                        <div className="cdp-info-chapter-item cdp-info-chapter-item--static">
+                          <span className="cdp-info-chapter-idx">{i + 1}</span>
+                          <span className="cdp-info-chapter-name">{ch.title}</span>
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function CourseDetailPage({ courseId, authToken, onBack, initialMode = 'reader' }) {
+  const [mode, setMode] = useState(initialMode);
   const progress = useEducationProgress();
   const userId = useSelector(s => s.auth?.user?._id ?? s.auth?.user?.id);
 
@@ -122,6 +239,12 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
   // reaching this reader (e.g. via "View Details") does NOT imply enrollment,
   // so this must never be assumed true just because the course loaded.
   const [apiEnrolled, setApiEnrolled] = useState(false);
+  // apiEnrolled defaults to false, which is indistinguishable from "checked
+  // and genuinely not enrolled" — without this flag, an already-enrolled
+  // user briefly sees the "Enroll this course" CTA flash on screen while
+  // the real check is still in flight, then watches it disappear once the
+  // response lands. This gates that CTA until the check has actually run.
+  const [enrollmentChecked, setEnrollmentChecked] = useState(false);
   // Paid-course checkout — mirrors the same mock-payment flow used on the
   // course list page, so a paid course can't be "enrolled" into for free.
   const [showCheckout, setShowCheckout] = useState(false);
@@ -185,7 +308,11 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
               }
             } catch {
               // Enrollment check failed — leave apiEnrolled false, the safe default.
+            } finally {
+              if (!cancelled) setEnrollmentChecked(true);
             }
+          } else if (!cancelled) {
+            setEnrollmentChecked(true);
           }
         } else {
           setSource('mock');
@@ -201,6 +328,13 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
   // request that isn't happening.
   const resolvedSource = authToken ? source : 'mock';
   const course = resolvedSource === 'api' ? apiCourse : resolvedSource === 'mock' ? getCourseById(courseId) : null;
+  // Needed both by the main reader below and by the "View Details" info
+  // view (chapters there are locked behind enrollment), so it's computed
+  // once up here rather than lower down where only the reader could see it.
+  const isEnrolled = resolvedSource === 'api' ? apiEnrolled : progress.isEnrolled(courseId);
+  // Only 'api' courses have an async enrollment check to wait on — mock
+  // courses resolve isEnrolled synchronously, so there's nothing to pend.
+  const enrollmentPending = resolvedSource === 'api' && !enrollmentChecked;
   const chapters = course ? flattenChapters(course) : [];
   const hasChapters = chapters.length > 0;
   const total = course ? totalChapterCount(course) : 0;
@@ -262,6 +396,21 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
         </header>
         <div style={{ padding: 40, color: '#94a3b8' }}>Course not found.</div>
       </div>
+    );
+  }
+
+  if (mode === 'info') {
+    return (
+      <CourseInfoView
+        course={course}
+        chapters={chapters}
+        isEnrolled={isEnrolled}
+        onBack={onBack}
+        onSelectChapter={(chapterId) => {
+          setSelectedChapterId(chapterId);
+          setMode('reader');
+        }}
+      />
     );
   }
 
@@ -416,9 +565,6 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
   }
 
   const isLastChapter = chapterIdx >= chapters.length - 1;
-  // API courses can be reached without enrolling (e.g. "View Details"), so
-  // enrollment must come from a real backend check, not just the source.
-  const isEnrolled = resolvedSource === 'api' ? apiEnrolled : progress.isEnrolled(courseId);
 
   return (
     <div className="cr-page">
@@ -433,7 +579,7 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
         </div>
 
         <div className="cr-topbar-center">
-          {!isEnrolled && (
+          {!enrollmentPending && !isEnrolled && (
             <button className="cdp-enroll-cta" onClick={handleEnroll}>
               <SparkIcon />
               Enroll this course
@@ -451,7 +597,7 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
           ) : null}
           <span className="cdp-meta-item"><ClockIcon /> {displayDuration}</span>
           <span className="cr-chapter-pill">{course.instructor}</span>
-          {isEnrolled ? (
+          {!enrollmentPending && (isEnrolled ? (
             <span className="cdp-price-badge cdp-price-badge--enrolled">
               <CheckIcon /> Enrolled
             </span>
@@ -459,7 +605,7 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
             <span className={`cdp-price-badge cdp-price-badge--highlight${course.isFree ? ' cdp-price-badge--free' : ''}`}>
               <SparkIcon /> Enroll this course <span className="cdp-enroll-cta-price">{priceLabel(course)}</span>
             </span>
-          )}
+          ))}
           {authToken && (
             <button
               className={`cdp-report-btn${alreadyReported ? ' cdp-report-btn--done' : ''}`}
@@ -557,36 +703,6 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
                       {chapter.figureCaption && <p className="cr-figure-caption">{chapter.figureCaption}</p>}
                     </div>
                   )}
-                  <div className="cr-left-body">
-                    {chapter.leftBody.map((para, i) => (
-                      <p key={i} className="cr-body-text">{para}</p>
-                    ))}
-                  </div>
-                  {(chapter.pdfUrl || chapter.externalUrl) && (
-                    <div className="cdp-chapter-resources">
-                      {chapter.pdfUrl && (
-                        <a className="cdp-resource-link" href={chapter.pdfUrl} target="_blank" rel="noreferrer"><DocumentIcon /> Download PDF</a>
-                      )}
-                      {chapter.externalUrl && (
-                        <a className="cdp-resource-link" href={chapter.externalUrl} target="_blank" rel="noreferrer"><LinkIcon /> Open Link</a>
-                      )}
-                    </div>
-                  )}
-                </>
-              ) : !hasChapters ? (
-                <div className="cdp-empty-chapters">
-                  <NoteIcon />
-                  <p className="cdp-empty-chapters-title">No chapters yet</p>
-                  <p className="cdp-empty-chapters-sub">The instructor hasn&apos;t added any chapters to this course yet. Check back soon.</p>
-                </div>
-              ) : null}
-            </div>
-
-            <div className="cr-spine" />
-
-            <div className="cr-page-right">
-              {chapter && (
-                <>
                   {chapter.rightSections.length > 1 && (
                     <div className="cdp-right-nav">
                       <button
@@ -626,6 +742,36 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
                     </div>
                   )}
                 </>
+              ) : !hasChapters ? (
+                <div className="cdp-empty-chapters">
+                  <NoteIcon />
+                  <p className="cdp-empty-chapters-title">No chapters yet</p>
+                  <p className="cdp-empty-chapters-sub">The instructor hasn&apos;t added any chapters to this course yet. Check back soon.</p>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="cr-spine" />
+
+            <div className="cr-page-right">
+              {chapter && (
+                <>
+                  <div className="cr-left-body">
+                    {chapter.leftBody.map((para, i) => (
+                      <p key={i} className="cr-body-text">{para}</p>
+                    ))}
+                  </div>
+                  {(chapter.pdfUrl || chapter.externalUrl) && (
+                    <div className="cdp-chapter-resources">
+                      {chapter.pdfUrl && (
+                        <a className="cdp-resource-link" href={chapter.pdfUrl} target="_blank" rel="noreferrer"><DocumentIcon /> Download PDF</a>
+                      )}
+                      {chapter.externalUrl && (
+                        <a className="cdp-resource-link" href={chapter.externalUrl} target="_blank" rel="noreferrer"><LinkIcon /> Open Link</a>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -645,7 +791,7 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
           </button>
 
           <div className="cr-progress-area">
-            {isEnrolled && (
+            {!enrollmentPending && isEnrolled && (
               <div className="cr-progress-track">
                 <div className="cr-progress-fill" style={{ width: `${pct}%` }} />
               </div>
@@ -653,7 +799,7 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
             <span className="cr-page-label">Chapter {chapterIdx + 1} of {total}</span>
           </div>
 
-          {isEnrolled ? (
+          {!enrollmentPending && (isEnrolled ? (
             <button
               className="cr-nav-btn cr-nav-btn--next"
               onClick={completeAndAdvance}
@@ -667,7 +813,7 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
             >
               Enroll to Continue <ChevRightIcon />
             </button>
-          )}
+          ))}
         </footer>
       )}
 
@@ -686,44 +832,7 @@ export default function CourseDetailPage({ courseId, authToken, onBack }) {
       )}
 
       {showCheckout && (
-        <div className="lap-checkout-overlay" onClick={() => checkoutStep !== 'processing' && closeCheckout()}>
-          <div className="lap-checkout-modal" onClick={(e) => e.stopPropagation()}>
-            {checkoutStep === 'success' ? (
-              <>
-                <div className="lap-checkout-success-icon"><CheckIcon /></div>
-                <h3>Payment Successful</h3>
-                <p className="lap-checkout-sub">You're enrolled in <strong>{course.title}</strong>.</p>
-                <div className="lap-checkout-actions">
-                  <button className="lap-checkout-primary-btn" onClick={closeCheckout}>Continue</button>
-                </div>
-              </>
-            ) : (
-              <>
-                <h3>Checkout</h3>
-                <p className="lap-checkout-sub">{course.title}</p>
-                <div className="lap-checkout-price-row">
-                  <span>Total</span>
-                  <span className="lap-checkout-price">{priceLabel(course)}</span>
-                </div>
-                {checkoutStep === 'error' && (
-                  <p className="lap-checkout-error">Payment failed. Please try again.</p>
-                )}
-                <div className="lap-checkout-actions">
-                  <button
-                    className="lap-checkout-primary-btn"
-                    disabled={checkoutStep === 'processing'}
-                    onClick={handlePurchase}
-                  >
-                    {checkoutStep === 'processing' ? 'Processing…' : `Pay ${priceLabel(course)}`}
-                  </button>
-                  <button className="lap-checkout-secondary-btn" disabled={checkoutStep === 'processing'} onClick={closeCheckout}>
-                    Cancel
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+        <CheckoutModal course={course} checkoutStep={checkoutStep} onPurchase={handlePurchase} onClose={closeCheckout} />
       )}
 
       {reportOpen && (

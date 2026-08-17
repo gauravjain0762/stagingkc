@@ -41,7 +41,7 @@ function ChapterContentPreview({ content }) {
   );
 }
 
-export default function ManageChaptersPage({ course, authToken, onBack, onCourseUpdated }) {
+export default function ManageChaptersPage({ course, authToken, onBack }) {
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -51,46 +51,6 @@ export default function ManageChaptersPage({ course, authToken, onBack, onCourse
   const [deletingId, setDeletingId] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [previewChapter, setPreviewChapter] = useState(null);
-
-  // Tracked locally so the button reflects the change immediately — the
-  // `course` prop itself won't update until the parent's list is refetched.
-  const [courseStatus, setCourseStatus] = useState(course.status);
-  const [publishing, setPublishing] = useState(false);
-  // Set on a blocked publish attempt; the banner itself is derived below so
-  // it disappears automatically once a chapter gets published, without
-  // needing an effect to explicitly clear it.
-  const [publishBlocked, setPublishBlocked] = useState(false);
-
-  // Draft chapters aren't visible to students (normalizeApiCourse filters
-  // them out of the reader), so a course with zero *published* chapters
-  // would publish into an empty, blank-looking course.
-  const hasPublishedChapter = chapters.some(ch => ch.status === 'published');
-  const showPublishError = publishBlocked && !hasPublishedChapter;
-
-  const handleTogglePublish = async () => {
-    if (!authToken || publishing) return;
-    const isPublished = courseStatus === 'published';
-    if (!isPublished && !hasPublishedChapter) {
-      setPublishBlocked(true);
-      return;
-    }
-    setPublishBlocked(false);
-    setPublishing(true);
-    try {
-      const res = isPublished
-        ? await courseApi.unpublishCourse(course.id, authToken)
-        : await courseApi.publishCourse(course.id, authToken);
-      if (res.success) {
-        const nextStatus = res.course?.status ?? (isPublished ? 'draft' : 'published');
-        setCourseStatus(nextStatus);
-        onCourseUpdated?.({ ...course, status: nextStatus });
-      }
-    } catch (err) {
-      console.error('Error toggling course publish state:', err);
-    } finally {
-      setPublishing(false);
-    }
-  };
 
   useEffect(() => {
     fetchChapters();
@@ -253,22 +213,11 @@ export default function ManageChaptersPage({ course, authToken, onBack, onCourse
         </button>
         <span className="mcp-topbar-sub">Manage Chapters</span>
         <div className="mcp-topbar-right">
-          <span className={`mcp-status-pill ${courseStatus === 'published' ? 'mcp-status-pill--published' : 'mcp-status-pill--draft'}`}>
-            {courseStatus === 'published' ? 'Published' : 'Draft'}
+          <span className={`mcp-status-pill ${course.status === 'published' ? 'mcp-status-pill--published' : 'mcp-status-pill--draft'}`}>
+            {course.status === 'published' ? 'Published' : 'Draft'}
           </span>
-          <button
-            className={`mcp-course-publish-btn ${courseStatus === 'published' ? 'mcp-course-publish-btn--unpublish' : 'mcp-course-publish-btn--publish'}`}
-            disabled={publishing}
-            onClick={handleTogglePublish}
-          >
-            {publishing ? '...' : courseStatus === 'published' ? 'Unpublish Course' : 'Publish Course'}
-          </button>
         </div>
       </header>
-
-      {showPublishError && (
-        <div className="mcp-publish-error-banner">Add and publish at least one chapter before publishing this course.</div>
-      )}
 
       <div className="mcp-body">
         <div className="mcp-list-col">

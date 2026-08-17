@@ -3344,6 +3344,28 @@
 .gd-tab:hover { color: #c8d0e0; }
 .gd-tab--active { color: #60a5fa; border-bottom-color: #2563eb; }
 
+.gd-tab--locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #3a4260;
+  cursor: not-allowed;
+}
+.gd-tab--locked:hover { color: #3a4260; }
+.gd-tab--locked svg { flex-shrink: 0; }
+
+.gd-locked-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 48px 24px;
+  color: #6b7a9e;
+  text-align: center;
+}
+.gd-locked-notice svg { width: 24px; height: 24px; opacity: 0.7; }
+.gd-locked-notice p { margin: 0; font-size: 14px; }
+
 /* Body grid */
 .gd-body {
   display: grid;

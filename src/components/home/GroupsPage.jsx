@@ -1897,6 +1897,18 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
   const myId = authUser?._id ?? authUser?.id;
   const isOwned = !!myId && (group.admin === myId || group.admin?._id === myId);
   const isPrivate = group.privacy === 'private';
+  // A pending join request isn't membership yet — Posts, Members, and
+  // Report all stay locked until the group (or the admin, for private
+  // groups) actually admits this user.
+  const canViewMemberContent = (joinedLocal || isOwned) && !pendingLocal;
+
+  // Leaving the group (or a pending request reverting) while sat on a
+  // locked tab would otherwise strand the view there with no content.
+  useEffect(() => {
+    if (!canViewMemberContent && (detailTab === 'posts' || detailTab === 'members')) {
+      setDetailTab('about');
+    }
+  }, [canViewMemberContent, detailTab]);
 
   // Resolve admin name + avatar from members list (API returns admin as ID only)
   const adminId = group.admin?._id ?? group.admin;
@@ -1984,8 +1996,9 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
               <button
                 className="gd-report-btn"
                 onClick={() => setShowReportModal(true)}
-                disabled={isReported}
-                style={{ opacity: isReported ? 0.6 : 1, cursor: isReported ? 'not-allowed' : 'pointer' }}
+                disabled={isReported || !canViewMemberContent}
+                title={!canViewMemberContent ? 'Join this group to report it' : undefined}
+                style={{ opacity: (isReported || !canViewMemberContent) ? 0.6 : 1, cursor: (isReported || !canViewMemberContent) ? 'not-allowed' : 'pointer' }}
               >
                 {isReported ? 'Reported' : 'Report'}
               </button>
@@ -2001,8 +2014,22 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
       <div className="gd-tab-card">
       <div className="gd-tab-row">
         <button className={`gd-tab${detailTab === 'about'   ? ' gd-tab--active' : ''}`} onClick={() => setDetailTab('about')}>About</button>
-        <button className={`gd-tab${detailTab === 'posts'   ? ' gd-tab--active' : ''}`} onClick={() => setDetailTab('posts')}>Posts</button>
-        <button className={`gd-tab${detailTab === 'members' ? ' gd-tab--active' : ''}`} onClick={() => setDetailTab('members')}>Members</button>
+        <button
+          className={`gd-tab${detailTab === 'posts' ? ' gd-tab--active' : ''}${canViewMemberContent ? '' : ' gd-tab--locked'}`}
+          onClick={() => canViewMemberContent && setDetailTab('posts')}
+          disabled={!canViewMemberContent}
+          title={canViewMemberContent ? undefined : 'Join this group to see posts'}
+        >
+          Posts{!canViewMemberContent && <LockIcon />}
+        </button>
+        <button
+          className={`gd-tab${detailTab === 'members' ? ' gd-tab--active' : ''}${canViewMemberContent ? '' : ' gd-tab--locked'}`}
+          onClick={() => canViewMemberContent && setDetailTab('members')}
+          disabled={!canViewMemberContent}
+          title={canViewMemberContent ? undefined : 'Join this group to see members'}
+        >
+          Members{!canViewMemberContent && <LockIcon />}
+        </button>
       </div>
 
       {/* Body */}
@@ -2134,9 +2161,15 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
         {/* ── Posts tab ── */}
         {detailTab === 'posts' && (
           <div className="gd-main">
+          {!canViewMemberContent ? (
+            <div className="gd-locked-notice">
+              <LockIcon />
+              <p>Join this group to see and create posts.</p>
+            </div>
+          ) : (
+          <>
             {/* Create post compose box — only for members */}
-            {(joinedLocal || isOwned) && !pendingLocal && (
-              <div className="gd-compose-box" onClick={() => setCreatePostOpen(true)}>
+            <div className="gd-compose-box" onClick={() => setCreatePostOpen(true)}>
                 <div className="gd-compose-input-fake">
                   <span>Write something to the group...</span>
                 </div>
@@ -2150,8 +2183,7 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
                     Video
                   </button>
                 </div>
-              </div>
-            )}
+            </div>
 
             {rdxPosts === null && <p style={{ padding: 24, color: '#94a3b8' }}>Loading posts...</p>}
             {rdxPosts?.map(p => {
@@ -2190,15 +2222,23 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
             })}
             {rdxPosts?.length === 0 && (
               <p style={{ padding: 24, color: '#94a3b8', textAlign: 'center' }}>
-                {(joinedLocal || isOwned) ? 'No posts yet. Be the first to post!' : 'Join this group to see and create posts.'}
+                No posts yet. Be the first to post!
               </p>
             )}
+          </>
+          )}
           </div>
         )}
 
         {/* ── Members tab ── */}
         {detailTab === 'members' && (
           <div className="gd-members-section">
+          {!canViewMemberContent ? (
+            <div className="gd-locked-notice">
+              <LockIcon />
+              <p>Join this group to see its members.</p>
+            </div>
+          ) : (
             <table className="adm-table">
               <thead>
                 <tr>
@@ -2286,6 +2326,7 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
                 })}
               </tbody>
             </table>
+          )}
           </div>
         )}
 
