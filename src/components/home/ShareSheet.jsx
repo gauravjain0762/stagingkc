@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchConnections } from '../../store/slices/profileSlice';
+import { sendMessage, startDM } from '../../store/slices/messagesSlice';
+import { showToast } from '../../store/slices/toastSlice';
 
 /* Brand marks — inline so the sheet has no icon-font/CDN dependency. */
 function WhatsAppIcon() {
@@ -31,6 +35,16 @@ function MoreIcon() {
 function CloseIcon() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>;
 }
+function PeopleIcon() {
+  return <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+}
+function BackIcon() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>;
+}
+
+function initials(name = '') {
+  return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+}
 
 /**
  * Share sheet — for a post by default, or any other shareable item (e.g. an
@@ -44,7 +58,14 @@ function CloseIcon() {
  * doesn't increment when someone just opens and dismisses the sheet.
  */
 export default function ShareSheet({ post, url, title, text, heading, onClose, onShared }) {
+  const dispatch = useDispatch();
+  const { connections, connectionsLoading } = useSelector(s => s.profile);
+
   const [copied, setCopied] = useState(false);
+  const [view, setView] = useState('main'); // 'main' | 'friends'
+  const [friendSearch, setFriendSearch] = useState('');
+  const [selectedFriends, setSelectedFriends] = useState(() => new Set());
+  const [sendingToFriends, setSendingToFriends] = useState(false);
   const copyTimer = useRef(null);
   const inputRef  = useRef(null);
 
@@ -81,6 +102,53 @@ export default function ShareSheet({ post, url, title, text, heading, onClose, o
     };
   }, [onClose]);
 
+  useEffect(() => {
+    if (view === 'friends' && connections.length === 0 && !connectionsLoading) {
+      dispatch(fetchConnections());
+    }
+  }, [view, connections.length, connectionsLoading, dispatch]);
+
+  function toggleFriend(id) {
+    setSelectedFriends(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  async function handleSendToFriends() {
+    if (!selectedFriends.size || sendingToFriends) return;
+    setSendingToFriends(true);
+    try {
+      const messageText = `${shareText}\n${url}`;
+      await Promise.all([...selectedFriends].map(async (friendId) => {
+        const conn = connections.find(c => c.id === friendId);
+        let convId = conn?.conversationId;
+        if (!convId) {
+          const dmResult = await dispatch(startDM(friendId));
+          if (!startDM.fulfilled.match(dmResult)) throw new Error(dmResult.payload || 'Failed to start conversation');
+          convId = dmResult.payload.id;
+        }
+        const sendResult = await dispatch(sendMessage({ convId, type: 'text', text: messageText }));
+        if (!sendMessage.fulfilled.match(sendResult)) throw new Error(sendResult.payload || 'Failed to send message');
+      }));
+      dispatch(showToast({
+        message: `Post shared with ${selectedFriends.size} friend${selectedFriends.size > 1 ? 's' : ''}`,
+        type: 'success',
+      }));
+      onShared?.();
+      onClose();
+    } catch (err) {
+      dispatch(showToast({ message: err.message || 'Failed to share post', type: 'error' }));
+    } finally {
+      setSendingToFriends(false);
+    }
+  }
+
+  const filteredFriends = friendSearch.trim()
+    ? connections.filter(c => c.name?.toLowerCase().includes(friendSearch.trim().toLowerCase()))
+    : connections;
+
   async function handleCopy() {
     try {
       if (navigator.clipboard?.writeText) {
@@ -112,42 +180,109 @@ export default function ShareSheet({ post, url, title, text, heading, onClose, o
     <div className="ss-backdrop" onClick={onClose}>
       <div className="ss-sheet" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={sheetHeading}>
         <div className="ss-head">
-          <h3 className="ss-title">{sheetHeading}</h3>
+          <div className="ss-head-left">
+            {view === 'friends' && (
+              <button className="ss-back" onClick={() => setView('main')} aria-label="Back">
+                <BackIcon />
+              </button>
+            )}
+            <h3 className="ss-title">{view === 'friends' ? 'Send to friends' : sheetHeading}</h3>
+          </div>
           <button className="ss-close" onClick={onClose} aria-label="Close">
             <CloseIcon />
           </button>
         </div>
 
-        <div className="ss-targets">
-          {targets.map(({ key, label, Icon, cls, href }) => (
-            <a
-              key={key}
-              className="ss-target"
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => onShared?.()}
-            >
-              <span className={`ss-icon ${cls}`}><Icon /></span>
-              <span className="ss-label">{label}</span>
-            </a>
-          ))}
+        {view === 'main' ? (
+          <>
+            <div className="ss-targets">
+              <button className="ss-target" onClick={() => setView('friends')}>
+                <span className="ss-icon ss-friends"><PeopleIcon /></span>
+                <span className="ss-label">Friends</span>
+              </button>
 
-          {typeof navigator !== 'undefined' && navigator.share && (
-            <button className="ss-target" onClick={handleNativeShare}>
-              <span className="ss-icon ss-more"><MoreIcon /></span>
-              <span className="ss-label">More</span>
-            </button>
-          )}
-        </div>
+              {targets.map(({ key, label, Icon, cls, href }) => (
+                <a
+                  key={key}
+                  className="ss-target"
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => onShared?.()}
+                >
+                  <span className={`ss-icon ${cls}`}><Icon /></span>
+                  <span className="ss-label">{label}</span>
+                </a>
+              ))}
 
-        <div className="ss-link-row">
-          <input ref={inputRef} className="ss-link" value={url} readOnly onFocus={e => e.target.select()} />
-          <button className={`ss-copy${copied ? ' ss-copy--done' : ''}`} onClick={handleCopy}>
-            {copied ? <CheckIcon /> : <CopyIcon />}
-            {copied ? 'Copied' : 'Copy'}
-          </button>
-        </div>
+              {typeof navigator !== 'undefined' && navigator.share && (
+                <button className="ss-target" onClick={handleNativeShare}>
+                  <span className="ss-icon ss-more"><MoreIcon /></span>
+                  <span className="ss-label">More</span>
+                </button>
+              )}
+            </div>
+
+            <div className="ss-link-row">
+              <input ref={inputRef} className="ss-link" value={url} readOnly onFocus={e => e.target.select()} />
+              <button className={`ss-copy${copied ? ' ss-copy--done' : ''}`} onClick={handleCopy}>
+                {copied ? <CheckIcon /> : <CopyIcon />}
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="ss-friends-picker">
+            <div className="ss-friends-search">
+              <input
+                className="ss-friends-search-input"
+                placeholder="Search friends"
+                value={friendSearch}
+                onChange={e => setFriendSearch(e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            <div className="ss-friends-list">
+              {connectionsLoading && connections.length === 0 && (
+                <p className="ss-friends-empty">Loading friends…</p>
+              )}
+              {!connectionsLoading && filteredFriends.length === 0 && (
+                <p className="ss-friends-empty">
+                  {friendSearch ? `No friends found for "${friendSearch}"` : 'No Connections'}
+                </p>
+              )}
+              {filteredFriends.map(conn => {
+                const checked = selectedFriends.has(conn.id);
+                return (
+                  <label key={conn.id} className={`ss-friend-row${checked ? ' ss-friend-row--checked' : ''}`}>
+                    <input
+                      type="checkbox"
+                      className="ss-friend-checkbox"
+                      checked={checked}
+                      onChange={() => toggleFriend(conn.id)}
+                    />
+                    {conn.avatar
+                      ? <img src={conn.avatar} alt={conn.name} className="ss-friend-avatar" />
+                      : <span className="ss-friend-avatar ss-friend-avatar--fallback">{initials(conn.name)}</span>
+                    }
+                    <span className="ss-friend-name">{conn.name}</span>
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className="ss-friends-footer">
+              <button
+                className="ss-friends-send"
+                disabled={!selectedFriends.size || sendingToFriends}
+                onClick={handleSendToFriends}
+              >
+                {sendingToFriends ? 'Sending…' : `Send${selectedFriends.size ? ` (${selectedFriends.size})` : ''}`}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

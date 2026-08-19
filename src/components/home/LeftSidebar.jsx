@@ -3,8 +3,10 @@ import SkeletonImg from '../SkeletonImg';
 import Loader from '../Loader';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchSuggestions, sendFriendRequest, dismissSuggestion, fetchGroups, followUser, unfollowUser, fetchAllUsers } from '../../store/slices/usersSlice';
+import { fetchGroups as fetchSuggestedGroups, joinGroup } from '../../store/slices/groupsSlice';
 import { fetchUserProfile } from '../../store/slices/profileSlice';
 import { fetchEvents } from '../../store/slices/eventsSlice';
+import { showToast } from '../../store/slices/toastSlice';
 import { apiRequest } from '../../services/api';
 import CreatePostModal from './CreatePostModal';
 import AnimatedNav from './AnimatedNav';
@@ -137,6 +139,7 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
   const { user: authUser, token } = useSelector((state) => state.auth);
   const { profile } = useSelector((state) => state.profile);
   const { suggestions, dismissedIds, groups, friendStatusMap, followingIds, allUsers, allUsersLoading, blockedUserIds } = useSelector((state) => state.users);
+  const { groups: suggestedGroups, joiningIds: joiningGroupIds } = useSelector((state) => state.groups);
   const { conversations } = useSelector((state) => state.messages);
   const { events: upcomingEvents } = useSelector((state) => state.events);
   const unreadMessages = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
@@ -151,8 +154,19 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
     dispatch(fetchUserProfile());
     dispatch(fetchSuggestions(5));
     dispatch(fetchGroups());
+    dispatch(fetchSuggestedGroups({ tab: 'suggested', limit: 3 }));
     dispatch(fetchEvents({ tab: 'upcoming', limit: 3 }));
   }, [dispatch]);
+
+  function handleJoinGroup(groupId) {
+    dispatch(joinGroup(groupId)).then((action) => {
+      if (joinGroup.fulfilled.match(action) && action.payload.pending) {
+        dispatch(showToast({ message: 'Join request sent! Waiting for admin approval.', type: 'success' }));
+      } else if (joinGroup.rejected.match(action)) {
+        dispatch(showToast({ message: action.payload?.message ?? 'Failed to join group.', type: 'error' }));
+      }
+    });
+  }
 
   // Refetch profile when following changes to keep sidebar counts in sync
   useEffect(() => {
@@ -345,14 +359,12 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
         {/* Your Groups */}
         <div className="sidebar-section">
           <div className="section-header">
-            <span className="section-title">Your Groups</span>
+            <span className="section-title">{groups.length > 0 ? 'Your Groups' : 'Suggested Groups'}</span>
             {groups.length > 0 && <button className="section-link" onClick={onGroupsClick}>View all</button>}
           </div>
-          {groups.length === 0 ? (
-            <button className="sidebar-create-btn" onClick={onCreateGroup}>+ Create Group</button>
-          ) : (
+          {groups.length > 0 ? (
             <div className="group-list">
-              {groups.map(g => (
+              {groups.slice(0, 3).map(g => (
                 <div key={g.id ?? g._id} className="group-item" style={{ cursor: 'pointer' }} onClick={() => onGroupClick?.(g.id ?? g._id)}>
                   <div className="group-icon" style={{ background: g.color ?? '#3b82f6' }}>
                     {g.name[0]}
@@ -364,6 +376,38 @@ export default function LeftSidebar({ onEventsClick, onMessagesClick, onGroupsCl
                 </div>
               ))}
             </div>
+          ) : (
+            <>
+              {suggestedGroups.length > 0 && (
+                <div className="group-list">
+                  {suggestedGroups.slice(0, 3).map(g => {
+                    const gid = g._id ?? g.id;
+                    const isJoining = joiningGroupIds.includes(gid);
+                    const btnLabel = isJoining ? '...' : g.pending ? 'Pending' : g.joined ? '✓ Joined' : 'Join';
+                    return (
+                      <div key={gid} className="group-item" style={{ alignItems: 'center' }}>
+                        <div className="group-icon" style={{ background: g.color ?? '#3b82f6', cursor: 'pointer' }} onClick={() => onGroupClick?.(gid)}>
+                          {g.iconText ?? g.name?.[0]}
+                        </div>
+                        <div className="friend-info" style={{ cursor: 'pointer' }} onClick={() => onGroupClick?.(gid)}>
+                          <p className="friend-name">{g.name}</p>
+                          <p className="friend-sub">{g.members ?? (g.memberCount != null ? `${g.memberCount.toLocaleString()} members` : '')}</p>
+                        </div>
+                        <button
+                          className={`friend-add-btn${(g.joined || g.pending) ? ' friend-add-btn--added' : ''}`}
+                          style={{ flex: '0 0 auto', padding: '6px 12px' }}
+                          disabled={isJoining || g.joined || g.pending}
+                          onClick={() => handleJoinGroup(gid)}
+                        >
+                          {btnLabel}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <button className="sidebar-create-btn" onClick={onCreateGroup}>+ Create Group</button>
+            </>
           )}
         </div>
 

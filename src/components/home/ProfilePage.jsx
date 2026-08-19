@@ -600,6 +600,9 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
           {visible.length === 0 && search && (
             <p className="prof-conn-empty">No connections found for "{search}"</p>
           )}
+          {visible.length === 0 && !search && (
+            <p className="prof-conn-empty">No Connections</p>
+          )}
           {visible.map(conn => (
             <div key={conn.id} className="prof-conn-item">
               <div className="prof-conn-avatar-wrap" style={{ cursor: 'pointer' }} onClick={() => openConnProfile(conn)}>
@@ -676,6 +679,9 @@ export function ConnectionsTab({ onUserClick, onMessageUser, hideSearch }) {
         <div className="prof-conn-grid">
           {visible.length === 0 && search && (
             <p className="prof-conn-empty">No connections found for "{search}"</p>
+          )}
+          {visible.length === 0 && !search && (
+            <p className="prof-conn-empty">No Connections</p>
           )}
           {visible.map(conn => (
             <div key={conn.id} className="prof-conn-card">

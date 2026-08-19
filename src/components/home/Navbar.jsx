@@ -7,6 +7,7 @@ import { fetchNotifications, markNotificationsRead, markNotificationRead } from 
 import { fetchMyPostsCount } from '../../store/slices/postsSlice';
 import { disconnectSocket } from '../../services/socket';
 import { fetchAllUsers, acceptFriendRequest, rejectFriendRequest } from '../../store/slices/usersSlice';
+import { globalSearch } from '../../store/slices/searchSlice';
 import { acceptInvitation, rejectInvitation } from '../../store/slices/invitationsSlice';
 import { showToast } from '../../store/slices/toastSlice';
 
@@ -81,7 +82,8 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
   const { notifications, unreadCount } = useSelector((state) => state.notifications);
   const { myPostsTotal }       = useSelector((state) => state.posts);
   const { conversations }      = useSelector((state) => state.messages);
-  const { allUsers }           = useSelector((state) => state.users);
+  const { friendStatusMap } = useSelector((state) => state.users);
+  const { global: globalSearchResults } = useSelector((state) => state.search);
   const unreadMessages = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
 
   // authUser/profile postsCount reflect the logged-in user; myPostsTotal (from
@@ -99,7 +101,6 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
   const [userOpen,   setUserOpen]   = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState([]);
   const [respondingNotifId, setRespondingNotifId] = useState(null);
   const [respondedNotifActions, setRespondedNotifActions] = useState(() => new Map());
   const notifRef                    = useRef(null);
@@ -139,19 +140,26 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
     return () => document.removeEventListener('mousedown', onOut);
   }, [searchOpen]);
 
-  // Handle search filtering
+  // Search the backend directly — filtering the locally cached `allUsers`
+  // (a single unparameterized /api/users/all fetch) silently missed anyone
+  // outside whatever page that endpoint returns by default.
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      return;
-    }
-    const query = searchQuery.toLowerCase();
-    const results = allUsers.filter(user =>
-      (user.name && user.name.toLowerCase().includes(query)) ||
-      (user._id && user._id.includes(query))
-    ).slice(0, 8); // Limit to 8 results
-    setSearchResults(results);
-  }, [searchQuery, allUsers]);
+    const query = searchQuery.trim();
+    if (!query) return;
+    const timer = setTimeout(() => {
+      dispatch(globalSearch({ q: query, page: 1, limit: 8 }));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, dispatch]);
+
+  const searchResults = searchQuery.trim()
+    ? globalSearchResults.users.map(u => ({
+        _id: u._id ?? u.id,
+        name: u.fullName ?? u.name ?? '',
+        avatar: u.avatar?.startsWith?.('http') ? u.avatar : '',
+        location: u.location ?? u.city ?? '',
+      }))
+    : [];
 
   function handleBell() {
     setNotifOpen(v => !v);
@@ -165,7 +173,6 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
   function handleUserClick(userId) {
     setSearchQuery('');
     setSearchOpen(false);
-    setSearchResults([]);
     // Navigate to user profile using the callback from HomePage
     if (userId && onUserClick) {
       console.log('🔍 [search] Navigating to user profile:', userId);
@@ -332,7 +339,14 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
               {notifications.map((n, i) => {
                 const nid = n.id ?? n._id;
                 const respondedAction = respondedNotifActions.get(nid);
-                const isPendingRequest = n.type === 'friend_request' && !respondedAction;
+                // A friend_request notification only stays actionable while the
+                // real friendship status is still 'incoming' — once accepted/rejected
+                // (even in a prior session, before a reload) friendStatusMap reflects
+                // that from fetchAllUsers, so stale notifications don't re-show the buttons.
+                const senderId = n.actor?._id ?? n.actor?.id;
+                const senderFriendStatus = senderId ? friendStatusMap[senderId] : undefined;
+                const isPendingRequest = n.type === 'friend_request' && !respondedAction
+                  && senderFriendStatus !== 'connected' && senderFriendStatus !== 'none';
                 const isGroupInviteByText = n.text?.includes('invited you to join') || n.text?.includes('group');
                 const isPendingGroupInvite = (n.type === 'group_invitation' || n.relatedGroup || isGroupInviteByText) && !respondedAction;
                 console.log('Notif:', { type: n.type, text: n.text, hasGroup: !!n.relatedGroup, byText: isGroupInviteByText, pending: isPendingGroupInvite });
