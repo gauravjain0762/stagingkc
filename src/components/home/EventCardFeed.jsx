@@ -20,17 +20,32 @@ function timeAgo(dateStr) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
+function formatTimeWithAMPM(time) {
+  if (!time) return '';
+  const match = time.match(/(\d{1,2}):(\d{2})/);
+  if (!match) return time;
+  const hour = parseInt(match[1], 10);
+  const minute = match[2];
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${minute} ${ampm}`;
+}
+
 export default function EventCardFeed({ event, onEventClick, onUserClick }) {
   const dispatch = useDispatch();
+  const { user } = useSelector(s => s.auth);
   const [joined, setJoined] = useState(event.isAttending ?? false);
   const [shareOpen, setShareOpen] = useState(false);
+
+  const isAuthor = user?._id === event.createdBy || user?.id === event.createdBy;
 
   const [attendeeCount, setAttendeeCount] = useState(event.attendingCount ?? event.attendees ?? event.totalAttending ?? 0);
 
   const eventImage = event.coverImages?.[0] ?? event.images?.[0] ?? event.coverImage ?? event.image ?? 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&q=80&fit=crop';
   const eventTitle = event.title ?? 'Untitled Event';
   const eventDate = event.startDate ?? event.eventDate ?? 'TBA';
-  const eventTime = event.isAllDay ? 'All Day' : (event.startTime || '00:00');
+  const eventTime = event.isAllDay ? 'All Day' : formatTimeWithAMPM(event.startTime || '00:00');
+  const isOnlineEvent = event.eventType === 'online';
 
   // Extract location as string (handle both string and object formats)
   let eventLocation = 'Location TBA';
@@ -109,7 +124,7 @@ export default function EventCardFeed({ event, onEventClick, onUserClick }) {
             </div>
             <div className="ecf-info-row">
               <MapPinIcon />
-              <span>{eventLocation}</span>
+              <span>{isOnlineEvent ? 'Online' : eventLocation}</span>
             </div>
             <div className="ecf-info-row">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -120,11 +135,15 @@ export default function EventCardFeed({ event, onEventClick, onUserClick }) {
           {/* Actions - Match feed post design */}
           <div className="post-actions">
             <button
-              className={`post-action-btn${joined ? ' post-action-btn--active' : ''}`}
+              className={`post-action-btn${joined || isAuthor ? ' post-action-btn--active' : ''}`}
               onClick={handleJoin}
-              disabled={joined}
+              disabled={joined && !isAuthor}
             >
-              {joined ? (
+              {isAuthor ? (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19H4v-3L16.5 3.5z"/></svg> Manage
+                </>
+              ) : joined ? (
                 <>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polyline points="20 6 9 17 4 12"/></svg> Joined
                 </>
