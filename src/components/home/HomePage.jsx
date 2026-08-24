@@ -344,6 +344,7 @@ export default function HomePage() {
               onProfileClick={() => setSection('profile')}
               onCreateEvent={goToEventsCreate}
               onUserClick={goToUserProfile}
+              onEventClick={goToEvent}
             />
             <RightSidebar onAddEducationClick={() => setSection('courses')} onGalleryClick={() => goToProfileTab('Photos')} />
           </>
