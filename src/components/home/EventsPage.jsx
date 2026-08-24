@@ -595,6 +595,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [discExpandedId,     setDiscExpandedId]      = useState(null);
   const [discCommentText,    setDiscCommentText]     = useState({}); // { [discussionId]: text }
   const [discCommentBusy,    setDiscCommentBusy]     = useState(false);
+  const [discCommentsLoading, setDiscCommentsLoading] = useState({}); // { [discussionId]: boolean }
   // Which comment a reply box is open under — { discussionId, commentId } | null
   const [discReplyTarget,    setDiscReplyTarget]     = useState(null);
   const [discReplyText,      setDiscReplyText]       = useState('');
@@ -1021,9 +1022,35 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     }
   }
 
+  async function loadDiscussionComments(discussionId) {
+    if (!selectedEvent?.id || discCommentsLoading[discussionId]) return;
+    setDiscCommentsLoading(prev => ({ ...prev, [discussionId]: true }));
+    try {
+      const data = await apiRequest(`/api/events/${selectedEvent.id}/discussions/${discussionId}/comments?page=1&limit=50`, { token: authToken });
+      const rawComments = data.comments ?? data.data ?? [];
+      const comments = rawComments.map(normalizeDiscComment);
+      setDiscussions(prev => prev.map(d => d.id === discussionId
+        ? { ...d, comments }
+        : d));
+    } catch (err) {
+      dispatch(showToast({ message: 'Failed to load comments.', type: 'error' }));
+    } finally {
+      setDiscCommentsLoading(prev => ({ ...prev, [discussionId]: false }));
+    }
+  }
+
   function toggleDiscExpanded(discussionId) {
-    setDiscExpandedId(prev => (prev === discussionId ? null : discussionId));
-    setDiscReplyTarget(null);
+    if (discExpandedId === discussionId) {
+      setDiscExpandedId(null);
+      setDiscReplyTarget(null);
+    } else {
+      setDiscExpandedId(discussionId);
+      setDiscReplyTarget(null);
+      const post = discussions.find(d => d.id === discussionId);
+      if (post && post.comments.length === 0 && post.commentCount > 0) {
+        loadDiscussionComments(discussionId);
+      }
+    }
   }
 
   async function handlePostDiscComment(discussionId) {
@@ -2344,6 +2371,10 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                               />
                               <button className="ev-disc-send-btn" disabled={discCommentBusy || !(discCommentText[post.id] || '').trim()} onClick={() => handlePostDiscComment(post.id)}><SendIcon /></button>
                             </div>
+
+                            {discCommentsLoading[post.id] && <p className="ev-join-loading">Loading comments…</p>}
+                            {!discCommentsLoading[post.id] && post.comments.length === 0 && post.commentCount > 0 && <p className="ev-join-loading">No comments found</p>}
+                            {!discCommentsLoading[post.id] && post.comments.length === 0 && post.commentCount === 0 && <p className="ev-join-loading">No comments yet — be the first!</p>}
 
                             {post.comments.map(c => (
                               <div key={c.id}>
