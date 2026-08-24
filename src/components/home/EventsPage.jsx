@@ -971,15 +971,15 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
       const fd = new FormData();
       if (discPostCaption.trim()) fd.append('caption', discPostCaption.trim());
       discPostMedia.forEach(m => fd.append('media', m.file));
-      const data = await apiRequest(`/api/events/${selectedEvent.id}/discussions`, {
+      await apiRequest(`/api/events/${selectedEvent.id}/discussions`, {
         method: 'POST', token: authToken, body: fd, isFormData: true,
       });
-      const post = normalizeDiscussion(data.discussion ?? data);
-      setDiscussions(prev => [post, ...prev]);
       setDiscPostCaption('');
       discPostMedia.forEach(m => URL.revokeObjectURL(m.url));
       setDiscPostMedia([]);
       setDiscComposerOpen(false);
+      await loadDiscussions(selectedEvent.id, 1);
+      dispatch(showToast({ message: 'Post created!', type: 'success' }));
     } catch (err) {
       dispatch(showToast({ message: err.message || 'Failed to post.', type: 'error' }));
     } finally {
