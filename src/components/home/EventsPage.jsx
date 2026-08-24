@@ -272,11 +272,12 @@ function isCardDescTruncated(desc) {
 // pinned down before implementing, so each normalizer accepts the common
 // naming variants rather than assuming one.
 function normalizeDiscussionAuthor(a) {
-  if (!a) return { id: '', name: 'Someone', avatar: '' };
+  if (!a) return { id: '', name: 'Someone', avatar: '', location: '' };
   return {
     id: a.id ?? a._id ?? a.userId ?? '',
     name: a.fullName ?? a.name ?? 'Someone',
     avatar: a.avatar?.startsWith?.('http') ? a.avatar : '',
+    location: a.location ?? a.city ?? a.address ?? '',
   };
 }
 
@@ -317,6 +318,7 @@ function normalizeDiscussion(d) {
     )),
     likeCount: d.likeCount ?? d.likesCount ?? d.likes ?? 0,
     likedByMe: !!(d.isLiked ?? d.likedByMe ?? d.hasLiked),
+    userReaction: d.userReaction ?? d.reaction ?? null,
     commentCount: commentCount,
     comments: commentsArray.map(normalizeDiscComment),
     time: timeAgo(d.createdAt ?? d.time),
@@ -414,6 +416,19 @@ function eventLocationLabel(ev) {
   const loc = ev.venue || ev.location;
   if (loc) return loc;
   return ev.eventType === 'online' ? 'Online' : 'N/A';
+}
+
+// Create clickable location link to Google Maps
+function ClickableLocation({ location }) {
+  if (!location || location === 'Online' || location === 'N/A') {
+    return <span>{location || 'N/A'}</span>;
+  }
+  const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(location)}`;
+  return (
+    <a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', textDecoration: 'none', cursor: 'pointer' }}>
+      {location}
+    </a>
+  );
 }
 
 // Attendee list API returns either a flat user record or one nested under
@@ -601,8 +616,19 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [discReplyText,      setDiscReplyText]       = useState('');
   const [discReplyBusy,      setDiscReplyBusy]       = useState(false);
   const [discLikersModal,    setDiscLikersModal]     = useState(null); // { discussionId, likers }
+  const [discReactionPicker, setDiscReactionPicker]  = useState(null); // { discussionId, timeout }
   const discMediaInputRef = useRef(null);
   const [moreOpen,      setMoreOpen]      = useState(false);
+
+  // Reaction emojis - match feed module
+  const DISC_REACTIONS = [
+    { id: 'like', emoji: '👍', label: 'Like' },
+    { id: 'celebrate', emoji: '👏', label: 'Celebrate' },
+    { id: 'support', emoji: '🫶', label: 'Support' },
+    { id: 'love', emoji: '❤️', label: 'Love' },
+    { id: 'insightful', emoji: '💡', label: 'Insightful' },
+    { id: 'funny', emoji: '😄', label: 'Funny' },
+  ];
   // Event "..." menu: Share sheet + Report modal — both dispatched from menu
   // items but rendered outside the menu (like the create-event / join-flow
   // modals below) so they survive the menu itself closing.
@@ -992,6 +1018,30 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     }
   }
 
+  function openDiscReactionPicker(discussionId) {
+    if (discReactionPicker?.discussionId === discussionId) return;
+    setDiscReactionPicker({ discussionId });
+  }
+
+  function closeDiscReactionPicker() {
+    setDiscReactionPicker(null);
+  }
+
+  async function handleDiscussionReaction(discussionId, reactionType) {
+    if (!selectedEvent?.id) return;
+    closeDiscReactionPicker();
+    try {
+      await apiRequest(`/api/events/${selectedEvent.id}/discussions/${discussionId}/reactions`, {
+        method: 'POST',
+        token: authToken,
+        body: { type: reactionType },
+      });
+      await loadDiscussions(selectedEvent.id, 1);
+    } catch (err) {
+      dispatch(showToast({ message: err.message || 'Failed to react.', type: 'error' }));
+    }
+  }
+
   async function handleLikeDiscussion(discussionId) {
     if (!selectedEvent?.id) return;
     // Optimistic toggle — calling this same updater again on failure flips it right back.
@@ -1001,6 +1051,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     setDiscussions(toggle);
     try {
       await apiRequest(`/api/events/${selectedEvent.id}/discussions/${discussionId}/like`, { method: 'POST', token: authToken });
+      await loadDiscussions(selectedEvent.id, 1);
     } catch (err) {
       setDiscussions(toggle);
       dispatch(showToast({ message: err.message || 'Failed to like post.', type: 'error' }));
@@ -2035,9 +2086,8 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
               {selectedEvent.startDate && <div className="ev-detail-cal-year">{selectedEvent.startDate.slice(0, 4)}</div>}
             </div>
             <div className="ev-detail-hero-info">
-              <p className="ev-detail-datetime">{selectedEvent.fullDate}</p>
               <h1 className="ev-detail-title">{selectedEvent.title}</h1>
-              <p className="ev-detail-location"><MapPinIcon /> {eventLocationLabel(selectedEvent)}</p>
+              <p className="ev-detail-location"><MapPinIcon /> <ClickableLocation location={eventLocationLabel(selectedEvent)} /></p>
               {attendeeCount[selectedEvent.id] !== undefined && (
                 <button
                   type="button"
@@ -2113,11 +2163,11 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       <div className="ev-more-divider" />
                       {(selectedEvent._sourceTab === 'created' ? [
                         { id: 'share',    icon: <ShareIcon />,    label: 'Share', onClick: () => setShareOpen(true) },
-                        { id: 'calendar', icon: <CalendarIcon />, label: calendarIds.has(selectedEvent.id) ? 'Added to Calendar' : 'Add to Calendar', onClick: () => toggleCalendar(selectedEvent.id) },
+                        { id: 'calendar', icon: <CalendarIcon />, label: calendarIds.has(selectedEvent.id) ? 'Remove from Calendar' : 'Add to Calendar', onClick: () => toggleCalendar(selectedEvent.id) },
                         { id: 'sold',     icon: <TicketIcon />,   label: selectedEvent.soldOut ? 'Mark as Available' : 'Mark as Sold Out', onClick: () => handleToggleSoldOut(selectedEvent) },
                       ] : [
                         { id: 'share',    icon: <ShareIcon />,    label: 'Share', onClick: () => setShareOpen(true) },
-                        { id: 'calendar', icon: <CalendarIcon />, label: calendarIds.has(selectedEvent.id) ? 'Added to Calendar' : 'Add to Calendar', onClick: () => toggleCalendar(selectedEvent.id) },
+                        { id: 'calendar', icon: <CalendarIcon />, label: calendarIds.has(selectedEvent.id) ? 'Remove from Calendar' : 'Add to Calendar', onClick: () => toggleCalendar(selectedEvent.id) },
                         { id: 'report',   icon: <FlagIcon />,     label: 'Report Event', onClick: () => setReportOpen(true), danger: true },
                       ]).map(item => (
                         <button key={item.id} className="ev-more-item" onClick={() => { setMoreOpen(false); item.onClick?.(); }}>
@@ -2170,7 +2220,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                     <h3 className="ev-detail-card-title">Event Info</h3>
                     <div className="ev-detail-info-rows">
                       <div className="ev-detail-info-row"><CalendarIcon /><span>{selectedEvent.fullDate}</span></div>
-                      <div className="ev-detail-info-row"><MapPinIcon /><span>{eventLocationLabel(selectedEvent)}</span></div>
+                      <div className="ev-detail-info-row"><MapPinIcon /><ClickableLocation location={eventLocationLabel(selectedEvent)} /></div>
                       <div className="ev-detail-info-row"><span className="ev-detail-cat-pill" style={{ background: selectedEvent.catColor + '22', color: selectedEvent.catColor, border: `1px solid ${selectedEvent.catColor}44` }}>{displayCategory(selectedEvent)}</span></div>
                     </div>
                   </div>
@@ -2192,13 +2242,13 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       ) : (
                         <div className="ev-detail-map-overlay">
                           <span className="ev-detail-map-label">
-                            {selectedEvent.eventType === 'online' ? <OnlineIcon /> : <MapPinIcon />} {eventLocationLabel(selectedEvent)}
+                            {selectedEvent.eventType === 'online' ? <OnlineIcon /> : <MapPinIcon />} <ClickableLocation location={eventLocationLabel(selectedEvent)} />
                           </span>
                         </div>
                       )}
                     </div>
                     <div className="ev-detail-map-footer">
-                      <p className="ev-detail-map-venue">{eventLocationLabel(selectedEvent)}</p>
+                      <p className="ev-detail-map-venue"><ClickableLocation location={eventLocationLabel(selectedEvent)} /></p>
                       {selectedEvent.eventType !== 'online' && (
                         <button
                           className="ev-detail-map-btn"
@@ -2316,8 +2366,15 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                             : <span className="ev-disc-comment-av ev-disc-av-fallback" style={{ cursor: post.author.id ? 'pointer' : 'default' }} onClick={() => onUserClick?.(post.author.id)}>{post.author.name[0]}</span>
                           }
                           <div>
-                            <span className="ev-disc-comment-name" style={{ cursor: post.author.id ? 'pointer' : 'default' }} onClick={() => onUserClick?.(post.author.id)}>{post.author.name}</span>
-                            <span className="ev-disc-post-time">{post.time}</span>
+                            <p className="ev-disc-author-row" style={{ cursor: post.author.id ? 'pointer' : 'default' }} onClick={() => onUserClick?.(post.author.id)}>
+                              {post.author.name}
+                            </p>
+                            {post.author.location && (
+                              <p className="ev-disc-author-loc">
+                                <MapPinIcon /> {post.author.location}
+                              </p>
+                            )}
+                            <p className="ev-disc-post-time">{post.time}</p>
                           </div>
                         </div>
 
@@ -2332,32 +2389,168 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                           </div>
                         )}
 
-                        <div className="ev-disc-post-actions">
-                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                            <button className={`ev-disc-like-btn${post.likedByMe ? ' ev-disc-like-btn--active' : ''}`} onClick={() => handleLikeDiscussion(post.id)}>
-                              <ThumbUpIcon /> Like
-                            </button>
-                            {post.likeCount > 0 && (
-                              <button
-                                onClick={() => handleViewDiscussionLikers(post.id)}
+                        {/* Emoji Reactions Row - Like Feed Module */}
+                        {post.likeCount > 0 && (
+                          <div style={{ display: 'flex', gap: '6px', padding: '8px 0', alignItems: 'center', flexWrap: 'wrap' }}>
+                            {post.reactions && Object.entries(post.reactions).filter(([_, count]) => count > 0).map(([reactionId, count]) => {
+                              const reactionEmoji = { like: '👍', celebrate: '👏', support: '🫶', love: '❤️', insightful: '💡', funny: '😄' }[reactionId];
+                              return reactionEmoji ? (
+                                <button
+                                  key={reactionId}
+                                  onClick={() => handleViewDiscussionLikers(post.id)}
+                                  style={{
+                                    background: 'rgba(99,102,241,0.1)',
+                                    border: '1px solid rgba(99,102,241,0.2)',
+                                    borderRadius: '20px',
+                                    padding: '4px 10px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    fontSize: '13px',
+                                    color: '#a5b4fc',
+                                    transition: 'all 0.2s',
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.15)'}
+                                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.1)'}
+                                >
+                                  <span style={{ fontSize: '15px' }}>{reactionEmoji}</span>
+                                  {count > 1 && <span>{count}</span>}
+                                </button>
+                              ) : null;
+                            })}
+                          </div>
+                        )}
+
+                        {/* Reactions & Comments Row - Match Feed Module */}
+                        <div className="post-actions" style={{ padding: '8px 0', borderTop: '1px solid rgba(148, 163, 184, 0.15)', borderBottom: '1px solid rgba(148, 163, 184, 0.15)' }}>
+                          {/* Reaction Picker Wrapper */}
+                          <div
+                            style={{ flex: 1, position: 'relative', display: 'flex' }}
+                            onMouseEnter={() => openDiscReactionPicker(post.id)}
+                            onMouseLeave={() => closeDiscReactionPicker()}
+                          >
+                            {discReactionPicker?.discussionId === post.id && (
+                              <div
                                 style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  color: '#3b82f6',
-                                  cursor: 'pointer',
-                                  fontSize: '13px',
-                                  fontWeight: '600',
-                                  padding: '0 4px',
+                                  position: 'absolute',
+                                  bottom: 'calc(100% + 12px)',
+                                  left: '50%',
+                                  transform: 'translateX(-50%)',
+                                  zIndex: 60,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  padding: '6px 8px',
+                                  background: '#1b2135',
+                                  border: '1px solid #2a3350',
+                                  borderRadius: '40px',
+                                  boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                                  pointerEvents: 'auto',
                                 }}
                               >
-                                {post.likeCount} {post.likeCount === 1 ? 'like' : 'likes'}
-                              </button>
+                                {DISC_REACTIONS.map(r => (
+                                  <button
+                                    key={r.id}
+                                    type="button"
+                                    onClick={() => handleDiscussionReaction(post.id, r.id)}
+                                    style={{
+                                      border: 'none',
+                                      background: 'none',
+                                      cursor: 'pointer',
+                                      padding: '4px 6px',
+                                      borderRadius: '50%',
+                                      lineHeight: 1,
+                                      fontSize: '26px',
+                                      transition: 'transform 0.15s cubic-bezier(0.34,1.56,0.64,1)',
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-6px) scale(1.35)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                    title={r.label}
+                                  >
+                                    {r.emoji}
+                                  </button>
+                                ))}
+                              </div>
                             )}
+                            <button
+                              className={`post-action-btn${post.userReaction ? ' post-action-btn--active' : ''}`}
+                              onClick={() => handleLikeDiscussion(post.id)}
+                              style={{
+                                flex: 1,
+                                background: 'none',
+                                border: 'none',
+                                color: post.userReaction ? '#f59e0b' : '#8b95a5',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                fontWeight: '500',
+                                padding: '8px 16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '6px',
+                                transition: 'background 0.18s ease, color 0.18s ease',
+                                borderRadius: '6px',
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.07)'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                            >
+                              <span style={{ fontSize: '16px' }}>
+                                {post.userReaction ? DISC_REACTIONS.find(r => r.id === post.userReaction)?.emoji : '👍'}
+                              </span>
+                              {post.userReaction
+                                ? DISC_REACTIONS.find(r => r.id === post.userReaction)?.label
+                                : 'Like'
+                              } ({post.likeCount})
+                            </button>
                           </div>
-                          <button className="ev-disc-reply-btn" onClick={() => toggleDiscExpanded(post.id)}>
-                            {post.commentCount > 0 ? `${post.commentCount} Comment${post.commentCount === 1 ? '' : 's'}` : 'Comment'}
+                          <div style={{ width: '1px', height: '20px', background: 'rgba(148, 163, 184, 0.1)' }} />
+                          <button
+                            className="post-action-btn"
+                            onClick={() => toggleDiscExpanded(post.id)}
+                            style={{
+                              flex: 1,
+                              background: 'none',
+                              border: 'none',
+                              color: '#8b95a5',
+                              cursor: 'pointer',
+                              fontSize: '14px',
+                              fontWeight: '500',
+                              padding: '8px 16px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px',
+                              transition: 'background 0.18s ease, color 0.18s ease',
+                              borderRadius: '6px',
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.07)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                          >
+                            <span style={{ fontSize: '16px' }}>💬</span> Comment ({post.commentCount})
                           </button>
                         </div>
+
+                        {/* Likers Row */}
+                        {post.likeCount > 0 && (
+                          <div style={{ padding: '8px 16px', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button
+                              onClick={() => handleViewDiscussionLikers(post.id)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#3b82f6',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                fontWeight: '500',
+                                padding: '0',
+                                textDecoration: 'underline',
+                              }}
+                            >
+                              {post.likeCount} {post.likeCount === 1 ? 'like' : 'likes'}
+                            </button>
+                          </div>
+                        )}
 
                         {discExpandedId === post.id && (
                           <div className="ev-disc-comments">
@@ -2464,7 +2657,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       </div>
                       <div className="ev-detail-info-row">
                         <MapPinIcon />
-                        <span>{eventLocationLabel(selectedEvent)}</span>
+                        <ClickableLocation location={eventLocationLabel(selectedEvent)} />
                       </div>
                       <div className="ev-detail-info-row">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
@@ -2641,7 +2834,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 </div>
                 <div className="ev-disc-card-body">
                   <p className="ev-disc-card-title">{ev.title}</p>
-                  <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {eventLocationLabel(ev)} • {ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}</p>
+                  <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <ClickableLocation location={eventLocationLabel(ev)} /> • {ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}</p>
                   <p className="ev-disc-card-desc">{ev.desc}</p>
                   {isCardDescTruncated(ev.desc) && (
                     <button type="button" className="ev-desc-seemore-btn" onClick={e => { e.stopPropagation(); setDescModalEvent(ev); }}>See more</button>
@@ -2707,7 +2900,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 <div className="ev-list-body">
                   <p className="ev-disc-card-title">{ev.title}</p>
                   <div className="ev-list-top">
-                    <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {eventLocationLabel(ev)} • {ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}</p>
+                    <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <ClickableLocation location={eventLocationLabel(ev)} /> • {ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}</p>
                   </div>
                   <p className="ev-list-desc">{ev.desc}</p>
                   {isCardDescTruncated(ev.desc) && (

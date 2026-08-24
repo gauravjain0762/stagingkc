@@ -6,11 +6,8 @@ import { disconnectSocket } from './socket';
 
 const BASE_URL = 'https://kick-analyst-backend-production.jay886631.workers.dev';
 
-// A still-valid JWT from a now-suspended user gets `suspended: true` on any
-// 403 (userAuth middleware does a DB lookup per request) — force them out
-// immediately instead of leaving them on a broken page. Guarded so a burst of
-// parallel requests failing together doesn't stack duplicate toasts/redirects.
 let suspensionHandled = false;
+let sessionExpiredHandled = false;
 
 export async function apiRequest(path, { method = 'GET', body, token, isFormData = false } = {}) {
   const headers = {};
@@ -35,6 +32,15 @@ export async function apiRequest(path, { method = 'GET', body, token, isFormData
         message: data.message || 'Your account has been suspended. Please contact support.',
         type: 'error',
       }));
+    } else if ((res.status === 401 || res.status === 403) && !sessionExpiredHandled && token) {
+      sessionExpiredHandled = true;
+      disconnectSocket();
+      store.dispatch(logout());
+      store.dispatch(showLogin());
+      store.dispatch(showToast({
+        message: 'Your session has expired. Please login again.',
+        type: 'error',
+      }));
     }
     const message =
       data?.message || data?.error || data?.msg || `Request failed (${res.status})`;
@@ -45,5 +51,6 @@ export async function apiRequest(path, { method = 'GET', body, token, isFormData
   }
 
   suspensionHandled = false;
+  sessionExpiredHandled = false;
   return data;
 }
