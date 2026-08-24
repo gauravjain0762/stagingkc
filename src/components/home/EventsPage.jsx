@@ -305,6 +305,8 @@ function normalizeDiscComment(c) {
 
 function normalizeDiscussion(d) {
   const rawMedia = d.media ?? d.images ?? [];
+  const commentsArray = Array.isArray(d.comments) ? d.comments : [];
+  const commentCount = typeof d.comments === 'number' ? d.comments : (d.commentCount ?? d.commentsCount ?? commentsArray.length ?? 0);
   return {
     id: d.id ?? d._id,
     author: normalizeDiscussionAuthor(d.author ?? d.user),
@@ -315,8 +317,8 @@ function normalizeDiscussion(d) {
     )),
     likeCount: d.likeCount ?? d.likesCount ?? d.likes ?? 0,
     likedByMe: !!(d.isLiked ?? d.likedByMe ?? d.hasLiked),
-    commentCount: d.commentCount ?? d.commentsCount ?? (d.comments?.length ?? 0),
-    comments: (d.comments ?? []).map(normalizeDiscComment),
+    commentCount: commentCount,
+    comments: commentsArray.map(normalizeDiscComment),
     time: timeAgo(d.createdAt ?? d.time),
   };
 }
@@ -597,6 +599,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [discReplyTarget,    setDiscReplyTarget]     = useState(null);
   const [discReplyText,      setDiscReplyText]       = useState('');
   const [discReplyBusy,      setDiscReplyBusy]       = useState(false);
+  const [discLikersModal,    setDiscLikersModal]     = useState(null); // { discussionId, likers }
   const discMediaInputRef = useRef(null);
   const [moreOpen,      setMoreOpen]      = useState(false);
   // Event "..." menu: Share sheet + Report modal — both dispatched from menu
@@ -1000,6 +1003,21 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     } catch (err) {
       setDiscussions(toggle);
       dispatch(showToast({ message: err.message || 'Failed to like post.', type: 'error' }));
+    }
+  }
+
+  async function handleViewDiscussionLikers(discussionId) {
+    if (!selectedEvent?.id) return;
+    try {
+      const data = await apiRequest(`/api/events/${selectedEvent.id}/discussions/${discussionId}/likes`, { token: authToken });
+      const likers = (data.likes ?? data.data ?? []).map(l => ({
+        id: l.id ?? l._id ?? l.userId ?? '',
+        name: l.fullName ?? l.name ?? 'Unknown',
+        avatar: l.avatar ?? '',
+      }));
+      setDiscLikersModal({ discussionId, likers });
+    } catch (err) {
+      dispatch(showToast({ message: 'Failed to load likers.', type: 'error' }));
     }
   }
 
@@ -2288,9 +2306,27 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                         )}
 
                         <div className="ev-disc-post-actions">
-                          <button className={`ev-disc-like-btn${post.likedByMe ? ' ev-disc-like-btn--active' : ''}`} onClick={() => handleLikeDiscussion(post.id)}>
-                            <ThumbUpIcon /> {post.likeCount > 0 ? post.likeCount : 'Like'}
-                          </button>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <button className={`ev-disc-like-btn${post.likedByMe ? ' ev-disc-like-btn--active' : ''}`} onClick={() => handleLikeDiscussion(post.id)}>
+                              <ThumbUpIcon /> Like
+                            </button>
+                            {post.likeCount > 0 && (
+                              <button
+                                onClick={() => handleViewDiscussionLikers(post.id)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#3b82f6',
+                                  cursor: 'pointer',
+                                  fontSize: '13px',
+                                  fontWeight: '600',
+                                  padding: '0 4px',
+                                }}
+                              >
+                                {post.likeCount} {post.likeCount === 1 ? 'like' : 'likes'}
+                              </button>
+                            )}
+                          </div>
                           <button className="ev-disc-reply-btn" onClick={() => toggleDiscExpanded(post.id)}>
                             {post.commentCount > 0 ? `${post.commentCount} Comment${post.commentCount === 1 ? '' : 's'}` : 'Comment'}
                           </button>
@@ -3725,6 +3761,71 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Discussion Likers Modal ── */}
+      {discLikersModal && (
+        <div
+          className="report-overlay"
+          onClick={e => { if (e.target === e.currentTarget) setDiscLikersModal(null); }}
+        >
+          <div className="report-modal" style={{ maxWidth: '500px' }}>
+            <div className="report-modal-header">
+              <h2 className="report-modal-title">Likes</h2>
+              <button className="report-close-btn" onClick={() => setDiscLikersModal(null)}>✕</button>
+            </div>
+            <div className="report-modal-body" style={{ maxHeight: '400px', overflowY: 'auto', padding: '12px 0' }}>
+              {discLikersModal.likers.length === 0 ? (
+                <p style={{ textAlign: 'center', color: '#8b95a5', padding: '20px' }}>No likes yet</p>
+              ) : (
+                discLikersModal.likers.map((liker, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px 16px',
+                      borderBottom: '1px solid rgba(148, 163, 184, 0.1)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {liker.avatar ? (
+                      <img
+                        src={liker.avatar}
+                        alt={liker.name}
+                        style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '50%',
+                          background: 'rgba(148, 163, 184, 0.2)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#e0e6ed',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                        }}
+                      >
+                        {liker.name[0]}
+                      </div>
+                    )}
+                    <span style={{ color: '#e0e6ed', fontWeight: '500' }}>{liker.name}</span>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       )}
