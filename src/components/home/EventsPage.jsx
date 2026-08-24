@@ -891,7 +891,8 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
       const list = raw.map(normalizeDiscussion);
       setDiscussions(prev => (page === 1 ? list : [...prev, ...list]));
       setDiscussionsPage(page);
-      setDiscussionsHasMore(!!data.hasMore || (typeof data.totalPages === 'number' && page < data.totalPages));
+      const pagination = data.pagination ?? {};
+      setDiscussionsHasMore(!!data.hasMore || (typeof pagination.totalPages === 'number' && page < pagination.totalPages));
     } catch (err) {
       dispatch(showToast({ message: err.message || 'Failed to load discussions.', type: 'error' }));
     } finally {
