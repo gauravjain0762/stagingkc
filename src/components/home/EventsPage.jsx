@@ -48,6 +48,17 @@ function timeAgo(dateStr) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
+function formatEventDateTime(fullDate) {
+  if (!fullDate) return '';
+  const match = fullDate.match(/(\d{1,2}):(\d{2})/);
+  if (!match) return fullDate;
+  const hour = parseInt(match[1], 10);
+  const minute = match[2];
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour % 12 || 12;
+  return fullDate.replace(/(\d{1,2}):(\d{2})/, `${displayHour}:${minute} ${ampm}`);
+}
+
 const VISIBILITY_OPTIONS = [
   { id: 'anyone',  label: 'Anyone',       icon: <GlobeIcon />   },
   { id: 'friends', label: 'Friends only', icon: <FriendsIcon /> },
@@ -2219,7 +2230,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                   <div className="ev-detail-card">
                     <h3 className="ev-detail-card-title">Event Info</h3>
                     <div className="ev-detail-info-rows">
-                      <div className="ev-detail-info-row"><CalendarIcon /><span>{selectedEvent.fullDate}</span></div>
+                      <div className="ev-detail-info-row"><CalendarIcon /><span>{formatEventDateTime(selectedEvent.fullDate)}</span></div>
                       <div className="ev-detail-info-row"><MapPinIcon /><ClickableLocation location={eventLocationLabel(selectedEvent)} /></div>
                       <div className="ev-detail-info-row"><span className="ev-detail-cat-pill" style={{ background: selectedEvent.catColor + '22', color: selectedEvent.catColor, border: `1px solid ${selectedEvent.catColor}44` }}>{displayCategory(selectedEvent)}</span></div>
                     </div>
