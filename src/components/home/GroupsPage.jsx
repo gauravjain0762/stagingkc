@@ -14,7 +14,7 @@ import GlobalSearch from './GlobalSearch';
 import Loader from '../Loader';
 import {
   fetchGroups, fetchGroupDetail, createGroup, updateGroup, fetchGroupPosts, fetchGroupMembers,
-  changeMemberRole, removeMember, joinGroup, leaveGroup, reportGroup,
+  changeMemberRole, removeMember, banMember, joinGroup, leaveGroup, reportGroup,
   fetchPendingRequests, acceptGroupRequest, rejectGroupRequest,
   fetchAdminDashboard, sendFriendRequest, createAnnouncement,
 } from '../../store/slices/groupsSlice';
@@ -969,6 +969,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                             (() => {
                               const isCreator = group.admin === mid || group.admin?._id === mid;
                               const canRemove = !isCreator && (!isMemberAdmin || isGroupCreator);
+                              const canBan = !isCreator && (!isMemberAdmin || isGroupCreator);
                               const disabledReason = isCreator
                                 ? 'Cannot remove group creator'
                                 : isMemberAdmin && !isGroupCreator
@@ -976,21 +977,44 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                                   : null;
 
                               return (
-                                <button
-                                  className="prof-conn-btn prof-conn-btn--remove"
-                                  disabled={!canRemove}
-                                  style={{ opacity: !canRemove ? 0.5 : 1, cursor: !canRemove ? 'not-allowed' : 'pointer' }}
-                                  title={disabledReason || 'Remove member'}
-                                  onClick={() => {
-                                    if (canRemove) {
-                                      dispatch(removeMember({ groupId, memberId: mid })).then(action => {
-                                        if (removeMember.fulfilled.match(action)) {
-                                          dispatch(fetchAdminDashboard(groupId));
-                                        }
-                                      });
-                                    }
-                                  }}
-                                >Remove</button>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                  <button
+                                    className="prof-conn-btn prof-conn-btn--remove"
+                                    disabled={!canRemove}
+                                    style={{ opacity: !canRemove ? 0.5 : 1, cursor: !canRemove ? 'not-allowed' : 'pointer' }}
+                                    title={disabledReason || 'Remove member'}
+                                    onClick={() => {
+                                      if (canRemove) {
+                                        dispatch(removeMember({ groupId, memberId: mid })).then(action => {
+                                          if (removeMember.fulfilled.match(action)) {
+                                            dispatch(fetchAdminDashboard(groupId));
+                                          }
+                                        });
+                                      }
+                                    }}
+                                  >Remove</button>
+                                  <button
+                                    className="prof-conn-btn prof-conn-btn--ban"
+                                    disabled={!canBan}
+                                    style={{
+                                      opacity: !canBan ? 0.5 : 1,
+                                      cursor: !canBan ? 'not-allowed' : 'pointer',
+                                      background: '#dc2626',
+                                      borderColor: '#991b1b'
+                                    }}
+                                    title={isCreator ? 'Cannot ban group creator' : 'Ban member permanently'}
+                                    onClick={() => {
+                                      if (canBan) {
+                                        dispatch(banMember({ groupId, memberId: mid })).then(action => {
+                                          if (banMember.fulfilled.match(action)) {
+                                            dispatch(fetchAdminDashboard(groupId));
+                                            dispatch(showToast('Member banned successfully'));
+                                          }
+                                        });
+                                      }
+                                    }}
+                                  >Ban</button>
+                                </div>
                               );
                             })()
                           )}
@@ -1323,8 +1347,11 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                   >
                     <div style={{ display: 'flex', gap: '12px', marginBottom: '10px' }}>
                       <img
-                        src={ann.authorImg || `https://i.pravatar.cc/40?img=${ann.author.charCodeAt(0)}`}
+                        src={ann.authorImg || `https://api.dicebear.com/7.x/avataaars/svg?seed=${ann.author}`}
                         alt={ann.author}
+                        onError={(e) => {
+                          e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${ann.author}`;
+                        }}
                         style={{
                           width: '36px',
                           height: '36px',
@@ -3063,8 +3090,11 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
                   >
                     <div style={{ display: 'flex', gap: '12px', marginBottom: '10px' }}>
                       <img
-                        src={ann.authorImg || `https://i.pravatar.cc/40?img=${ann.author.charCodeAt(0)}`}
+                        src={ann.authorImg || `https://api.dicebear.com/7.x/avataaars/svg?seed=${ann.author}`}
                         alt={ann.author}
+                        onError={(e) => {
+                          e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${ann.author}`;
+                        }}
                         style={{
                           width: '36px',
                           height: '36px',

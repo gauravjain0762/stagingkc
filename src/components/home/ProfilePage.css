@@ -609,6 +609,16 @@
   border-color: rgba(239,68,68,0.4);
 }
 
+.prof-conn-btn--ban {
+  background: rgba(220,38,38,0.12);
+  border: 1px solid rgba(220,38,38,0.3);
+  color: #fca5a5;
+}
+.prof-conn-btn--ban:hover:not(:disabled) {
+  background: rgba(220,38,38,0.2);
+  border-color: rgba(220,38,38,0.5);
+}
+
 .prof-conn-btn--msg {
   background: rgba(59,130,246,0.08);
   border: 1px solid rgba(59,130,246,0.2);

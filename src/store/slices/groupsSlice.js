@@ -167,6 +167,18 @@ export const removeMember = createAsyncThunk(
   }
 );
 
+// 8b. POST /api/groups/:id/members/:memberId/ban
+export const banMember = createAsyncThunk(
+  'groups/banMember',
+  async ({ groupId, memberId }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/groups/${groupId}/members/${memberId}/ban`, { method: 'POST', token });
+      return { groupId, memberId, message: data.message };
+    } catch (err) { return rejectWithValue({ groupId, memberId, message: err.message }); }
+  }
+);
+
 // 9. POST /api/groups/:id/join
 export const joinGroup = createAsyncThunk(
   'groups/joinGroup',
