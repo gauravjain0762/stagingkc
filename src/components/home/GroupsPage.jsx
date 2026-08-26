@@ -442,6 +442,8 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
   const [openPndDrop,    setOpenPndDrop]    = useState(null);
   const pendingFilterRef = useRef(null);
   const [createPostOpen, setCreatePostOpen] = useState(false);
+  const [announcements, setAnnouncements] = useState([]);
+  const [announcementText, setAnnouncementText] = useState('');
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteSearchQuery, setInviteSearchQuery] = useState('');
   const [selectedInvites, setSelectedInvites] = useState(new Set());
@@ -730,6 +732,9 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                   Pending Requests {pendingList.length > 0 && <span className="adm-tab-count">{pendingList.length}</span>}
                 </button>
               )}
+              <button className={`adm-tab${activeTab === 'announcements' ? ' adm-tab--active' : ''}`} onClick={() => switchTab('announcements')}>
+                Announcements
+              </button>
             </div>
             {activeTab !== 'posts' && activeTab !== 'about' && (
               <div className="prof-conn-filter-bar adm-filter-bar-override" ref={activeTab === 'members' ? memberFilterRef : activeTab === 'pending' ? pendingFilterRef : null}>
@@ -1210,6 +1215,150 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
           )}
         </div>
 
+        {/* Announcements tab */}
+        {activeTab === 'announcements' && (
+          <div className="adm-announcements-container" style={{ padding: '20px' }}>
+            {/* Post announcement form */}
+            <div style={{ marginBottom: '30px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#e0e6f8', marginBottom: '12px' }}>
+                📢 Post Announcement
+              </h3>
+              <textarea
+                placeholder="Type your announcement here..."
+                value={announcementText}
+                onChange={(e) => setAnnouncementText(e.target.value)}
+                style={{
+                  width: '100%',
+                  minHeight: '100px',
+                  padding: '12px 14px',
+                  borderRadius: '8px',
+                  border: '1px solid #252d4a',
+                  background: '#0a0e1a',
+                  color: '#e0e6f8',
+                  fontSize: '14px',
+                  fontFamily: 'Plus Jakarta Sans, sans-serif',
+                  resize: 'vertical',
+                  outline: 'none',
+                  transition: 'all 0.2s'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#3b82f6';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#252d4a';
+                  e.target.style.boxShadow = 'none';
+                }}
+              />
+              <button
+                onClick={() => {
+                  if (announcementText.trim()) {
+                    const newAnnouncement = {
+                      _id: Date.now(),
+                      author: authUser?.fullName || authUser?.name,
+                      authorImg: authUser?.profileImage,
+                      text: announcementText,
+                      createdAt: new Date().toLocaleString(),
+                      role: myRole
+                    };
+                    setAnnouncements([newAnnouncement, ...announcements]);
+                    setAnnouncementText('');
+                    dispatch(showToast('Announcement posted!'));
+                  }
+                }}
+                style={{
+                  marginTop: '10px',
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: '#3b82f6',
+                  color: '#fff',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.background = '#2563eb'}
+                onMouseLeave={(e) => e.target.style.background = '#3b82f6'}
+              >
+                Post Announcement
+              </button>
+            </div>
+
+            {/* Announcements list */}
+            <div>
+              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#e0e6f8', marginBottom: '12px' }}>
+                All Announcements
+              </h3>
+              {announcements.length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '40px 20px',
+                  color: '#7a8494',
+                  background: '#0a0e1a',
+                  borderRadius: '8px',
+                  border: '1px solid #252d4a'
+                }}>
+                  <p style={{ fontSize: '14px' }}>No announcements posted yet</p>
+                </div>
+              ) : (
+                announcements.map(ann => (
+                  <div
+                    key={ann._id}
+                    style={{
+                      background: '#0a0e1a',
+                      border: '1px solid #252d4a',
+                      borderRadius: '8px',
+                      padding: '16px',
+                      marginBottom: '12px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', gap: '12px', marginBottom: '10px' }}>
+                      <img
+                        src={ann.authorImg || `https://i.pravatar.cc/40?img=${ann.author.charCodeAt(0)}`}
+                        alt={ann.author}
+                        style={{
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '50%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <span style={{ fontSize: '14px', fontWeight: '600', color: '#e0e6f8' }}>
+                            {ann.author}
+                          </span>
+                          <span style={{
+                            fontSize: '11px',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            background: ann.role === 'Admin' ? 'rgba(59,130,246,0.2)' : 'rgba(139,92,246,0.2)',
+                            color: ann.role === 'Admin' ? '#60a5fa' : '#a78bfa'
+                          }}>
+                            {ann.role}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '12px', color: '#7a8494' }}>
+                          {ann.createdAt}
+                        </span>
+                      </div>
+                    </div>
+                    <p style={{
+                      fontSize: '14px',
+                      lineHeight: '1.6',
+                      color: '#c8cfe0',
+                      margin: '0',
+                      wordBreak: 'break-word'
+                    }}>
+                      {ann.text}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Invite Members Modal */}
         {showInviteModal && (
