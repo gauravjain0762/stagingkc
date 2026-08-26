@@ -31,8 +31,8 @@ export default function GroupCard({ group, onJoin, onDetails, onShare }) {
 
   return (
     <div className="gc-card">
-      {/* Cover Image */}
-      <div className="gc-cover" style={{ backgroundImage: `url(${group.coverImage || 'https://via.placeholder.com/400x200?text=Group'})` }}>
+      {/* Cover Image - fallback to group profile photo */}
+      <div className="gc-cover" style={{ backgroundImage: `url(${group.coverImage || group.profileImage || 'https://via.placeholder.com/400x200?text=Group'})` }}>
         <div className="gc-overlay" />
       </div>
 

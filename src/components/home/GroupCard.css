@@ -79,18 +79,19 @@
 
 .gc-actions {
   display: flex;
-  gap: 6px;
+  gap: 8px;
+  align-items: center;
 }
 
 .gc-btn {
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 12px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: 600;
-  border: none;
   cursor: pointer;
   transition: all 0.15s;
   font-family: inherit;
+  border: 1px solid #3b82f6;
 }
 
 .gc-btn--join {
@@ -103,6 +104,7 @@
 .gc-btn--join:hover {
   background: #2563eb;
   border-color: #2563eb;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .gc-btn--details {
@@ -114,11 +116,13 @@
 
 .gc-btn--details:hover {
   background: rgba(59, 130, 246, 0.1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
 .gc-btn--share {
-  width: 36px;
-  padding: 6px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
   background: transparent;
   color: #94a3b8;
   border: 1px solid #3f4f67;
