@@ -16,7 +16,7 @@ import {
   fetchGroups, fetchGroupDetail, createGroup, updateGroup, fetchGroupPosts, fetchGroupMembers,
   changeMemberRole, removeMember, joinGroup, leaveGroup, reportGroup,
   fetchPendingRequests, acceptGroupRequest, rejectGroupRequest,
-  fetchAdminDashboard, sendFriendRequest,
+  fetchAdminDashboard, sendFriendRequest, createAnnouncement,
 } from '../../store/slices/groupsSlice';
 import { inviteUserToGroup } from '../../store/slices/invitationsSlice';
 import { startDM } from '../../store/slices/messagesSlice';
@@ -1253,17 +1253,25 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
               <button
                 onClick={() => {
                   if (announcementText.trim()) {
-                    const newAnnouncement = {
-                      _id: Date.now(),
-                      author: authUser?.fullName || authUser?.name,
-                      authorImg: authUser?.profileImage,
-                      text: announcementText,
-                      createdAt: new Date().toLocaleString(),
-                      role: myRole
-                    };
-                    setAnnouncements([newAnnouncement, ...announcements]);
-                    setAnnouncementText('');
-                    dispatch(showToast('Announcement posted!'));
+                    dispatch(createAnnouncement({ groupId, text: announcementText }))
+                      .then(action => {
+                        if (createAnnouncement.fulfilled.match(action)) {
+                          const announcement = action.payload.announcement;
+                          const newAnnouncement = {
+                            _id: announcement._id || Date.now(),
+                            author: announcement.authorName || authUser?.fullName || authUser?.name,
+                            authorImg: announcement.authorImage || authUser?.profileImage,
+                            text: announcement.text,
+                            createdAt: announcement.createdAt || new Date().toLocaleString(),
+                            role: announcement.authorRole || myRole
+                          };
+                          setAnnouncements([newAnnouncement, ...announcements]);
+                          setAnnouncementText('');
+                          dispatch(showToast('Announcement posted!'));
+                        } else {
+                          dispatch(showToast('Failed to post announcement'));
+                        }
+                      });
                   }
                 }}
                 style={{
@@ -2989,17 +2997,25 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
                 <button
                   onClick={() => {
                     if (announcementText.trim()) {
-                      const newAnnouncement = {
-                        _id: Date.now(),
-                        author: authUser?.fullName || authUser?.name,
-                        authorImg: authUser?.profileImage,
-                        text: announcementText,
-                        createdAt: new Date().toLocaleString(),
-                        role: myRole
-                      };
-                      setAnnouncements([newAnnouncement, ...announcements]);
-                      setAnnouncementText('');
-                      dispatch(showToast('Announcement posted!'));
+                      dispatch(createAnnouncement({ groupId, text: announcementText }))
+                        .then(action => {
+                          if (createAnnouncement.fulfilled.match(action)) {
+                            const announcement = action.payload.announcement;
+                            const newAnnouncement = {
+                              _id: announcement._id || Date.now(),
+                              author: announcement.authorName || authUser?.fullName || authUser?.name,
+                              authorImg: announcement.authorImage || authUser?.profileImage,
+                              text: announcement.text,
+                              createdAt: announcement.createdAt || new Date().toLocaleString(),
+                              role: announcement.authorRole || myRole
+                            };
+                            setAnnouncements([newAnnouncement, ...announcements]);
+                            setAnnouncementText('');
+                            dispatch(showToast('Announcement posted!'));
+                          } else {
+                            dispatch(showToast('Failed to post announcement'));
+                          }
+                        });
                     }
                   }}
                   style={{

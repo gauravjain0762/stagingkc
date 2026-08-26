@@ -293,6 +293,21 @@ export const sendFriendRequest = createAsyncThunk(
   }
 );
 
+export const createAnnouncement = createAsyncThunk(
+  'groups/createAnnouncement',
+  async ({ groupId, text }, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/groups/${groupId}/announcements`, {
+        method: 'POST',
+        token,
+        body: { text }
+      });
+      return { groupId, announcement: data.announcement || data };
+    } catch (err) { return rejectWithValue(err.message); }
+  }
+);
+
 const groupsSlice = createSlice({
   name: 'groups',
   initialState: {
