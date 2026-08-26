@@ -71,15 +71,14 @@ function InfoCircleIcon()     { return <svg width="16" height="16" viewBox="0 0 
 
 /* ── Premium Role Dropdown ── */
 const ROLE_CONFIG = {
-  Owner:     { color: '#f59e0b', bg: 'rgba(245,158,11,0.14)',  border: 'rgba(245,158,11,0.32)'  },
   Admin:     { color: '#60a5fa', bg: 'rgba(59,130,246,0.14)',  border: 'rgba(59,130,246,0.32)'  },
   Moderator: { color: '#8b5cf6', bg: 'rgba(139,92,246,0.14)',  border: 'rgba(139,92,246,0.32)'  },
   Member:    { color: '#94a3b8', bg: 'rgba(100,116,139,0.14)', border: 'rgba(100,116,139,0.28)' },
 };
 
-const MEMBER_ROLES   = ['Owner', 'Admin', 'Moderator', 'Member'];
+const MEMBER_ROLES   = ['Admin', 'Moderator', 'Member'];
 
-function RoleSelect({ value, memberId, openId, onToggle, onChange, isOwner, isSelf }) {
+function RoleSelect({ value, memberId, openId, onToggle, onChange, isSelf }) {
   const ref = useRef(null);
   const isOpen = openId === memberId;
   const cfg = ROLE_CONFIG[value] ?? ROLE_CONFIG.Member;
@@ -921,7 +920,6 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                             memberId={mid}
                             openId={openDropdownId}
                             onToggle={setOpenDropdownId}
-                            isOwner={role === 'Owner'}
                             isSelf={isSelfRow}
                             onChange={(newRole) => {
                               if (newRole !== role) {
