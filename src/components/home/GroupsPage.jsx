@@ -3263,6 +3263,7 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
   const [hubTab,         setHubTab]         = useState('suggested');
   const [hubCat,         setHubCat]         = useState('All');
   const [joinedSearch,   setJoinedSearch]   = useState('');
+  const [suggestedSearch, setSuggestedSearch] = useState('');
 
   useEffect(() => {
     dispatch(fetchGroups({ tab: hubTab, category: hubCat === 'All' ? '' : hubCat }));
@@ -3475,6 +3476,15 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
     );
   }
 
+  // Filter by search query when on suggested tab
+  if (hubTab === 'suggested' && suggestedSearch.trim()) {
+    displayGroups = displayGroups.filter(g =>
+      g.name.toLowerCase().includes(suggestedSearch.toLowerCase()) ||
+      (g.category && g.category.toLowerCase().includes(suggestedSearch.toLowerCase())) ||
+      (g.description && g.description.toLowerCase().includes(suggestedSearch.toLowerCase()))
+    );
+  }
+
   return (
     <div className="grp-page">
 
@@ -3507,6 +3517,61 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
                 {cat}
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Search box for suggested groups */}
+        {hubTab === 'suggested' && (
+          <div style={{
+            marginBottom: '20px',
+            display: 'flex',
+            gap: '8px'
+          }}>
+            <input
+              type="text"
+              placeholder="🔍 Search suggested groups..."
+              value={suggestedSearch}
+              onChange={(e) => setSuggestedSearch(e.target.value)}
+              style={{
+                flex: 1,
+                padding: '12px 16px',
+                borderRadius: '8px',
+                border: '1px solid #252d4a',
+                background: '#0a0e1a',
+                color: '#e0e6f8',
+                fontSize: '14px',
+                outline: 'none',
+                transition: 'all 0.2s'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#3b82f6';
+                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#252d4a';
+                e.target.style.boxShadow = 'none';
+              }}
+            />
+            {suggestedSearch && (
+              <button
+                onClick={() => setSuggestedSearch('')}
+                style={{
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: '#1e2a42',
+                  color: '#e0e6f8',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.background = '#252d4a'}
+                onMouseLeave={(e) => e.target.style.background = '#1e2a42'}
+              >
+                Clear
+              </button>
+            )}
           </div>
         )}
 
