@@ -1167,7 +1167,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
 
         {/* Edit Modals */}
         {editModal === 'about' && (
-          <div className="modal-overlay" onClick={() => setEditModal(null)}>
+          <div className="modal-overlay" onClick={(e) => e.currentTarget === e.target && setEditModal(null)}>
             <div className="modal-content">
               <div className="modal-header">
                 <h2>Edit About this Group</h2>
@@ -1205,7 +1205,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
         )}
 
         {editModal === 'mission' && (
-          <div className="modal-overlay" onClick={() => setEditModal(null)}>
+          <div className="modal-overlay" onClick={(e) => e.currentTarget === e.target && setEditModal(null)}>
             <div className="modal-content">
               <div className="modal-header">
                 <h2>Edit Group Mission</h2>
@@ -1243,7 +1243,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
         )}
 
         {editModal === 'privacy' && (
-          <div className="modal-overlay" onClick={() => setEditModal(null)}>
+          <div className="modal-overlay" onClick={(e) => e.currentTarget === e.target && setEditModal(null)}>
             <div className="modal-content">
               <div className="modal-header">
                 <h2>Edit Group Privacy</h2>
