@@ -423,7 +423,11 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
   const rdxStats    = useSelector(s => s.groups.adminDashboard[groupId]?.stats ?? null);
 
   const myId = authUser?._id ?? authUser?.id;
-  const isOwned = !!myId && (group.admin === myId || group.admin?._id === myId);
+  const isGroupCreator = !!myId && (group.admin === myId || group.admin?._id === myId);
+  const myMember = rdxMembers?.find(m => (m._id ?? m.id) === myId);
+  const myRole = myMember?.role ?? normalizeRole(myMember?.role);
+  const isAdmin = myRole === 'Admin';
+  const isOwned = isGroupCreator || isAdmin;
 
   const [activeTab,      setActiveTab]      = useState('about');
   const [aboutExpanded,  setAboutExpanded]  = useState(false);
@@ -2204,7 +2208,11 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
   }
 
   const myId = authUser?._id ?? authUser?.id;
-  const isOwned = !!myId && (group.admin === myId || group.admin?._id === myId);
+  const isGroupCreator = !!myId && (group.admin === myId || group.admin?._id === myId);
+  const myMember = baseMembers?.find(m => (m._id ?? m.id) === myId);
+  const myRole = myMember?.role ?? normalizeRole(myMember?.role);
+  const isAdmin = myRole === 'Admin';
+  const isOwned = isGroupCreator || isAdmin;
   const isPrivate = group.privacy === 'private';
   // A pending join request isn't membership yet — Posts, Members, and
   // Report all stay locked until the group (or the admin, for private
