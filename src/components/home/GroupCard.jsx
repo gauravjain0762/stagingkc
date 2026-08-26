@@ -25,12 +25,8 @@ export default function GroupCard({ group, onJoin, onDetails, onShare }) {
   const groupType = group.groupType || 'public';
   const typeConfig = TYPE_CONFIG[groupType] || TYPE_CONFIG.public;
 
-  const handleJoin = () => {
-    dispatch(joinGroup(group._id)).then(action => {
-      if (joinGroup.fulfilled.match(action)) {
-        if (onJoin) onJoin(group._id);
-      }
-    });
+  const handleOpenGroup = () => {
+    onDetails?.(group._id);
   };
 
   return (
@@ -62,13 +58,13 @@ export default function GroupCard({ group, onJoin, onDetails, onShare }) {
           <span>{group.memberCount || 0} members</span>
         </div>
 
-        {/* Actions - Match event card style */}
+        {/* Actions - Match event card style (both open group details) */}
         <div className="post-actions">
-          <button className="post-action-btn" onClick={handleJoin}>
+          <button className="post-action-btn" onClick={handleOpenGroup}>
             Join Group
           </button>
           <div className="post-action-sep" />
-          <button className="post-action-btn" onClick={() => onDetails?.(group._id)}>
+          <button className="post-action-btn" onClick={handleOpenGroup}>
             <InfoIcon /> Details
           </button>
           <div className="post-action-sep" />
