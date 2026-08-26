@@ -960,17 +960,34 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                               }}
                             >Add Friend</button>
                           ))}
-                          {!isSelfRow && !isMemberAdmin && (
-                            <button
-                              className="prof-conn-btn prof-conn-btn--remove"
-                              onClick={() => {
-                                dispatch(removeMember({ groupId, memberId: mid })).then(action => {
-                                  if (removeMember.fulfilled.match(action)) {
-                                    dispatch(fetchAdminDashboard(groupId));
-                                  }
-                                });
-                              }}
-                            >Remove</button>
+                          {!isSelfRow && (
+                            (() => {
+                              const isCreator = group.admin === mid || group.admin?._id === mid;
+                              const canRemove = !isCreator && (!isMemberAdmin || isGroupCreator);
+                              const disabledReason = isCreator
+                                ? 'Cannot remove group creator'
+                                : isMemberAdmin && !isGroupCreator
+                                  ? 'Only creator can remove admins'
+                                  : null;
+
+                              return (
+                                <button
+                                  className="prof-conn-btn prof-conn-btn--remove"
+                                  disabled={!canRemove}
+                                  style={{ opacity: !canRemove ? 0.5 : 1, cursor: !canRemove ? 'not-allowed' : 'pointer' }}
+                                  title={disabledReason || 'Remove member'}
+                                  onClick={() => {
+                                    if (canRemove) {
+                                      dispatch(removeMember({ groupId, memberId: mid })).then(action => {
+                                        if (removeMember.fulfilled.match(action)) {
+                                          dispatch(fetchAdminDashboard(groupId));
+                                        }
+                                      });
+                                    }
+                                  }}
+                                >Remove</button>
+                              );
+                            })()
                           )}
                         </div>
                       </td>
