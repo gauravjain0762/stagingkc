@@ -2924,18 +2924,113 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
 }
-.adm-action-cell .prof-conn-btn:first-child {
-  width: 108px;
+.adm-action-cell .prof-conn-btn {
+  flex: 0 1 auto;
+  min-width: 80px;
   text-align: center;
   justify-content: center;
-  flex-shrink: 0;
+  white-space: nowrap;
 }
-.adm-action-cell .prof-conn-btn:last-child {
-  width: 160px;
-  text-align: center;
+
+/* Member Menu Styles */
+.member-menu-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #252d4a;
+  background: #0d1020;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  font-size: 18px;
+  transition: all 0.2s ease;
+}
+.member-menu-btn:hover {
+  background: #1a1f35;
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.member-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: #0d1020;
+  border: 1px solid #252d4a;
+  border-radius: 8px;
+  padding: 4px 0;
+  min-width: 160px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.member-menu-item {
+  width: 100%;
+  padding: 10px 16px;
+  text-align: left;
+  background: none;
+  border: none;
+  color: #cbd5e1;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.member-menu-item:hover:not(.member-menu-item--disabled) {
+  background: #1a1f35;
+  color: #e0e6f8;
+}
+
+.member-menu-item--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.member-menu-item--disabled:hover {
+  background: none;
+  color: #cbd5e1;
+}
+
+.member-menu-item--report {
+  color: #fb923c;
+}
+.member-menu-item--report:hover {
+  background: rgba(249, 115, 22, 0.15);
+  color: #fdba74;
+}
+
+.member-menu-item--remove {
+  color: #f87171;
+}
+.member-menu-item--remove:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+.member-menu-item--ban {
+  color: #fca5a5;
+}
+.member-menu-item--ban:hover {
+  background: rgba(220, 38, 38, 0.15);
+  color: #fca5a5;
 }
 
 .adm-act-btn {

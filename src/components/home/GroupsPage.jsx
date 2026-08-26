@@ -23,6 +23,7 @@ import { startDM } from '../../store/slices/messagesSlice';
 import { fetchConnections } from '../../store/slices/profileSlice';
 import { showToast } from '../../store/slices/toastSlice';
 import { deletePost, editPost, pinPost, unpinPost, fetchComments } from '../../store/slices/commentsSlice';
+import { CustomDatePicker } from './DateTimePicker';
 
 
 /* ── UI icons ── */
@@ -2190,13 +2191,15 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
   const [reportSelected,   setReportSelected]   = useState('');
   const [reportDone,       setReportDone]       = useState(false);
   const [isReported,       setIsReported]       = useState(group?.reported ?? false);
-  const [sharing,         setSharing]         = useState(false);
-  const [showAgeModal,     setShowAgeModal]     = useState(false);
-  const [birthDate,        setBirthDate]        = useState('');
-  const [ageError,         setAgeError]         = useState('');
-  const [showCalendar,     setShowCalendar]     = useState(false);
-  const [calendarMonth,    setCalendarMonth]    = useState(new Date().getMonth());
-  const [calendarYear,     setCalendarYear]     = useState(new Date().getFullYear() - 25);
+  const [sharing,           setSharing]           = useState(false);
+  const [showAgeModal,      setShowAgeModal]      = useState(false);
+  const [birthDate,         setBirthDate]         = useState('');
+  const [ageError,          setAgeError]          = useState('');
+  const [showMemberReport,  setShowMemberReport]  = useState(false);
+  const [reportMemberId,    setReportMemberId]    = useState(null);
+  const [memberReportReason, setMemberReportReason] = useState('');
+  const [memberReportDone,  setMemberReportDone]  = useState(false);
+  const [openMemberMenu,    setOpenMemberMenu]    = useState(null);
 
   const isJoining = joiningIds.includes(groupId);
   const isLeaving = leavingIds.includes(groupId);
@@ -2295,6 +2298,16 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
     'Misinformation',
   ];
 
+  const MEMBER_REPORT_REASONS = [
+    'Harassment or bullying',
+    'Hate speech or discrimination',
+    'Inappropriate behavior',
+    'Spam or fake profile',
+    'Impersonation',
+    'Sexual harassment',
+    'Violent or threatening behavior',
+  ];
+
   function handleReportSubmit() {
     if (!reportSelected) return;
     dispatch(reportGroup({ groupId, reason: reportSelected })).then((result) => {
@@ -2309,6 +2322,55 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
     setShowReportModal(false);
     setReportSelected('');
     setReportDone(false);
+  }
+
+  function handleMemberReportSubmit() {
+    if (!memberReportReason || !reportMemberId || !authToken) return;
+    const reportedMember = rdxMembers?.find(m => (m._id ?? m.id) === reportMemberId);
+
+    // Call backend API
+    fetch(`/api/groups/${groupId}/members/${reportMemberId}/report`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        reason: memberReportReason
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        dispatch(showToast({
+          message: `Reported ${reportedMember?.name || 'member'} for ${memberReportReason.toLowerCase()}. Our team will review this report.`,
+          type: 'success'
+        }));
+      } else {
+        dispatch(showToast({
+          message: data.message || 'Failed to report member',
+          type: 'error'
+        }));
+      }
+      setShowMemberReport(false);
+      setReportMemberId(null);
+      setMemberReportReason('');
+      setMemberReportDone(false);
+    })
+    .catch(err => {
+      console.error('Report error:', err);
+      dispatch(showToast({
+        message: 'Error reporting member. Please try again.',
+        type: 'error'
+      }));
+    });
+  }
+
+  function handleMemberReportClose() {
+    setShowMemberReport(false);
+    setReportMemberId(null);
+    setMemberReportReason('');
+    setMemberReportDone(false);
   }
 
   function handleShare() {
@@ -2476,101 +2538,14 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
                 Minimum age required: {group.minAge ?? 18} years
               </p>
 
-              <div style={{ position: 'relative' }}>
-                <div
-                  onClick={() => setShowCalendar(!showCalendar)}
-                  style={{
-                    width: '100%',
-                    padding: '14px 16px',
-                    borderRadius: '8px',
-                    border: ageError ? '1.5px solid #ef4444' : showCalendar ? '1.5px solid #3b82f6' : '1px solid #252d4a',
-                    background: '#0a0e1a',
-                    color: birthDate ? '#e0e6f8' : '#7a8494',
-                    fontSize: '15px',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    boxSizing: 'border-box',
-                    letterSpacing: '0.2px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    transition: 'all 0.2s',
-                    boxShadow: showCalendar && !ageError ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none'
-                  }}
-                >
-                  <span>{birthDate ? new Date(birthDate + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Select birth date'}</span>
-                  <span style={{ fontSize: '20px' }}>📅</span>
-                </div>
-
-                {showCalendar && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    marginTop: '8px',
-                    background: '#0a0e1a',
-                    border: '1px solid #252d4a',
-                    borderRadius: '12px',
-                    padding: '16px',
-                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
-                    zIndex: 1000
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                      <button onClick={() => setCalendarMonth(m => m === 0 ? 11 : m - 1)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '18px' }}>❮</button>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ color: '#e0e6f8', fontWeight: 600, marginBottom: '4px' }}>
-                          {new Date(calendarYear, calendarMonth).toLocaleDateString('en-US', { month: 'long' })}
-                        </div>
-                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                          <button onClick={() => setCalendarYear(y => y - 1)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.background = 'rgba(59, 130, 246, 0.1)'} onMouseLeave={(e) => e.target.style.background = 'none'}>◀ {calendarYear}</button>
-                          <button onClick={() => setCalendarYear(y => y + 1)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.background = 'rgba(59, 130, 246, 0.1)'} onMouseLeave={(e) => e.target.style.background = 'none'}>{calendarYear + 1} ▶</button>
-                        </div>
-                      </div>
-                      <button onClick={() => setCalendarMonth(m => m === 11 ? 0 : m + 1)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '18px' }}>❯</button>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', marginBottom: '12px' }}>
-                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                        <div key={day} style={{ textAlign: 'center', color: '#5c6a8c', fontSize: '11px', fontWeight: 600, padding: '6px 0' }}>{day}</div>
-                      ))}
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
-                      {Array.from({ length: getFirstDayOfMonth(calendarMonth, calendarYear) }).map((_, i) => (
-                        <div key={`empty-${i}`} />
-                      ))}
-                      {Array.from({ length: getDaysInMonth(calendarMonth, calendarYear) }).map((_, i) => {
-                        const day = i + 1;
-                        const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                        const isSelected = birthDate === dateStr;
-                        const isToday = new Date().toISOString().split('T')[0] === dateStr;
-                        return (
-                          <button
-                            key={day}
-                            onClick={() => handleDateSelect(day)}
-                            style={{
-                              padding: '8px',
-                              borderRadius: '6px',
-                              border: isSelected ? '2px solid #3b82f6' : 'none',
-                              background: isSelected ? 'rgba(59, 130, 246, 0.2)' : isToday ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                              color: '#e0e6f8',
-                              cursor: 'pointer',
-                              fontSize: '13px',
-                              fontWeight: 500,
-                              transition: 'all 0.2s'
-                            }}
-                            onMouseEnter={(e) => { if (!isSelected) e.target.style.background = 'rgba(59, 130, 246, 0.15)'; }}
-                            onMouseLeave={(e) => { if (!isSelected) e.target.style.background = 'transparent'; }}
-                          >
-                            {day}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <CustomDatePicker
+                name="birthDate"
+                value={birthDate}
+                onChange={(e) => setBirthDate(e.target.value)}
+                placeholder="Select birth date"
+                hasError={!!ageError}
+                max={new Date().toISOString().split('T')[0]}
+              />
               {ageError && (
                 <p style={{
                   color: '#ef4444',
@@ -2949,35 +2924,58 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
                     <td className="adm-date-cell">{m.joined}</td>
                     <td><span className="adm-member-mutual" style={{ textTransform: 'capitalize' }}>{normalizeRole(m.role)}</span></td>
                     <td>
-                      <div className="adm-action-cell">
+                      <div className="adm-action-cell" style={{ position: 'relative' }}>
                         {!isSelf && (
-                          friendRequestIds.includes(mid) ? (
-                            <button className="prof-conn-btn prof-conn-btn--pending" disabled>
-                              Request Pending
+                          <div style={{ position: 'relative' }}>
+                            <button
+                              className="member-menu-btn"
+                              onClick={() => setOpenMemberMenu(openMemberMenu === mid ? null : mid)}
+                              title="More options"
+                            >
+                              ⋮
                             </button>
-                          ) : gdFriendIds.has(mid) ? (
-                            <button
-                              className="prof-conn-btn prof-conn-btn--msg"
-                              onClick={() => {
-                                dispatch(startDM(mid));
-                                onMessagesClick?.();
-                              }}
-                            >Chat</button>
-                          ) : (
-                            <button
-                              className="prof-conn-btn prof-conn-btn--add"
-                              onClick={() => {
-                                dispatch(sendFriendRequest(mid));
-                              }}
-                            >Add Friend</button>
-                          )
-                        )}
-                        {/* Only group admin can remove; cannot remove themselves or another admin */}
-                        {isOwned && !isSelf && !isAdmin && (
-                          <button
-                            className="prof-conn-btn prof-conn-btn--remove"
-                            onClick={() => dispatch(removeMember({ groupId, memberId: mid }))}
-                          >Remove</button>
+                            {openMemberMenu === mid && (
+                              <div className="member-menu-dropdown">
+                                {/* Report option */}
+                                <button
+                                  className="member-menu-item member-menu-item--report"
+                                  onClick={() => {
+                                    setReportMemberId(mid);
+                                    setShowMemberReport(true);
+                                    setOpenMemberMenu(null);
+                                  }}
+                                >
+                                  🚩 Report
+                                </button>
+
+                                {/* Remove option - only for admins removing non-admins */}
+                                {isOwned && !isSelf && !isAdmin && (
+                                  <button
+                                    className="member-menu-item member-menu-item--remove"
+                                    onClick={() => {
+                                      dispatch(removeMember({ groupId, memberId: mid }));
+                                      setOpenMemberMenu(null);
+                                    }}
+                                  >
+                                    ✕ Remove
+                                  </button>
+                                )}
+
+                                {/* Ban option - only for group creators banning anyone but themselves */}
+                                {isGroupCreator && !isSelf && (
+                                  <button
+                                    className="member-menu-item member-menu-item--ban"
+                                    onClick={() => {
+                                      dispatch(banMember({ groupId, memberId: mid }));
+                                      setOpenMemberMenu(null);
+                                    }}
+                                  >
+                                    🔒 Ban
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
                     </td>
@@ -3191,6 +3189,53 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
         </div>
       )}
 
+      {/* Report Member Modal */}
+      {showMemberReport && (
+        <div className="report-overlay" onClick={e => { if (e.target === e.currentTarget) handleMemberReportClose(); }}>
+          <div className="report-modal">
+            <div className="report-modal-header">
+              <h2 className="report-modal-title">Report Member</h2>
+              <button className="report-close-btn" onClick={handleMemberReportClose}>✕</button>
+            </div>
+            {memberReportDone ? (
+              <div className="report-success">
+                <div className="report-success-icon">✓</div>
+                <p>Thank you for your report. We'll review it and take action if it violates our community guidelines.</p>
+                <button className="report-success-close" onClick={handleMemberReportClose}>Done</button>
+              </div>
+            ) : (
+              <>
+                <div className="report-modal-body">
+                  <h3 className="report-question">What's going on?</h3>
+                  <p className="report-subtitle">We'll check for all community guidelines, so don't worry about making the perfect choice.</p>
+                  <ul className="report-reasons">
+                    {MEMBER_REPORT_REASONS.map(reason => (
+                      <li key={reason} className="report-reason-item">
+                        <label className="report-reason-label">
+                          <span className={`report-radio${memberReportReason === reason ? ' report-radio--checked' : ''}`} />
+                          <input
+                            type="radio"
+                            name="member-report-reason"
+                            value={reason}
+                            checked={memberReportReason === reason}
+                            onChange={() => setMemberReportReason(reason)}
+                            style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+                          />
+                          <span className="report-reason-text">{reason}</span>
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="report-modal-footer">
+                  <button className="report-submit-btn" onClick={() => { handleMemberReportSubmit(); setMemberReportDone(true); }} disabled={!memberReportReason}>Submit</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Leave Group Modal */}
       {showLeaveModal && (
         <div className="lgm-overlay" onClick={() => setShowLeaveModal(false)}>
@@ -3231,31 +3276,12 @@ function GroupHubCard({ group, onManage, onView, isOwned }) {
   const [showAgeModal, setShowAgeModal] = useState(false);
   const [birthDate, setBirthDate] = useState('');
   const [ageError, setAgeError] = useState('');
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
-  const [calendarYear, setCalendarYear] = useState(new Date().getFullYear() - 25);
 
   // Sync when group prop refreshes (e.g. after re-fetch on back from detail)
   useEffect(() => {
     setJoined(group.joined  || false);
     setPending(group.pending || false);
   }, [group.joined, group.pending]);
-
-  function getDaysInMonth(month, year) {
-    return new Date(year, month + 1, 0).getDate();
-  }
-
-  function getFirstDayOfMonth(month, year) {
-    return new Date(year, month, 1).getDay();
-  }
-
-  function handleDateSelect(day) {
-    const date = new Date(calendarYear, calendarMonth, day);
-    const dateStr = date.toISOString().split('T')[0];
-    setBirthDate(dateStr);
-    setShowCalendar(false);
-    setAgeError('');
-  }
 
   function calculateAge(birthDateStr) {
     const birthDate = new Date(birthDateStr);
@@ -3352,101 +3378,14 @@ function GroupHubCard({ group, onManage, onView, isOwned }) {
                 Minimum age required: {group.minAge ?? 18} years
               </p>
 
-              <div style={{ position: 'relative' }}>
-                <div
-                  onClick={() => setShowCalendar(!showCalendar)}
-                  style={{
-                    width: '100%',
-                    padding: '14px 16px',
-                    borderRadius: '8px',
-                    border: ageError ? '1.5px solid #ef4444' : showCalendar ? '1.5px solid #3b82f6' : '1px solid #252d4a',
-                    background: '#0a0e1a',
-                    color: birthDate ? '#e0e6f8' : '#7a8494',
-                    fontSize: '15px',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    boxSizing: 'border-box',
-                    letterSpacing: '0.2px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    transition: 'all 0.2s',
-                    boxShadow: showCalendar && !ageError ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none'
-                  }}
-                >
-                  <span>{birthDate ? new Date(birthDate + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Select birth date'}</span>
-                  <span style={{ fontSize: '20px' }}>📅</span>
-                </div>
-
-                {showCalendar && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    marginTop: '8px',
-                    background: '#0a0e1a',
-                    border: '1px solid #252d4a',
-                    borderRadius: '12px',
-                    padding: '16px',
-                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
-                    zIndex: 1000
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                      <button onClick={() => setCalendarMonth(m => m === 0 ? 11 : m - 1)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '18px' }}>❮</button>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ color: '#e0e6f8', fontWeight: 600, marginBottom: '4px' }}>
-                          {new Date(calendarYear, calendarMonth).toLocaleDateString('en-US', { month: 'long' })}
-                        </div>
-                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                          <button onClick={() => setCalendarYear(y => y - 1)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.background = 'rgba(59, 130, 246, 0.1)'} onMouseLeave={(e) => e.target.style.background = 'none'}>◀ {calendarYear}</button>
-                          <button onClick={() => setCalendarYear(y => y + 1)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.background = 'rgba(59, 130, 246, 0.1)'} onMouseLeave={(e) => e.target.style.background = 'none'}>{calendarYear + 1} ▶</button>
-                        </div>
-                      </div>
-                      <button onClick={() => setCalendarMonth(m => m === 11 ? 0 : m + 1)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '18px' }}>❯</button>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', marginBottom: '12px' }}>
-                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                        <div key={day} style={{ textAlign: 'center', color: '#5c6a8c', fontSize: '11px', fontWeight: 600, padding: '6px 0' }}>{day}</div>
-                      ))}
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
-                      {Array.from({ length: getFirstDayOfMonth(calendarMonth, calendarYear) }).map((_, i) => (
-                        <div key={`empty-${i}`} />
-                      ))}
-                      {Array.from({ length: getDaysInMonth(calendarMonth, calendarYear) }).map((_, i) => {
-                        const day = i + 1;
-                        const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                        const isSelected = birthDate === dateStr;
-                        const isToday = new Date().toISOString().split('T')[0] === dateStr;
-                        return (
-                          <button
-                            key={day}
-                            onClick={() => handleDateSelect(day)}
-                            style={{
-                              padding: '8px',
-                              borderRadius: '6px',
-                              border: isSelected ? '2px solid #3b82f6' : 'none',
-                              background: isSelected ? 'rgba(59, 130, 246, 0.2)' : isToday ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                              color: '#e0e6f8',
-                              cursor: 'pointer',
-                              fontSize: '13px',
-                              fontWeight: 500,
-                              transition: 'all 0.2s'
-                            }}
-                            onMouseEnter={(e) => { if (!isSelected) e.target.style.background = 'rgba(59, 130, 246, 0.15)'; }}
-                            onMouseLeave={(e) => { if (!isSelected) e.target.style.background = 'transparent'; }}
-                          >
-                            {day}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <CustomDatePicker
+                name="birthDate"
+                value={birthDate}
+                onChange={(e) => setBirthDate(e.target.value)}
+                placeholder="Select birth date"
+                hasError={!!ageError}
+                max={new Date().toISOString().split('T')[0]}
+              />
               {ageError && (
                 <p style={{
                   color: '#ef4444',

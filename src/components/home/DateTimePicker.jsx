@@ -31,7 +31,34 @@ export function CustomDatePicker({ value, onChange, min, max, disabled, placehol
     if (min) return new Date(min + 'T00:00:00');
     return new Date();
   });
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open || !ref.current) return;
+
+    const updatePos = () => {
+      const fieldEl = ref.current?.querySelector('.dtp-field');
+      if (!fieldEl) return;
+      const rect = fieldEl.getBoundingClientRect();
+      const dropdownHeight = 360;
+      const spaceBelow = window.innerHeight - rect.bottom;
+
+      let top = rect.bottom + 2;
+      if (spaceBelow < dropdownHeight + 20) {
+        top = rect.top - dropdownHeight - 2;
+      }
+
+      setDropdownPos({
+        top: Math.max(10, top),
+        left: rect.left
+      });
+    };
+
+    updatePos();
+    window.addEventListener('resize', updatePos);
+    return () => window.removeEventListener('resize', updatePos);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -97,7 +124,7 @@ export function CustomDatePicker({ value, onChange, min, max, disabled, placehol
       </div>
 
       {open && (
-        <div className="dtp-dropdown dtp-dropdown--cal">
+        <div className="dtp-dropdown dtp-dropdown--cal" style={{ top: `${dropdownPos.top}px`, left: `${dropdownPos.left}px` }}>
           <div className="dtp-cal-nav">
             <button type="button" className="dtp-nav-btn" onClick={() => setView(new Date(year, month - 1, 1))}><ChevLeft /></button>
             <div className="dtp-cal-nav-selects">

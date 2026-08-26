@@ -9,13 +9,13 @@
 .dtp-wrap--disabled { opacity: 0.38; pointer-events: none; }
 
 /* position:relative alone doesn't create a stacking context (no z-index),
-   so the open dropdown's z-index:500 was being resolved against sibling
+   so the open dropdown's z-index:9999 was being resolved against sibling
    fields/sections further down the form (Event Category, Event Type, etc.)
    at a shared ancestor context and losing to them. Promoting the wrap
    itself to a stacking context only while its dropdown is open forces the
    whole field (dropdown included) above any later-in-flow content. */
 .dtp-wrap:has(.dtp-field--open) {
-  z-index: 60;
+  z-index: 9999;
 }
 
 /* ── Trigger field ── */
@@ -45,10 +45,8 @@
 
 /* ── Shared dropdown ── */
 .dtp-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 500;
+  position: fixed;
+  z-index: 9999;
   background: #111422;
   border: 1px solid #1e2238;
   border-radius: 12px;

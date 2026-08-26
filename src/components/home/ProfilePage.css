@@ -619,6 +619,16 @@
   border-color: rgba(220,38,38,0.5);
 }
 
+.prof-conn-btn--report {
+  background: rgba(249,115,22,0.08);
+  border: 1px solid rgba(249,115,22,0.2);
+  color: #fb923c;
+}
+.prof-conn-btn--report:hover {
+  background: rgba(249,115,22,0.15);
+  border-color: rgba(249,115,22,0.4);
+}
+
 .prof-conn-btn--msg {
   background: rgba(59,130,246,0.08);
   border: 1px solid rgba(59,130,246,0.2);
