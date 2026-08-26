@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { io } from 'socket.io-client';
+import { getSocket } from '../../services/socket';
 import { fetchUserInvitations, acceptInvitation, rejectInvitation } from '../../store/slices/invitationsSlice';
 import './UserInvitations.css';
 
@@ -19,7 +19,8 @@ function UserInvitations() {
     dispatch(fetchUserInvitations());
 
     // Socket.io listener for real-time invitations
-    const socket = io();
+    const socket = getSocket();
+    if (!socket) return;
     const userId = authUser?._id || authUser?.id;
 
     if (userId) {

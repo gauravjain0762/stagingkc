@@ -60,7 +60,7 @@ export const fetchGroups = createAsyncThunk(
 // 2. POST /api/groups
 export const createGroup = createAsyncThunk(
   'groups/createGroup',
-  async ({ name, description, mission, category, privacy, adminApproval, coverImg, groupImg, inviteUserIds = [] }, { getState, rejectWithValue }) => {
+  async ({ name, description, mission, category, privacy, adminApproval, minAge, coverImg, groupImg, inviteUserIds = [] }, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
       const form = new FormData();
@@ -70,6 +70,7 @@ export const createGroup = createAsyncThunk(
       if (category) form.append('category', category);
       if (privacy) form.append('privacy', privacy);
       form.append('adminApproval', adminApproval ? 'true' : 'false');
+      if (minAge) form.append('minAge', minAge);
       if (coverImg instanceof File) form.append('coverImg', coverImg);
       if (groupImg instanceof File) form.append('groupImg', groupImg);
       if (inviteUserIds.length) form.append('inviteUserIds', JSON.stringify(inviteUserIds));
@@ -94,7 +95,7 @@ export const fetchGroupDetail = createAsyncThunk(
 // 4. PUT /api/groups/:id
 export const updateGroup = createAsyncThunk(
   'groups/updateGroup',
-  async ({ groupId, name, description, mission, category, privacy, adminApproval, coverImg, groupImg }, { getState, rejectWithValue }) => {
+  async ({ groupId, name, description, mission, category, privacy, adminApproval, minAge, coverImg, groupImg }, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
       const form = new FormData();
@@ -104,6 +105,7 @@ export const updateGroup = createAsyncThunk(
       if (category) form.append('category', category);
       if (privacy) form.append('privacy', privacy);
       if (adminApproval !== undefined) form.append('adminApproval', adminApproval ? 'true' : 'false');
+      if (minAge !== undefined) form.append('minAge', minAge);
       if (coverImg instanceof File) form.append('coverImg', coverImg);
       if (groupImg instanceof File) form.append('groupImg', groupImg);
       const data = await apiRequest(`/api/groups/${groupId}`, { method: 'PUT', token, body: form, isFormData: true });

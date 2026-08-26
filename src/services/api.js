@@ -32,16 +32,18 @@ export async function apiRequest(path, { method = 'GET', body, token, isFormData
         message: data.message || 'Your account has been suspended. Please contact support.',
         type: 'error',
       }));
-    } else if ((res.status === 401 || res.status === 403) && !sessionExpiredHandled && token) {
-      sessionExpiredHandled = true;
-      disconnectSocket();
-      store.dispatch(logout());
-      store.dispatch(showLogin());
-      store.dispatch(showToast({
-        message: 'Your session has expired. Please login again.',
-        type: 'error',
-      }));
     }
+    // TEMPORARILY DISABLED FOR DEBUGGING
+    // else if ((res.status === 401 || res.status === 403) && !sessionExpiredHandled && token) {
+    //   sessionExpiredHandled = true;
+    //   disconnectSocket();
+    //   store.dispatch(logout());
+    //   store.dispatch(showLogin());
+    //   store.dispatch(showToast({
+    //     message: 'Your session has expired. Please login again.',
+    //     type: 'error',
+    //   }));
+    // }
     const message =
       data?.message || data?.error || data?.msg || `Request failed (${res.status})`;
     const err = new Error(message);

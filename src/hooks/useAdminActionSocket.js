@@ -1,13 +1,14 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { io } from 'socket.io-client';
+import { getSocket } from '../services/socket';
 import { addAdminActionNotification } from '../store/slices/adminActionsSlice';
 
 export function useAdminActionSocket() {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    const socket = io();
+    const socket = getSocket();
+    if (!socket) return;
 
     socket.on('admin:action-taken', (action) => {
       const notification = {

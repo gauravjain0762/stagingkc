@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { io } from 'socket.io-client';
+import { getSocket } from '../../services/socket';
 import './GroupsPage.css';
 import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
@@ -440,16 +440,23 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
   const coverInputRef = useRef(null);
   const photoInputRef = useRef(null);
 
+  // Edit modal states
+  const [editModal, setEditModal] = useState(null); // 'about' | 'mission' | 'privacy' | null
+  const [editAbout, setEditAbout] = useState(group?.description ?? '');
+  const [editMission, setEditMission] = useState(group?.mission ?? '');
+  const [editPrivacy, setEditPrivacy] = useState(group?.privacy ?? 'public');
+
   useEffect(() => {
     if (!groupId) return;
     dispatch(fetchGroupMembers({ groupId }));
     dispatch(fetchGroupPosts({ groupId, page: 1 }));
-    if (group?.privacy === 'private') dispatch(fetchPendingRequests({ groupId }));
+    if (group?.privacy === 'private' || group?.privacy === 'vetted') dispatch(fetchPendingRequests({ groupId }));
     dispatch(fetchAdminDashboard(groupId));
     dispatch(fetchConnections());
 
     // Socket listeners for admin dashboard real-time updates
-    const socket = io();
+    const socket = getSocket();
+    if (!socket) return;
 
     // Join group room for group events
     socket.emit('join:group', { groupId });
@@ -468,7 +475,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
     });
 
     socket.on('group:pending-request', (data) => {
-      if (data.groupId === groupId && group?.privacy === 'private') {
+      if (data.groupId === groupId && (group?.privacy === 'private' || group?.privacy === 'vetted')) {
         dispatch(fetchPendingRequests({ groupId }));
         dispatch(fetchAdminDashboard(groupId));
       }
@@ -522,6 +529,17 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
       dispatch(updateGroup({ groupId, groupImg: file }));
     }
     e.target.value = '';
+  }
+
+  function handleSaveEdit() {
+    if (editModal === 'about') {
+      dispatch(updateGroup({ groupId, description: editAbout }));
+    } else if (editModal === 'mission') {
+      dispatch(updateGroup({ groupId, mission: editMission }));
+    } else if (editModal === 'privacy') {
+      dispatch(updateGroup({ groupId, privacy: editPrivacy }));
+    }
+    setEditModal(null);
   }
 
   function navClick(id) {
@@ -646,10 +664,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
 
             <div className="adm-group-info">
               <h1 className="adm-title">{group?.name ?? 'Creative Directors United'}</h1>
-            </div>
-
-            <div className="adm-header-btns">
-              <button className="adm-export-btn"><ExportIcon /> Export List</button>
+              <p className="adm-group-date">Created {fmtDate(group?.createdAt)}</p>
             </div>
           </div>
 
@@ -660,21 +675,16 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
           <div className="adm-stat-card" style={{ cursor: 'pointer' }} onClick={() => switchTab('members')}>
             <p className="adm-stat-label">Total Members</p>
             <p className="adm-stat-value">{(rdxStats?.memberCount ?? group?.memberCount ?? baseMembers.length).toLocaleString()}</p>
-            <span className="adm-stat-pill adm-stat-pill--green">+12% this month</span>
           </div>
-          {group?.privacy === 'private' && (
+          {(group?.privacy === 'private' || group?.privacy === 'vetted') && (
             <div className="adm-stat-card" style={{ cursor: 'pointer' }} onClick={() => switchTab('pending')}>
               <p className="adm-stat-label">Pending Requests</p>
               <p className="adm-stat-value">{rdxStats?.pendingCount ?? pendingList.length}</p>
-              <span className={`adm-stat-pill ${(rdxStats?.pendingCount ?? pendingList.length) > 0 ? 'adm-stat-pill--amber' : 'adm-stat-pill--green'}`}>
-                {(rdxStats?.pendingCount ?? pendingList.length) > 0 ? 'Needs Review' : 'All Clear'}
-              </span>
             </div>
           )}
           <div className="adm-stat-card" style={{ cursor: 'pointer' }} onClick={() => switchTab('posts')}>
             <p className="adm-stat-label">Total Posts</p>
             <p className="adm-stat-value">{(rdxStats?.postsCount ?? 0).toLocaleString()}</p>
-            <span className="adm-stat-pill adm-stat-pill--green">Published</span>
           </div>
         </div>
 
@@ -691,7 +701,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
               <button className={`adm-tab${activeTab === 'members' ? ' adm-tab--active' : ''}`} onClick={() => switchTab('members')}>
                 Members <span className="adm-tab-count">{(group?.memberCount ?? baseMembers.length).toLocaleString()}</span>
               </button>
-              {group?.privacy === 'private' && (
+              {(group?.privacy === 'private' || group?.privacy === 'vetted') && (
                 <button className={`adm-tab${activeTab === 'pending' ? ' adm-tab--active' : ''}`} onClick={() => switchTab('pending')}>
                   Pending Requests {pendingList.length > 0 && <span className="adm-tab-count">{pendingList.length}</span>}
                 </button>
@@ -869,7 +879,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                             {m.location && (
                               <span className="gd-member-location"><PinIcon /> {m.location}</span>
                             )}
-                            <div className="prof-conn-shared" style={{ marginTop: '2px' }}>
+                            <div className="prof-conn-shared" style={{ marginTop: '4px' }}>
                               <div className="prof-conn-shared-avatars">
                                 {(m.sharedAvatars ?? []).slice(0, 3).map((src, i) => (
                                   <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
@@ -943,6 +953,13 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                   <div className="adm-about-card-head">
                     <span className="adm-about-icon adm-about-icon--blue"><InfoCircleIcon /></span>
                     <span className="adm-about-card-title">About this Group</span>
+                    <button
+                      className="adm-about-edit-btn"
+                      onClick={() => { setEditAbout(group?.description ?? ''); setEditModal('about'); }}
+                      title="Edit"
+                    >
+                      <EditIcon />
+                    </button>
                   </div>
                   <p className="adm-about-body">
                     {aboutExpanded || (group?.description ?? '').length <= 300
@@ -977,6 +994,13 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                   <div className="adm-about-card-head">
                     <span className="adm-about-icon adm-about-icon--purple"><TrendingUpIcon /></span>
                     <span className="adm-about-card-title">Group Mission</span>
+                    <button
+                      className="adm-about-edit-btn"
+                      onClick={() => { setEditMission(group?.mission ?? ''); setEditModal('mission'); }}
+                      title="Edit"
+                    >
+                      <EditIcon />
+                    </button>
                   </div>
                   <p className="adm-about-body">
                     {group?.mission}
@@ -996,10 +1020,22 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                     </div>
                   </div>
                   <div className="adm-about-meta-card">
-                    <span className="adm-about-meta-label">Privacy</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <span className="adm-about-meta-label">Privacy</span>
+                      <button
+                        className="adm-about-edit-btn"
+                        onClick={() => { setEditPrivacy(group?.privacy ?? 'public'); setEditModal('privacy'); }}
+                        title="Edit"
+                        style={{ width: '24px', height: '24px', padding: '4px' }}
+                      >
+                        <EditIcon />
+                      </button>
+                    </div>
                     <div className="adm-about-meta-val-row">
                       {group?.privacy === 'private'
                         ? <><LockIcon /><span className="adm-about-meta-value">Private</span></>
+                        : group?.privacy === 'vetted'
+                        ? <><CheckCircleIcon /><span className="adm-about-meta-value">Vetted</span></>
                         : <><GlobeIcon /><span className="adm-about-meta-value">Public</span></>
                       }
                     </div>
@@ -1021,35 +1057,35 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                   <h3 className="gd-card-title">Group Info</h3>
                   <div className="gd-info-rows">
                     <div className="gd-info-row">
-                      {group?.privacy === 'private' ? <LockIcon /> : <GlobeIcon />}
-                      <div>
-                        <p className="gd-info-sub">{group?.privacy === 'private' ? 'Only members can see posts' : 'Anyone can view and join'}</p>
-                        <p className="gd-info-label">{group?.privacy === 'private' ? 'Private Group' : 'Public Group'}</p>
+                      <div className="gd-info-sub-row">
+                        {group?.privacy === 'private' ? <LockIcon /> : group?.privacy === 'vetted' ? <CheckCircleIcon /> : <GlobeIcon />}
+                        <p className="gd-info-sub">{group?.privacy === 'private' ? 'Only members can see posts' : group?.privacy === 'vetted' ? 'Verified members only' : 'Anyone can view and join'}</p>
                       </div>
+                      <p className="gd-info-label">{group?.privacy === 'private' ? 'Private Group' : group?.privacy === 'vetted' ? 'Vetted Group' : 'Public Group'}</p>
                     </div>
                     <div className="gd-info-row">
-                      <UsersIcon />
-                      <div>
+                      <div className="gd-info-sub-row">
+                        <UsersIcon />
                         <p className="gd-info-sub">Total members</p>
-                        <p className="gd-info-label">{group?.memberCount?.toLocaleString() || group?.members || '—'}</p>
                       </div>
+                      <p className="gd-info-label">{group?.memberCount?.toLocaleString() || group?.members || '—'}</p>
                     </div>
                     {group?.createdAt && (
                       <div className="gd-info-row">
-                        <InfoCircleIcon />
-                        <div>
+                        <div className="gd-info-sub-row">
+                          <InfoCircleIcon />
                           <p className="gd-info-sub">Group history</p>
-                          <p className="gd-info-label">Created {fmtDate(group.createdAt)}</p>
                         </div>
+                        <p className="gd-info-label">Created {fmtDate(group.createdAt)}</p>
                       </div>
                     )}
                     {admName && admName !== '—' && (
                       <div className="gd-info-row">
-                        <OrganizerIcon />
-                        <div>
+                        <div className="gd-info-sub-row">
+                          <OrganizerIcon />
                           <p className="gd-info-sub">Group Admin</p>
-                          <p className="gd-info-label">{admName}</p>
                         </div>
+                        <p className="gd-info-label">{admName}</p>
                       </div>
                     )}
                   </div>
@@ -1089,7 +1125,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                             {r.location && (
                               <span className="gd-member-location"><PinIcon /> {r.location}</span>
                             )}
-                            <div className="prof-conn-shared" style={{ marginTop: '2px' }}>
+                            <div className="prof-conn-shared" style={{ marginTop: '4px' }}>
                               <div className="prof-conn-shared-avatars">
                                 {(r.sharedAvatars ?? []).slice(0, 3).map((src, i) => (
                                   <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
@@ -1127,6 +1163,144 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
             groupName={group?.name}
             onClose={() => { setShowInviteModal(false); setSelectedInvites(new Set()); setInviteSearchQuery(''); }}
           />
+        )}
+
+        {/* Edit Modals */}
+        {editModal === 'about' && (
+          <div className="modal-overlay" onClick={() => setEditModal(null)}>
+            <div className="modal-content">
+              <div className="modal-header">
+                <h2>Edit About this Group</h2>
+                <button className="modal-close" onClick={() => setEditModal(null)}>×</button>
+              </div>
+              <div className="modal-body">
+                <textarea
+                  value={editAbout}
+                  onChange={(e) => setEditAbout(e.target.value)}
+                  placeholder="Tell members about your group"
+                  maxLength="1000"
+                  style={{
+                    width: '100%',
+                    minHeight: '120px',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #252d4a',
+                    background: '#0a0e1a',
+                    color: '#e0e6f8',
+                    fontFamily: 'inherit',
+                    fontSize: '14px',
+                    resize: 'vertical'
+                  }}
+                />
+                <p style={{ fontSize: '12px', color: '#5c6a8c', marginTop: '8px' }}>
+                  {editAbout.length}/1000
+                </p>
+              </div>
+              <div className="modal-actions">
+                <button onClick={() => setEditModal(null)} className="modal-cancel-btn">Cancel</button>
+                <button onClick={handleSaveEdit} className="modal-save-btn">Save Changes</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {editModal === 'mission' && (
+          <div className="modal-overlay" onClick={() => setEditModal(null)}>
+            <div className="modal-content">
+              <div className="modal-header">
+                <h2>Edit Group Mission</h2>
+                <button className="modal-close" onClick={() => setEditModal(null)}>×</button>
+              </div>
+              <div className="modal-body">
+                <textarea
+                  value={editMission}
+                  onChange={(e) => setEditMission(e.target.value)}
+                  placeholder="What is your group's mission?"
+                  maxLength="500"
+                  style={{
+                    width: '100%',
+                    minHeight: '100px',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #252d4a',
+                    background: '#0a0e1a',
+                    color: '#e0e6f8',
+                    fontFamily: 'inherit',
+                    fontSize: '14px',
+                    resize: 'vertical'
+                  }}
+                />
+                <p style={{ fontSize: '12px', color: '#5c6a8c', marginTop: '8px' }}>
+                  {editMission.length}/500
+                </p>
+              </div>
+              <div className="modal-actions">
+                <button onClick={() => setEditModal(null)} className="modal-cancel-btn">Cancel</button>
+                <button onClick={handleSaveEdit} className="modal-save-btn">Save Changes</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {editModal === 'privacy' && (
+          <div className="modal-overlay" onClick={() => setEditModal(null)}>
+            <div className="modal-content">
+              <div className="modal-header">
+                <h2>Edit Group Privacy</h2>
+                <button className="modal-close" onClick={() => setEditModal(null)}>×</button>
+              </div>
+              <div className="modal-body">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '12px', borderRadius: '8px', border: `2px solid ${editPrivacy === 'public' ? '#3b82f6' : '#252d4a'}`, background: editPrivacy === 'public' ? 'rgba(59, 130, 246, 0.1)' : 'transparent' }}>
+                    <input
+                      type="radio"
+                      name="privacy"
+                      value="public"
+                      checked={editPrivacy === 'public'}
+                      onChange={(e) => setEditPrivacy(e.target.value)}
+                      style={{ cursor: 'pointer' }}
+                    />
+                    <div>
+                      <p style={{ margin: 0, fontWeight: 600, color: '#e0e6f8' }}>Public Group</p>
+                      <p style={{ margin: 0, fontSize: '12px', color: '#5c6a8c' }}>Anyone can see and join</p>
+                    </div>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '12px', borderRadius: '8px', border: `2px solid ${editPrivacy === 'private' ? '#3b82f6' : '#252d4a'}`, background: editPrivacy === 'private' ? 'rgba(59, 130, 246, 0.1)' : 'transparent' }}>
+                    <input
+                      type="radio"
+                      name="privacy"
+                      value="private"
+                      checked={editPrivacy === 'private'}
+                      onChange={(e) => setEditPrivacy(e.target.value)}
+                      style={{ cursor: 'pointer' }}
+                    />
+                    <div>
+                      <p style={{ margin: 0, fontWeight: 600, color: '#e0e6f8' }}>Private Group</p>
+                      <p style={{ margin: 0, fontSize: '12px', color: '#5c6a8c' }}>Only members can see posts</p>
+                    </div>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '12px', borderRadius: '8px', border: `2px solid ${editPrivacy === 'vetted' ? '#3b82f6' : '#252d4a'}`, background: editPrivacy === 'vetted' ? 'rgba(59, 130, 246, 0.1)' : 'transparent' }}>
+                    <input
+                      type="radio"
+                      name="privacy"
+                      value="vetted"
+                      checked={editPrivacy === 'vetted'}
+                      onChange={(e) => setEditPrivacy(e.target.value)}
+                      style={{ cursor: 'pointer' }}
+                    />
+                    <div>
+                      <p style={{ margin: 0, fontWeight: 600, color: '#e0e6f8' }}>Vetted Group</p>
+                      <p style={{ margin: 0, fontSize: '12px', color: '#5c6a8c' }}>Verified members only</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+              <div className="modal-actions">
+                <button onClick={() => setEditModal(null)} className="modal-cancel-btn">Cancel</button>
+                <button onClick={handleSaveEdit} className="modal-save-btn">Save Changes</button>
+              </div>
+            </div>
+          </div>
         )}
 
       </div>
@@ -1392,6 +1566,7 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
   const [category,       setCategory]       = useState('Technology & Software');
   const [privacy,        setPrivacy]        = useState('public');
   const [adminApproval,  setAdminApproval]  = useState(true);
+  const [minAge,         setMinAge]         = useState(18);
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [coverImg,       setCoverImg]       = useState('');
   const [coverImgFile,   setCoverImgFile]   = useState(null);
@@ -1459,7 +1634,7 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
       return;
     }
 
-    dispatch(createGroup({
+    const payload = {
       name,
       mission,
       description,
@@ -1468,7 +1643,13 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
       adminApproval,
       coverImg: coverImgFile,
       groupImg: groupImgFile,
-    })).then(action => {
+    };
+
+    if (privacy === 'vetted') {
+      payload.minAge = minAge;
+    }
+
+    dispatch(createGroup(payload)).then(action => {
       if (createGroup.fulfilled.match(action)) {
         onCreateGroup?.(action.payload);
       } else if (createGroup.rejected.match(action)) {
@@ -1606,10 +1787,21 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
                   <p className="cg-privacy-title">Private Group</p>
                   <p className="cg-privacy-desc">Only members can see who's in the group and what they post.</p>
                 </div>
+                {/* Vetted */}
+                <div className={`cg-privacy-card${privacy === 'vetted' ? ' cg-privacy-card--active' : ''}`} onClick={() => setPrivacy('vetted')}>
+                  <div className="cg-privacy-card-top">
+                    <span className={`cg-privacy-icon${privacy === 'vetted' ? ' active' : ''}`}><CheckCircleIcon /></span>
+                    <span className={`cg-radio${privacy === 'vetted' ? ' cg-radio--on' : ''}`}>
+                      {privacy === 'vetted' && <span className="cg-radio-dot" />}
+                    </span>
+                  </div>
+                  <p className="cg-privacy-title">Vetted Group</p>
+                  <p className="cg-privacy-desc">Verified members only. Requires admin approval to join.</p>
+                </div>
               </div>
 
-              {/* Admin Approval toggle — only for private groups */}
-              {privacy === 'private' && (
+              {/* Admin Approval toggle — for private and vetted groups */}
+              {(privacy === 'private' || privacy === 'vetted') && (
               <div className="cg-toggle-row">
                 <div className="cg-toggle-icon"><ShieldIcon2 /></div>
                 <div className="cg-toggle-info">
@@ -1618,6 +1810,28 @@ function CreateGroupPage({ onBack, onFeedClick, onEventsClick, onCalendarClick, 
                 </div>
                 <div className={`cg-toggle${adminApproval ? ' cg-toggle--on' : ''}`} onClick={() => setAdminApproval(v => !v)}>
                   <div className="cg-toggle-thumb" />
+                </div>
+              </div>
+              )}
+
+              {/* Age Verification — only for vetted groups */}
+              {privacy === 'vetted' && (
+              <div className="cg-age-verification">
+                <div className="cg-age-header">
+                  <p className="cg-age-title">Age Verification</p>
+                  <p className="cg-age-desc">Set minimum age requirement for group members</p>
+                </div>
+                <div className="cg-age-input-row">
+                  <input
+                    type="number"
+                    min="13"
+                    max="120"
+                    value={minAge}
+                    onChange={(e) => setMinAge(Math.max(13, parseInt(e.target.value) || 13))}
+                    className="cg-age-input"
+                    placeholder="18"
+                  />
+                  <span className="cg-age-suffix">years old</span>
                 </div>
               </div>
               )}
@@ -1747,7 +1961,8 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
     dispatch(fetchConnections());
 
     // Socket listeners for real-time group updates
-    const socket = io();
+    const socket = getSocket();
+    if (!socket) return;
     socket.emit('join:group', { groupId });
 
     socket.on('group:new-post', (data) => {
@@ -2642,7 +2857,8 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
 
   // Socket listeners for hub updates (group created, member joined, etc.)
   useEffect(() => {
-    const socket = io();
+    const socket = getSocket();
+    if (!socket) return;
     socket.emit('join-room', 'groups-hub');
 
     socket.on('group:created', (data) => {

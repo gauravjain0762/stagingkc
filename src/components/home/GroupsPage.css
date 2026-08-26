@@ -868,7 +868,7 @@
 /* Privacy cards */
 .cg-privacy-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 12px;
 }
 
@@ -982,6 +982,49 @@
   box-shadow: 0 1px 4px rgba(0,0,0,0.4);
 }
 .cg-toggle--on .cg-toggle-thumb { transform: translateX(20px); }
+
+/* Age Verification */
+.cg-age-verification {
+  background: #0f1220;
+  border: 1px solid #1e2238;
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.cg-age-header { margin-bottom: 12px; }
+.cg-age-title { font-size: 13px; font-weight: 600; color: #e0e6f8; margin: 0 0 2px; }
+.cg-age-desc { font-size: 11.5px; color: #5c6a8c; margin: 0; }
+
+.cg-age-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cg-age-input {
+  width: 100px;
+  height: 36px;
+  padding: 8px 12px;
+  border: 1px solid #252d4a;
+  border-radius: 8px;
+  background: #0a0e1a;
+  color: #e0e6f8;
+  font-size: 14px;
+  font-weight: 500;
+  transition: border-color 0.15s;
+}
+
+.cg-age-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.cg-age-suffix {
+  font-size: 13px;
+  color: #5c6a8c;
+  font-weight: 500;
+}
 
 /* Right column */
 .cg-right { display: flex; flex-direction: column; gap: 14px; }
@@ -1476,8 +1519,8 @@
   flex-shrink: 0;
 }
 
-.adm-member-name  { font-size: 13.5px; font-weight: 600; color: #d8dff0; margin: 0 0 2px; }
-.adm-member-mutual { font-size: 12px; color: #4a5270; margin: 0; }
+.adm-member-name  { font-size: 13.5px; font-weight: 600; color: #d8dff0; margin: 0; line-height: 1; }
+.adm-member-mutual { font-size: 12px; color: #4a5270; margin: 0; line-height: 1; }
 
 .adm-member-joined-col {
   display: flex;
@@ -3443,17 +3486,24 @@
 
 .gd-info-row {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  flex-direction: column;
+  gap: 4px;
   color: #4a5270;
 }
-.gd-info-row svg { flex-shrink: 0; margin-top: 16px; }
+
+.gd-info-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gd-info-sub-row svg { flex-shrink: 0; }
 
 .gd-info-label {
   font-size: 13px;
   font-weight: 600;
   color: #c8d0e0;
-  margin: 0 0 2px;
+  margin: 0;
 }
 .gd-info-sub {
   font-size: 11.5px;
@@ -3472,7 +3522,9 @@
   gap: 4px;
   font-size: 12px;
   color: #4a5270;
-  margin-top: 2px;
+  margin: 0;
+  line-height: 1;
+  height: fit-content;
 }
 
 .gd-members-grid {
@@ -3813,4 +3865,60 @@
   padding: 16px 20px;
   border-top: 1px solid #1e2a42;
   justify-content: flex-end;
+}
+
+/* Edit Button */
+.adm-about-edit-btn {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s;
+  margin-left: auto;
+}
+.adm-about-edit-btn:hover {
+  background: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
+}
+
+/* Modal Button Styles */
+.modal-cancel-btn,
+.modal-save-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-cancel-btn {
+  border: 1px solid #252d4a;
+  background: transparent;
+  color: #94a3b8;
+}
+.modal-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #3a4468;
+}
+
+.modal-save-btn {
+  border: none;
+  background: #3b82f6;
+  color: #fff;
+}
+.modal-save-btn:hover {
+  background: #2563eb;
+}
+
+/* Group Date Display */
+.adm-group-date {
+  font-size: 12px;
+  color: #5c6a8c;
+  margin: 4px 0 0;
 }
