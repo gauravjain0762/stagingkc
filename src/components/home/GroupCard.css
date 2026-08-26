@@ -77,66 +77,6 @@
   margin-bottom: 12px;
 }
 
-.gc-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.gc-btn {
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-  font-family: inherit;
-  border: 1px solid #3b82f6;
-}
-
-.gc-btn--join {
-  flex: 1;
-  background: #3b82f6;
-  color: white;
-  border: 1px solid #3b82f6;
-}
-
-.gc-btn--join:hover {
-  background: #2563eb;
-  border-color: #2563eb;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-}
-
-.gc-btn--details {
-  flex: 1;
-  background: transparent;
-  color: #60a5fa;
-  border: 1px solid #3b82f6;
-}
-
-.gc-btn--details:hover {
-  background: rgba(59, 130, 246, 0.1);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
-}
-
-.gc-btn--share {
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  background: transparent;
-  color: #94a3b8;
-  border: 1px solid #3f4f67;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.gc-btn--share:hover {
-  color: #cbd5e1;
-  border-color: #64748b;
-  background: rgba(100, 116, 139, 0.1);
-}
-
 @media (max-width: 768px) {
   .gc-card {
     margin-bottom: 12px;
