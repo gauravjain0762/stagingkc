@@ -107,17 +107,19 @@ function RoleSelect({ value, memberId, openId, onToggle, onChange, isOwner, isSe
       </button>
       {isOpen && !isDisabled && (
         <div className="adm-rs-dropdown">
-          {MEMBER_ROLES.filter(role => role !== 'Owner').map(role => {
+          {MEMBER_ROLES.map(role => {
             const rc = ROLE_CONFIG[role];
+            const optionDisabled = role === 'Owner';
             return (
               <button
                 key={role}
-                className={`adm-rs-option${value === role ? ' adm-rs-option--active' : ''}`}
-                onClick={() => { onChange(role); onToggle(null); }}
-                style={{ cursor: 'pointer' }}
+                className={`adm-rs-option${value === role ? ' adm-rs-option--active' : ''}${optionDisabled ? ' adm-rs-option--disabled' : ''}`}
+                onClick={() => !optionDisabled && (onChange(role), onToggle(null))}
+                style={{ opacity: optionDisabled ? 0.5 : 1, cursor: optionDisabled ? 'not-allowed' : 'pointer' }}
+                title={optionDisabled ? 'Owner role is not assignable' : ''}
               >
                 <span className="adm-rs-opt-dot" style={{ background: rc.color, boxShadow: `0 0 6px ${rc.color}` }} />
-                <span className="adm-rs-opt-label">{role}</span>
+                <span className="adm-rs-opt-label">{role}{optionDisabled ? ' (Locked)' : ''}</span>
                 {value === role && <CheckSmIcon />}
               </button>
             );
