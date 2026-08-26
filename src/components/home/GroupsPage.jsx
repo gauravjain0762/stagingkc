@@ -2209,7 +2209,7 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
 
   const myId = authUser?._id ?? authUser?.id;
   const isGroupCreator = !!myId && (group.admin === myId || group.admin?._id === myId);
-  const myMember = baseMembers?.find(m => (m._id ?? m.id) === myId);
+  const myMember = rdxMembers?.find(m => (m._id ?? m.id) === myId);
   const myRole = myMember?.role ?? normalizeRole(myMember?.role);
   const isAdmin = myRole === 'Admin';
   const isOwned = isGroupCreator || isAdmin;
