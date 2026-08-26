@@ -170,12 +170,23 @@ export const removeMember = createAsyncThunk(
 // 9. POST /api/groups/:id/join
 export const joinGroup = createAsyncThunk(
   'groups/joinGroup',
-  async (groupId, { getState, rejectWithValue }) => {
+  async (payload, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
-      const data = await apiRequest(`/api/groups/${groupId}/join`, { method: 'POST', token });
+      const groupId = typeof payload === 'string' ? payload : payload.groupId;
+      const config = { method: 'POST', token };
+
+      if (typeof payload === 'object' && payload.birthDate) {
+        // Send birthDate as JSON body
+        config.body = { birthDate: payload.birthDate };
+      }
+
+      const data = await apiRequest(`/api/groups/${groupId}/join`, config);
       return { groupId, joined: data.joined ?? true, pending: data.pending ?? false };
-    } catch (err) { return rejectWithValue({ groupId, message: err.message }); }
+    } catch (err) {
+      const groupId = typeof payload === 'string' ? payload : payload.groupId;
+      return rejectWithValue({ groupId, message: err.message });
+    }
   }
 );
 
@@ -339,6 +350,15 @@ const groupsSlice = createSlice({
         if (!a.payload?._id) return;
         const idx = s.groups.findIndex(g => g._id === a.payload._id);
         if (idx !== -1) s.groups[idx] = { ...s.groups[idx], ...a.payload };
+      })
+
+      .addCase(fetchGroupDetail.fulfilled, (s, a) => {
+        if (!a.payload?._id) return;
+        const idx = s.groups.findIndex(g => g._id === a.payload._id);
+        if (idx !== -1) {
+          s.groups[idx] = { ...s.groups[idx], ...a.payload };
+          console.log('✅ Redux: Updated groups array with fetched detail:', { privacy: a.payload.privacy, minAge: a.payload.minAge });
+        }
       })
 
       .addCase(fetchGroupPosts.pending, s => { s.groupPostsLoading = true; })

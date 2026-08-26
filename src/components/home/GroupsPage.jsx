@@ -13,7 +13,7 @@ import UserProfilePage from './UserProfilePage';
 import GlobalSearch from './GlobalSearch';
 import Loader from '../Loader';
 import {
-  fetchGroups, createGroup, updateGroup, fetchGroupPosts, fetchGroupMembers,
+  fetchGroups, fetchGroupDetail, createGroup, updateGroup, fetchGroupPosts, fetchGroupMembers,
   changeMemberRole, removeMember, joinGroup, leaveGroup, reportGroup,
   fetchPendingRequests, acceptGroupRequest, rejectGroupRequest,
   fetchAdminDashboard, sendFriendRequest,
@@ -532,12 +532,23 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
   }
 
   function handleSaveEdit() {
+    let updatePromise;
     if (editModal === 'about') {
-      dispatch(updateGroup({ groupId, description: editAbout }));
+      updatePromise = dispatch(updateGroup({ groupId, description: editAbout }));
     } else if (editModal === 'mission') {
-      dispatch(updateGroup({ groupId, mission: editMission }));
+      updatePromise = dispatch(updateGroup({ groupId, mission: editMission }));
     } else if (editModal === 'privacy') {
-      dispatch(updateGroup({ groupId, privacy: editPrivacy }));
+      updatePromise = dispatch(updateGroup({ groupId, privacy: editPrivacy }));
+    }
+
+    if (updatePromise) {
+      updatePromise.then(action => {
+        if (updateGroup.fulfilled.match(action)) {
+          // Refetch group details to sync UI with latest data
+          dispatch(fetchGroupDetail(groupId));
+          dispatch(showToast({ message: 'Changes saved successfully!', type: 'success' }));
+        }
+      });
     }
     setEditModal(null);
   }
@@ -1020,17 +1031,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                     </div>
                   </div>
                   <div className="adm-about-meta-card">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                      <span className="adm-about-meta-label">Privacy</span>
-                      <button
-                        className="adm-about-edit-btn"
-                        onClick={() => { setEditPrivacy(group?.privacy ?? 'public'); setEditModal('privacy'); }}
-                        title="Edit"
-                        style={{ width: '24px', height: '24px', padding: '4px' }}
-                      >
-                        <EditIcon />
-                      </button>
-                    </div>
+                    <span className="adm-about-meta-label">Privacy</span>
                     <div className="adm-about-meta-val-row">
                       {group?.privacy === 'private'
                         ? <><LockIcon /><span className="adm-about-meta-value">Private</span></>
@@ -1058,10 +1059,11 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                   <div className="gd-info-rows">
                     <div className="gd-info-row">
                       <div className="gd-info-sub-row">
+                        {(() => { console.log('🔍 Privacy display:', { id: group?.id ?? group?._id, privacy: group?.privacy, minAge: group?.minAge }); return null; })()}
                         {group?.privacy === 'private' ? <LockIcon /> : group?.privacy === 'vetted' ? <CheckCircleIcon /> : <GlobeIcon />}
                         <p className="gd-info-sub">{group?.privacy === 'private' ? 'Only members can see posts' : group?.privacy === 'vetted' ? 'Verified members only' : 'Anyone can view and join'}</p>
                       </div>
-                      <p className="gd-info-label">{group?.privacy === 'private' ? 'Private Group' : group?.privacy === 'vetted' ? 'Vetted Group' : 'Public Group'}</p>
+                      <p className="gd-info-label">{group?.privacy === 'private' ? 'Private' : group?.privacy === 'vetted' ? 'Vetted' : 'Public'}</p>
                     </div>
                     <div className="gd-info-row">
                       <div className="gd-info-sub-row">
@@ -1950,12 +1952,19 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
   const [reportDone,       setReportDone]       = useState(false);
   const [isReported,       setIsReported]       = useState(group?.reported ?? false);
   const [sharing,         setSharing]         = useState(false);
+  const [showAgeModal,     setShowAgeModal]     = useState(false);
+  const [birthDate,        setBirthDate]        = useState('');
+  const [ageError,         setAgeError]         = useState('');
 
   const isJoining = joiningIds.includes(groupId);
   const isLeaving = leavingIds.includes(groupId);
 
   useEffect(() => {
     if (!groupId) return;
+    // Always fetch fresh group data when detail page mounts
+    dispatch(fetchGroupDetail(groupId)).then(action => {
+      console.log('✅ GroupDetailPage: Fetched fresh group data on mount');
+    });
     dispatch(fetchGroupPosts({ groupId, page: 1 }));
     dispatch(fetchGroupMembers({ groupId }));
     dispatch(fetchConnections());
@@ -2000,7 +2009,8 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
 
     socket.on('group:updated', (data) => {
       if (data.groupId === groupId) {
-        // Optionally refresh group detail
+        console.log('🔔 Socket: group:updated received, refetching group detail...');
+        dispatch(fetchGroupDetail(groupId));
       }
     });
 
@@ -2098,6 +2108,57 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
     setLeaveReason('');
   }
 
+  function calculateAge(birthDateStr) {
+    const birthDate = new Date(birthDateStr);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  }
+
+  function handleAgeSubmit() {
+    setAgeError('');
+    const minAge = group.minAge ?? 18;
+
+    if (!birthDate.trim()) {
+      setAgeError('Please enter your birth date');
+      return;
+    }
+
+    const age = calculateAge(birthDate);
+    if (age < minAge) {
+      setAgeError(`You must be at least ${minAge} years old to join this group`);
+      return;
+    }
+
+    setShowAgeModal(false);
+    setBirthDate('');
+    proceedWithJoinDetail();
+  }
+
+  function proceedWithJoinDetail() {
+    setJoinedLocal(true);
+    const joinPayload = group.privacy === 'vetted' ? { groupId, birthDate } : { groupId };
+    dispatch(joinGroup(joinPayload)).then(action => {
+      if (joinGroup.fulfilled.match(action)) {
+        const isPending = action.payload.pending ?? false;
+        setJoinedLocal(action.payload.joined);
+        setPendingLocal(isPending);
+        if (isPending) {
+          dispatch(showToast({ message: 'Join request sent! Waiting for admin approval.', type: 'success' }));
+        } else {
+          dispatch(showToast({ message: 'Successfully joined group!', type: 'success' }));
+        }
+      } else if (joinGroup.rejected.match(action)) {
+        setJoinedLocal(false);
+        dispatch(showToast({ message: action.payload?.message ?? 'Failed to join group.', type: 'error' }));
+      }
+    });
+  }
+
   function navClick(id) {
     if (id === 'create')   { setCreatePostOpen(true); return; }
     if (id === 'home')     onFeedClick?.();
@@ -2142,9 +2203,150 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
   }
 
   return (
-    <div className="gd-page">
-      <AnimatedNav activeId="friends" onNavigate={navClick} />
-      {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} groupId={groupId} />}
+    <>
+      {showAgeModal && (
+        <div className="modal-overlay" onClick={() => setShowAgeModal(false)}>
+          <div className="modal-content" style={{ maxWidth: '420px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Age Verification</h2>
+              <button className="modal-close" onClick={() => setShowAgeModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p style={{
+                color: '#b3bcc4',
+                marginBottom: '8px',
+                fontSize: '14px',
+                lineHeight: '1.6',
+                letterSpacing: '0.3px'
+              }}>
+                This is a vetted group. Please verify your birth date to continue.
+              </p>
+              <p style={{
+                color: '#7a8494',
+                marginBottom: '20px',
+                fontSize: '12px',
+                letterSpacing: '0.2px'
+              }}>
+                Minimum age required: {group.minAge ?? 18} years
+              </p>
+
+              <div style={{ position: 'relative' }}>
+                <div
+                  onClick={() => setShowCalendar(!showCalendar)}
+                  style={{
+                    width: '100%',
+                    padding: '14px 16px',
+                    borderRadius: '8px',
+                    border: ageError ? '1.5px solid #ef4444' : showCalendar ? '1.5px solid #3b82f6' : '1px solid #252d4a',
+                    background: '#0a0e1a',
+                    color: birthDate ? '#e0e6f8' : '#7a8494',
+                    fontSize: '15px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    boxSizing: 'border-box',
+                    letterSpacing: '0.2px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    transition: 'all 0.2s',
+                    boxShadow: showCalendar && !ageError ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none'
+                  }}
+                >
+                  <span>{birthDate ? new Date(birthDate + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Select birth date'}</span>
+                  <span style={{ fontSize: '20px' }}>📅</span>
+                </div>
+
+                {showCalendar && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    marginTop: '8px',
+                    background: '#0a0e1a',
+                    border: '1px solid #252d4a',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
+                    zIndex: 1000
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                      <button onClick={() => setCalendarMonth(m => m === 0 ? 11 : m - 1)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '18px' }}>❮</button>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ color: '#e0e6f8', fontWeight: 600, marginBottom: '4px' }}>
+                          {new Date(calendarYear, calendarMonth).toLocaleDateString('en-US', { month: 'long' })}
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                          <button onClick={() => setCalendarYear(y => y - 1)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.background = 'rgba(59, 130, 246, 0.1)'} onMouseLeave={(e) => e.target.style.background = 'none'}>◀ {calendarYear}</button>
+                          <button onClick={() => setCalendarYear(y => y + 1)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.background = 'rgba(59, 130, 246, 0.1)'} onMouseLeave={(e) => e.target.style.background = 'none'}>{calendarYear + 1} ▶</button>
+                        </div>
+                      </div>
+                      <button onClick={() => setCalendarMonth(m => m === 11 ? 0 : m + 1)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '18px' }}>❯</button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', marginBottom: '12px' }}>
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                        <div key={day} style={{ textAlign: 'center', color: '#5c6a8c', fontSize: '11px', fontWeight: 600, padding: '6px 0' }}>{day}</div>
+                      ))}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
+                      {Array.from({ length: getFirstDayOfMonth(calendarMonth, calendarYear) }).map((_, i) => (
+                        <div key={`empty-${i}`} />
+                      ))}
+                      {Array.from({ length: getDaysInMonth(calendarMonth, calendarYear) }).map((_, i) => {
+                        const day = i + 1;
+                        const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        const isSelected = birthDate === dateStr;
+                        const isToday = new Date().toISOString().split('T')[0] === dateStr;
+                        return (
+                          <button
+                            key={day}
+                            onClick={() => handleDateSelect(day)}
+                            style={{
+                              padding: '8px',
+                              borderRadius: '6px',
+                              border: isSelected ? '2px solid #3b82f6' : 'none',
+                              background: isSelected ? 'rgba(59, 130, 246, 0.2)' : isToday ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                              color: '#e0e6f8',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              fontWeight: 500,
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => { if (!isSelected) e.target.style.background = 'rgba(59, 130, 246, 0.15)'; }}
+                            onMouseLeave={(e) => { if (!isSelected) e.target.style.background = 'transparent'; }}
+                          >
+                            {day}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {ageError && (
+                <p style={{
+                  color: '#ef4444',
+                  fontSize: '13px',
+                  marginTop: '10px',
+                  letterSpacing: '0.2px',
+                  lineHeight: '1.5'
+                }}>
+                  {ageError}
+                </p>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button onClick={() => { setShowAgeModal(false); setBirthDate(''); setAgeError(''); }} className="modal-cancel-btn">Cancel</button>
+              <button onClick={handleAgeSubmit} className="modal-save-btn">Verify & Join</button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="gd-page">
+        <AnimatedNav activeId="friends" onNavigate={navClick} />
+        {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} groupId={groupId} />}
 
       {/* Cover */}
       <div className="gd-cover-section">
@@ -2164,7 +2366,7 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
           <div className="gd-group-info">
             <h1 className="gd-title">{group.name}</h1>
             <p className="gd-meta">
-              {group.members}
+              Created {fmtDate(group.createdAt)}
             </p>
           </div>
           <div className="gd-header-actions">
@@ -2180,20 +2382,11 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
               <button
                 className="gd-join-btn"
                 onClick={() => {
-                  setJoinedLocal(true);
-                  dispatch(joinGroup(groupId)).then(action => {
-                    if (joinGroup.fulfilled.match(action)) {
-                      const isPending = action.payload.pending ?? false;
-                      setJoinedLocal(action.payload.joined);
-                      setPendingLocal(isPending);
-                      if (isPending) {
-                        dispatch(showToast({ message: 'Join request sent! Waiting for admin approval.', type: 'success' }));
-                      }
-                    } else if (joinGroup.rejected.match(action)) {
-                      setJoinedLocal(false);
-                      dispatch(showToast({ message: action.payload?.message ?? 'Failed to join group.', type: 'error' }));
-                    }
-                  });
+                  if (group.privacy === 'vetted') {
+                    setShowAgeModal(true);
+                  } else {
+                    proceedWithJoinDetail();
+                  }
                 }}
                 disabled={isJoining}
               >
@@ -2312,10 +2505,7 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
                   <div className="adm-about-meta-card">
                     <span className="adm-about-meta-label">Privacy</span>
                     <div className="adm-about-meta-val-row">
-                      {isPrivate
-                        ? <><LockIcon /><span className="adm-about-meta-value">Private</span></>
-                        : <><GlobeIcon /><span className="adm-about-meta-value">Public</span></>
-                      }
+                      {group?.privacy === 'private' ? <><LockIcon /><span className="adm-about-meta-value">Private</span></> : group?.privacy === 'vetted' ? <><CheckCircleIcon /><span className="adm-about-meta-value">Vetted</span></> : <><GlobeIcon /><span className="adm-about-meta-value">Public</span></>}
                     </div>
                   </div>
                   <div className="adm-about-meta-card">
@@ -2337,35 +2527,35 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
                 <h3 className="gd-card-title">Group Info</h3>
                 <div className="gd-info-rows">
                   <div className="gd-info-row">
-                    {isPrivate ? <LockIcon /> : <GlobeIcon />}
-                    <div>
-                      <p className="gd-info-sub">{isPrivate ? 'Only members can see posts' : 'Anyone can view and join'}</p>
-                      <p className="gd-info-label">{isPrivate ? 'Private Group' : 'Public Group'}</p>
+                    <div className="gd-info-sub-row">
+                      {group?.privacy === 'private' ? <LockIcon /> : group?.privacy === 'vetted' ? <CheckCircleIcon /> : <GlobeIcon />}
+                      <p className="gd-info-sub">{group?.privacy === 'private' ? 'Only members can see posts' : group?.privacy === 'vetted' ? 'Verified members only' : 'Anyone can view and join'}</p>
                     </div>
+                    <p className="gd-info-label">{group?.privacy === 'private' ? 'Private Group' : group?.privacy === 'vetted' ? 'Vetted Group' : 'Public Group'}</p>
                   </div>
                   <div className="gd-info-row">
-                    <UsersIcon />
-                    <div>
+                    <div className="gd-info-sub-row">
+                      <UsersIcon />
                       <p className="gd-info-sub">Total members</p>
-                      <p className="gd-info-label">{group.members}</p>
                     </div>
+                    <p className="gd-info-label">{group.members}</p>
                   </div>
                   {group.createdAt && (
                     <div className="gd-info-row">
-                      <InfoCircleIcon />
-                      <div>
+                      <div className="gd-info-sub-row">
+                        <InfoCircleIcon />
                         <p className="gd-info-sub">Group history</p>
-                        <p className="gd-info-label">Created {fmtDate(group.createdAt)}</p>
                       </div>
+                      <p className="gd-info-label">Created {fmtDate(group.createdAt)}</p>
                     </div>
                   )}
                   {adminName && adminName !== '—' && (
                     <div className="gd-info-row">
-                      <OrganizerIcon />
-                      <div>
+                      <div className="gd-info-sub-row">
+                        <OrganizerIcon />
                         <p className="gd-info-sub">Group Admin</p>
-                        <p className="gd-info-label">{adminName}</p>
                       </div>
+                      <p className="gd-info-label">{adminName}</p>
                     </div>
                   )}
                 </div>
@@ -2618,7 +2808,8 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
         </div>
       )}
 
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -2632,6 +2823,12 @@ function GroupHubCard({ group, onManage, onView, isOwned }) {
   const [joined,  setJoined]  = useState(group.joined  || false);
   const [pending, setPending] = useState(group.pending || false);
   const isJoining = joiningIds.includes(groupId);
+  const [showAgeModal, setShowAgeModal] = useState(false);
+  const [birthDate, setBirthDate] = useState('');
+  const [ageError, setAgeError] = useState('');
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
+  const [calendarYear, setCalendarYear] = useState(new Date().getFullYear() - 25);
 
   // Sync when group prop refreshes (e.g. after re-fetch on back from detail)
   useEffect(() => {
@@ -2639,17 +2836,65 @@ function GroupHubCard({ group, onManage, onView, isOwned }) {
     setPending(group.pending || false);
   }, [group.joined, group.pending]);
 
-  function handleJoin(e) {
-    e.stopPropagation();
-    if (joined || pending || isJoining) return;
+  function getDaysInMonth(month, year) {
+    return new Date(year, month + 1, 0).getDate();
+  }
+
+  function getFirstDayOfMonth(month, year) {
+    return new Date(year, month, 1).getDay();
+  }
+
+  function handleDateSelect(day) {
+    const date = new Date(calendarYear, calendarMonth, day);
+    const dateStr = date.toISOString().split('T')[0];
+    setBirthDate(dateStr);
+    setShowCalendar(false);
+    setAgeError('');
+  }
+
+  function calculateAge(birthDateStr) {
+    const birthDate = new Date(birthDateStr);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  }
+
+  function handleAgeSubmit() {
+    setAgeError('');
+    const minAge = group.minAge ?? 18;
+
+    if (!birthDate.trim()) {
+      setAgeError('Please enter your birth date');
+      return;
+    }
+
+    const age = calculateAge(birthDate);
+    if (age < minAge) {
+      setAgeError(`You must be at least ${minAge} years old to join this group`);
+      return;
+    }
+
+    setShowAgeModal(false);
+    setBirthDate('');
+    proceedWithJoin();
+  }
+
+  function proceedWithJoin() {
     setJoined(true);
-    dispatch(joinGroup(groupId)).then(action => {
+    const joinPayload = group.privacy === 'vetted' ? { groupId, birthDate } : { groupId };
+    dispatch(joinGroup(joinPayload)).then(action => {
       if (joinGroup.fulfilled.match(action)) {
         const isPending = action.payload.pending ?? false;
         setJoined(action.payload.joined);
         setPending(isPending);
         if (isPending) {
           dispatch(showToast({ message: 'Join request sent! Waiting for admin approval.', type: 'success' }));
+        } else {
+          dispatch(showToast({ message: 'Successfully joined group!', type: 'success' }));
         }
       } else if (joinGroup.rejected.match(action)) {
         setJoined(false);
@@ -2658,15 +2903,176 @@ function GroupHubCard({ group, onManage, onView, isOwned }) {
     });
   }
 
+  function handleJoin(e) {
+    e.stopPropagation();
+    if (joined || pending || isJoining) return;
+
+    if (group.privacy === 'vetted') {
+      setShowAgeModal(true);
+    } else {
+      proceedWithJoin();
+    }
+  }
+
   const btnLabel = isJoining ? 'Joining...' : pending ? 'Pending' : joined ? 'Joined' : 'Join Group';
-  const coverSrc = group.coverImg || group.coverUrl || `https://picsum.photos/seed/hub-${groupId}/400/200`;
+  const hasCoverImg = !!(group.coverImg || group.coverUrl);
+  const coverSrc = group.coverImg || group.coverUrl;
   const pendingReqs = group.pendingReqs ?? group.pendingCount ?? 0;
 
   return (
-    <div className={`hub-card${isOwned ? '' : ' hub-card--clickable'}`} onClick={isOwned ? undefined : onView}>
+    <>
+      {showAgeModal && (
+        <div className="modal-overlay" onClick={() => setShowAgeModal(false)}>
+          <div className="modal-content" style={{ maxWidth: '420px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Age Verification</h2>
+              <button className="modal-close" onClick={() => setShowAgeModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p style={{
+                color: '#b3bcc4',
+                marginBottom: '8px',
+                fontSize: '14px',
+                lineHeight: '1.6',
+                letterSpacing: '0.3px'
+              }}>
+                This is a vetted group. Please verify your birth date to continue.
+              </p>
+              <p style={{
+                color: '#7a8494',
+                marginBottom: '20px',
+                fontSize: '12px',
+                letterSpacing: '0.2px'
+              }}>
+                Minimum age required: {group.minAge ?? 18} years
+              </p>
+
+              <div style={{ position: 'relative' }}>
+                <div
+                  onClick={() => setShowCalendar(!showCalendar)}
+                  style={{
+                    width: '100%',
+                    padding: '14px 16px',
+                    borderRadius: '8px',
+                    border: ageError ? '1.5px solid #ef4444' : showCalendar ? '1.5px solid #3b82f6' : '1px solid #252d4a',
+                    background: '#0a0e1a',
+                    color: birthDate ? '#e0e6f8' : '#7a8494',
+                    fontSize: '15px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    boxSizing: 'border-box',
+                    letterSpacing: '0.2px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    transition: 'all 0.2s',
+                    boxShadow: showCalendar && !ageError ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none'
+                  }}
+                >
+                  <span>{birthDate ? new Date(birthDate + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Select birth date'}</span>
+                  <span style={{ fontSize: '20px' }}>📅</span>
+                </div>
+
+                {showCalendar && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    marginTop: '8px',
+                    background: '#0a0e1a',
+                    border: '1px solid #252d4a',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
+                    zIndex: 1000
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                      <button onClick={() => setCalendarMonth(m => m === 0 ? 11 : m - 1)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '18px' }}>❮</button>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ color: '#e0e6f8', fontWeight: 600, marginBottom: '4px' }}>
+                          {new Date(calendarYear, calendarMonth).toLocaleDateString('en-US', { month: 'long' })}
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                          <button onClick={() => setCalendarYear(y => y - 1)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.background = 'rgba(59, 130, 246, 0.1)'} onMouseLeave={(e) => e.target.style.background = 'none'}>◀ {calendarYear}</button>
+                          <button onClick={() => setCalendarYear(y => y + 1)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.background = 'rgba(59, 130, 246, 0.1)'} onMouseLeave={(e) => e.target.style.background = 'none'}>{calendarYear + 1} ▶</button>
+                        </div>
+                      </div>
+                      <button onClick={() => setCalendarMonth(m => m === 11 ? 0 : m + 1)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '18px' }}>❯</button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', marginBottom: '12px' }}>
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                        <div key={day} style={{ textAlign: 'center', color: '#5c6a8c', fontSize: '11px', fontWeight: 600, padding: '6px 0' }}>{day}</div>
+                      ))}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
+                      {Array.from({ length: getFirstDayOfMonth(calendarMonth, calendarYear) }).map((_, i) => (
+                        <div key={`empty-${i}`} />
+                      ))}
+                      {Array.from({ length: getDaysInMonth(calendarMonth, calendarYear) }).map((_, i) => {
+                        const day = i + 1;
+                        const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        const isSelected = birthDate === dateStr;
+                        const isToday = new Date().toISOString().split('T')[0] === dateStr;
+                        return (
+                          <button
+                            key={day}
+                            onClick={() => handleDateSelect(day)}
+                            style={{
+                              padding: '8px',
+                              borderRadius: '6px',
+                              border: isSelected ? '2px solid #3b82f6' : 'none',
+                              background: isSelected ? 'rgba(59, 130, 246, 0.2)' : isToday ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                              color: '#e0e6f8',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              fontWeight: 500,
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => { if (!isSelected) e.target.style.background = 'rgba(59, 130, 246, 0.15)'; }}
+                            onMouseLeave={(e) => { if (!isSelected) e.target.style.background = 'transparent'; }}
+                          >
+                            {day}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {ageError && (
+                <p style={{
+                  color: '#ef4444',
+                  fontSize: '13px',
+                  marginTop: '10px',
+                  letterSpacing: '0.2px',
+                  lineHeight: '1.5'
+                }}>
+                  {ageError}
+                </p>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button onClick={() => { setShowAgeModal(false); setBirthDate(''); setAgeError(''); }} className="modal-cancel-btn">Cancel</button>
+              <button onClick={handleAgeSubmit} className="modal-save-btn">Verify & Join</button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div className={`hub-card${isOwned ? '' : ' hub-card--clickable'}`} onClick={isOwned ? undefined : onView}>
       <div className="hub-card-cover">
-        <img src={coverSrc} alt={group.name} className="hub-card-cover-img" />
-        <span className="hub-card-badge">{group.category}</span>
+        {hasCoverImg ? (
+          <>
+            <img src={coverSrc} alt={group.name} className="hub-card-cover-img" />
+            <span className="hub-card-badge">{group.category}</span>
+          </>
+        ) : (
+          <div className="hub-card-cover-placeholder">
+            <span className="hub-card-cover-text">{group.category}</span>
+          </div>
+        )}
       </div>
       <div className="hub-card-icon-wrap">
         {group.groupImg
@@ -2721,6 +3127,7 @@ function GroupHubCard({ group, onManage, onView, isOwned }) {
         )}
       </div>
     </div>
+    </>
   );
 }
 
@@ -2826,6 +3233,7 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
   const [searchOpen,     setSearchOpen]     = useState(false);
   const [hubTab,         setHubTab]         = useState('suggested');
   const [hubCat,         setHubCat]         = useState('All');
+  const [joinedSearch,   setJoinedSearch]   = useState('');
 
   useEffect(() => {
     dispatch(fetchGroups({ tab: hubTab, category: hubCat === 'All' ? '' : hubCat }));
@@ -2871,12 +3279,21 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
       dispatch(fetchGroups({ tab: hubTab, category: hubCat === 'All' ? '' : hubCat }));
     });
 
+    // Listen for group updates (privacy, description, mission changes)
+    socket.on('group:updated', (data) => {
+      if (showDetail && (detailGroup?._id ?? detailGroup?.id) === data.groupId) {
+        console.log('🔔 Main: group:updated received, refetching...', data);
+        dispatch(fetchGroupDetail(data.groupId));
+      }
+    });
+
     return () => {
       socket.emit('leave-room', 'groups-hub');
       socket.off('group:created');
       socket.off('group:member-count-changed');
+      socket.off('group:updated');
     };
-  }, [dispatch, hubTab, hubCat]);
+  }, [dispatch, hubTab, hubCat, showDetail, detailGroup]);
 
   useEffect(() => {
     if (!initialGroupId) return;
@@ -2888,6 +3305,17 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
     }
     onInitGroupConsumed?.();
   }, [initialGroupId, groups]);
+
+  // Update detailGroup when group data changes (e.g., after edit and refetch)
+  useEffect(() => {
+    if (!showDetail || !detailGroup) return;
+    const detailGroupId = detailGroup?._id ?? detailGroup?.id;
+    const updatedGroup = groups.find(g => (g._id ?? g.id) === detailGroupId);
+    if (updatedGroup && (updatedGroup.privacy !== detailGroup.privacy || updatedGroup.minAge !== detailGroup.minAge)) {
+      console.log('📊 Syncing detailGroup privacy:', { old: detailGroup.privacy, new: updatedGroup.privacy });
+      setDetailGroup(updatedGroup);
+    }
+  }, [groups, showDetail, detailGroup]);
 
   // Report the currently-open group/create-flow up to HomePage so it can
   // keep the URL in sync (?section=groups&id=&create=) for refresh restore.
@@ -3007,7 +3435,16 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
   }
 
   // Show API groups only when they belong to the current tab
-  const displayGroups = (groupsTab === hubTab) ? groups : [];
+  let displayGroups = (groupsTab === hubTab) ? groups : [];
+
+  // Filter by search query when on joined tab
+  if (hubTab === 'joined' && joinedSearch.trim()) {
+    displayGroups = displayGroups.filter(g =>
+      g.name.toLowerCase().includes(joinedSearch.toLowerCase()) ||
+      (g.category && g.category.toLowerCase().includes(joinedSearch.toLowerCase())) ||
+      (g.description && g.description.toLowerCase().includes(joinedSearch.toLowerCase()))
+    );
+  }
 
   return (
     <div className="grp-page">
@@ -3030,17 +3467,74 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
         </div>
 
         {/* Category chips */}
-        <div className="grp-hub-cats">
-          {HUB_CATEGORIES.map(cat => (
-            <button
-              key={cat}
-              className={`grp-hub-cat${hubCat === cat ? ' grp-hub-cat--active' : ''}`}
-              onClick={() => setHubCat(cat)}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+        {hubTab !== 'joined' && (
+          <div className="grp-hub-cats">
+            {HUB_CATEGORIES.map(cat => (
+              <button
+                key={cat}
+                className={`grp-hub-cat${hubCat === cat ? ' grp-hub-cat--active' : ''}`}
+                onClick={() => setHubCat(cat)}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Search box for joined groups */}
+        {hubTab === 'joined' && (
+          <div style={{
+            marginBottom: '20px',
+            display: 'flex',
+            gap: '8px'
+          }}>
+            <input
+              type="text"
+              placeholder="🔍 Search joined groups..."
+              value={joinedSearch}
+              onChange={(e) => setJoinedSearch(e.target.value)}
+              style={{
+                flex: 1,
+                padding: '12px 16px',
+                borderRadius: '8px',
+                border: '1px solid #252d4a',
+                background: '#0a0e1a',
+                color: '#e0e6f8',
+                fontSize: '14px',
+                outline: 'none',
+                transition: 'all 0.2s'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#3b82f6';
+                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#252d4a';
+                e.target.style.boxShadow = 'none';
+              }}
+            />
+            {joinedSearch && (
+              <button
+                onClick={() => setJoinedSearch('')}
+                style={{
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: '#1e2a42',
+                  color: '#e0e6f8',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.background = '#252d4a'}
+                onMouseLeave={(e) => e.target.style.background = '#1e2a42'}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Group cards grid */}
         <div className="grp-hub-grid">
