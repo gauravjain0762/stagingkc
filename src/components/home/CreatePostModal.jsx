@@ -515,39 +515,41 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
 
         {/* Body */}
         <div className="cp-body">
-          {/* Audience row */}
-          <div className="cp-audience-row">
-            <div className="cp-audience-wrap" ref={dropdownRef}>
-              <button
-                className={`cp-audience-chip${dropdownOpen ? ' cp-audience-chip--open' : ''}`}
-                type="button"
-                onClick={() => setDropdownOpen(v => !v)}
-                aria-haspopup="listbox"
-                aria-expanded={dropdownOpen}
-              >
-                {VISIBILITY_OPTIONS.find(o => o.id === visibility)?.icon}
-                {VISIBILITY_OPTIONS.find(o => o.id === visibility)?.label}
-                <span className={`cp-chevron${dropdownOpen ? ' cp-chevron--up' : ''}`}><ChevronDownIcon /></span>
-              </button>
+          {/* Audience row — only for feed posts, not group posts */}
+          {!groupId && (
+            <div className="cp-audience-row">
+              <div className="cp-audience-wrap" ref={dropdownRef}>
+                <button
+                  className={`cp-audience-chip${dropdownOpen ? ' cp-audience-chip--open' : ''}`}
+                  type="button"
+                  onClick={() => setDropdownOpen(v => !v)}
+                  aria-haspopup="listbox"
+                  aria-expanded={dropdownOpen}
+                >
+                  {VISIBILITY_OPTIONS.find(o => o.id === visibility)?.icon}
+                  {VISIBILITY_OPTIONS.find(o => o.id === visibility)?.label}
+                  <span className={`cp-chevron${dropdownOpen ? ' cp-chevron--up' : ''}`}><ChevronDownIcon /></span>
+                </button>
 
-              {dropdownOpen && (
-                <ul className="cp-visibility-dropdown" role="listbox">
-                  {VISIBILITY_OPTIONS.map(opt => (
-                    <li key={opt.id} role="option" aria-selected={visibility === opt.id}>
-                      <button
-                        className={`cp-vis-option${visibility === opt.id ? ' cp-vis-option--active' : ''}`}
-                        onClick={() => { setVisibility(opt.id); setDropdownOpen(false); }}
-                      >
-                        <span className="cp-vis-icon">{opt.icon}</span>
-                        <span className="cp-vis-label">{opt.label}</span>
-                        {visibility === opt.id && <span className="cp-vis-check"><CheckIcon /></span>}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+                {dropdownOpen && (
+                  <ul className="cp-visibility-dropdown" role="listbox">
+                    {VISIBILITY_OPTIONS.map(opt => (
+                      <li key={opt.id} role="option" aria-selected={visibility === opt.id}>
+                        <button
+                          className={`cp-vis-option${visibility === opt.id ? ' cp-vis-option--active' : ''}`}
+                          onClick={() => { setVisibility(opt.id); setDropdownOpen(false); }}
+                        >
+                          <span className="cp-vis-icon">{opt.icon}</span>
+                          <span className="cp-vis-label">{opt.label}</span>
+                          {visibility === opt.id && <span className="cp-vis-check"><CheckIcon /></span>}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Caption */}
           <div style={{ position: 'relative' }} ref={mentionRef}>

@@ -1613,6 +1613,58 @@
 
 .creator-post-btn:active { transform: scale(0.96); box-shadow: none; }
 
+/* ── Feed sections ── */
+.feed-section {
+  margin-bottom: 20px;
+}
+
+.feed-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.feed-section-header h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e0e6f8;
+  margin: 0;
+}
+
+.feed-section-viewall {
+  font-size: 12px;
+  font-weight: 600;
+  color: #60a5fa;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.2s;
+}
+
+.feed-section-viewall:hover {
+  color: #93c5fd;
+}
+
+.feed-groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 1200px) {
+  .feed-groups-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .feed-groups-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
 /* ── Feed posts ── */
 .feed-posts {
   display: flex;
