@@ -2194,6 +2194,9 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
   const [showAgeModal,     setShowAgeModal]     = useState(false);
   const [birthDate,        setBirthDate]        = useState('');
   const [ageError,         setAgeError]         = useState('');
+  const [showCalendar,     setShowCalendar]     = useState(false);
+  const [calendarMonth,    setCalendarMonth]    = useState(new Date().getMonth());
+  const [calendarYear,     setCalendarYear]     = useState(new Date().getFullYear() - 25);
 
   const isJoining = joiningIds.includes(groupId);
   const isLeaving = leavingIds.includes(groupId);
