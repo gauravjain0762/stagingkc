@@ -134,31 +134,6 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
 
       {createOpen && <CreatePostModal initialTab={createTab} onClose={() => setCreateOpen(false)} onNavigateToEvents={onEventsClick} onCreateEvent={onCreateEvent} />}
 
-      {/* Groups Section */}
-      {groups.length > 0 && !groupsLoading && (
-        <div className="feed-section">
-          <div className="feed-section-header">
-            <h2>Suggested Groups</h2>
-            {groups.length > 3 && <button className="feed-section-viewall" onClick={onGroupsClick}>View all</button>}
-          </div>
-          <div className="feed-groups-grid">
-            {groups.slice(0, 3).map(group => (
-              <GroupCard
-                key={group._id}
-                group={group}
-                onJoin={() => loadFeedGroups()}
-                onDetails={() => onGroupClick?.(group._id)}
-                onShare={() => {
-                  if (navigator.share) {
-                    navigator.share({ title: group.name, text: `Check out ${group.name}!`, url: window.location.href });
-                  }
-                }}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
       <div className="feed-posts" ref={feedRef}>
         {(loading || eventsLoading || groupsLoading) && feedItems.length === 0 && (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#5c6a8c' }}>Loading…</div>
