@@ -71,17 +71,19 @@ function InfoCircleIcon()     { return <svg width="16" height="16" viewBox="0 0 
 
 /* ── Premium Role Dropdown ── */
 const ROLE_CONFIG = {
+  Owner:     { color: '#f59e0b', bg: 'rgba(245,158,11,0.14)',  border: 'rgba(245,158,11,0.32)'  },
   Admin:     { color: '#60a5fa', bg: 'rgba(59,130,246,0.14)',  border: 'rgba(59,130,246,0.32)'  },
-  Moderator: { color: '#fbbf24', bg: 'rgba(245,158,11,0.14)',  border: 'rgba(245,158,11,0.32)'  },
+  Moderator: { color: '#8b5cf6', bg: 'rgba(139,92,246,0.14)',  border: 'rgba(139,92,246,0.32)'  },
   Member:    { color: '#94a3b8', bg: 'rgba(100,116,139,0.14)', border: 'rgba(100,116,139,0.28)' },
 };
 
-const MEMBER_ROLES   = ['Admin', 'Moderator', 'Member'];
+const MEMBER_ROLES   = ['Owner', 'Admin', 'Moderator', 'Member'];
 
-function RoleSelect({ value, memberId, openId, onToggle, onChange }) {
+function RoleSelect({ value, memberId, openId, onToggle, onChange, isOwner }) {
   const ref = useRef(null);
   const isOpen = openId === memberId;
   const cfg = ROLE_CONFIG[value] ?? ROLE_CONFIG.Member;
+  const isOwnerRole = value === 'Owner';
 
   useEffect(() => {
     if (!isOpen) return;
@@ -94,26 +96,30 @@ function RoleSelect({ value, memberId, openId, onToggle, onChange }) {
     <div className="adm-rs-wrap" ref={ref}>
       <button
         className="adm-rs-trigger"
-        onClick={() => onToggle(isOpen ? null : memberId)}
-        style={{ '--rs-color': cfg.color, '--rs-bg': cfg.bg, '--rs-border': cfg.border }}
+        onClick={() => !isOwnerRole && onToggle(isOpen ? null : memberId)}
+        style={{ '--rs-color': cfg.color, '--rs-bg': cfg.bg, '--rs-border': cfg.border, cursor: isOwnerRole ? 'not-allowed' : 'pointer', opacity: isOwnerRole ? 0.6 : 1 }}
+        title={isOwnerRole ? 'Owner role cannot be changed' : 'Click to change role'}
       >
         <span className="adm-rs-dot" style={{ background: cfg.color }} />
         <span className="adm-rs-label">{value}</span>
-        <span className={`adm-rs-chevron${isOpen ? ' adm-rs-chevron--up' : ''}`}><ChevronDownIcon /></span>
+        {!isOwnerRole && <span className={`adm-rs-chevron${isOpen ? ' adm-rs-chevron--up' : ''}`}><ChevronDownIcon /></span>}
       </button>
-      {isOpen && (
+      {isOpen && !isOwnerRole && (
         <div className="adm-rs-dropdown">
-          {Object.entries(ROLE_CONFIG).map(([role, rc]) => (
-            <button
-              key={role}
-              className={`adm-rs-option${value === role ? ' adm-rs-option--active' : ''}`}
-              onClick={() => { onChange(role); onToggle(null); }}
-            >
-              <span className="adm-rs-opt-dot" style={{ background: rc.color, boxShadow: `0 0 6px ${rc.color}` }} />
-              <span className="adm-rs-opt-label">{role}</span>
-              {value === role && <CheckSmIcon />}
-            </button>
-          ))}
+          {MEMBER_ROLES.filter(role => role !== 'Owner').map(role => {
+            const rc = ROLE_CONFIG[role];
+            return (
+              <button
+                key={role}
+                className={`adm-rs-option${value === role ? ' adm-rs-option--active' : ''}`}
+                onClick={() => { onChange(role); onToggle(null); }}
+              >
+                <span className="adm-rs-opt-dot" style={{ background: rc.color, boxShadow: `0 0 6px ${rc.color}` }} />
+                <span className="adm-rs-opt-label">{role}</span>
+                {value === role && <CheckSmIcon />}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -904,7 +910,30 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
                         </div>
                       </td>
                       <td className="adm-date-cell">{m.joined}</td>
-                      <td><span className="adm-member-mutual" style={{ textTransform: 'capitalize' }}>{role}</span></td>
+                      <td>
+                        {isOwned ? (
+                          <RoleSelect
+                            value={role}
+                            memberId={mid}
+                            openId={openDropdownId}
+                            onToggle={setOpenDropdownId}
+                            isOwner={role === 'Owner'}
+                            onChange={(newRole) => {
+                              if (newRole !== role) {
+                                setMemberRoles(s => ({ ...s, [mid]: newRole }));
+                                dispatch(changeMemberRole({ groupId, memberId: mid, role: newRole }))
+                                  .then(action => {
+                                    if (changeMemberRole.fulfilled.match(action)) {
+                                      dispatch(fetchAdminDashboard(groupId));
+                                    }
+                                  });
+                              }
+                            }}
+                          />
+                        ) : (
+                          <span className="adm-member-mutual" style={{ textTransform: 'capitalize' }}>{role}</span>
+                        )}
+                      </td>
                       <td>
                         <div className="adm-action-cell">
                           {!isSelfRow && (isFriendOrRequested ? (
