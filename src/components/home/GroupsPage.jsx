@@ -83,8 +83,7 @@ function RoleSelect({ value, memberId, openId, onToggle, onChange, isOwner, isSe
   const ref = useRef(null);
   const isOpen = openId === memberId;
   const cfg = ROLE_CONFIG[value] ?? ROLE_CONFIG.Member;
-  const isOwnerRole = value === 'Owner';
-  const isDisabled = isOwnerRole || isSelf;
+  const isDisabled = isSelf;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -99,7 +98,7 @@ function RoleSelect({ value, memberId, openId, onToggle, onChange, isOwner, isSe
         className="adm-rs-trigger"
         onClick={() => !isDisabled && onToggle(isOpen ? null : memberId)}
         style={{ '--rs-color': cfg.color, '--rs-bg': cfg.bg, '--rs-border': cfg.border, cursor: isDisabled ? 'not-allowed' : 'pointer', opacity: isDisabled ? 0.6 : 1 }}
-        title={isSelf ? 'You cannot change your own role' : isOwnerRole ? 'Owner role cannot be changed' : 'Click to change role'}
+        title={isSelf ? 'You cannot change your own role' : 'Click to change role'}
       >
         <span className="adm-rs-dot" style={{ background: cfg.color }} />
         <span className="adm-rs-label">{value}</span>
@@ -109,17 +108,15 @@ function RoleSelect({ value, memberId, openId, onToggle, onChange, isOwner, isSe
         <div className="adm-rs-dropdown">
           {MEMBER_ROLES.map(role => {
             const rc = ROLE_CONFIG[role];
-            const optionDisabled = role === 'Owner';
             return (
               <button
                 key={role}
-                className={`adm-rs-option${value === role ? ' adm-rs-option--active' : ''}${optionDisabled ? ' adm-rs-option--disabled' : ''}`}
-                onClick={() => !optionDisabled && (onChange(role), onToggle(null))}
-                style={{ opacity: optionDisabled ? 0.5 : 1, cursor: optionDisabled ? 'not-allowed' : 'pointer' }}
-                title={optionDisabled ? 'Owner role is not assignable' : ''}
+                className={`adm-rs-option${value === role ? ' adm-rs-option--active' : ''}`}
+                onClick={() => { onChange(role); onToggle(null); }}
+                style={{ cursor: 'pointer' }}
               >
                 <span className="adm-rs-opt-dot" style={{ background: rc.color, boxShadow: `0 0 6px ${rc.color}` }} />
-                <span className="adm-rs-opt-label">{role}{optionDisabled ? ' (Locked)' : ''}</span>
+                <span className="adm-rs-opt-label">{role}</span>
                 {value === role && <CheckSmIcon />}
               </button>
             );
