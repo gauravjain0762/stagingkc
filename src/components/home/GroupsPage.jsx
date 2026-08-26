@@ -1996,6 +1996,8 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
   const [aboutExpanded,    setAboutExpanded]    = useState(false);
   const [joinedLocal,      setJoinedLocal]      = useState(group.joined || false);
   const [pendingLocal,     setPendingLocal]     = useState(group.pending || false);
+  const [announcements,    setAnnouncements]    = useState([]);
+  const [announcementText, setAnnouncementText] = useState('');
   const [createPostOpen,   setCreatePostOpen]   = useState(false);
   const [gdFriendIds,      setGdFriendIds]      = useState(() => new Set(GD_MEMBERS.filter(m => m.isFriend).map(m => m.id)));
   const [showLeaveModal,   setShowLeaveModal]   = useState(false);
@@ -2496,6 +2498,14 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
         >
           Members{!canViewMemberContent && <LockIcon />}
         </button>
+        <button
+          className={`gd-tab${detailTab === 'announcements' ? ' gd-tab--active' : ''}${canViewMemberContent ? '' : ' gd-tab--locked'}`}
+          onClick={() => canViewMemberContent && setDetailTab('announcements')}
+          disabled={!canViewMemberContent}
+          title={canViewMemberContent ? undefined : 'Join this group to see announcements'}
+        >
+          Announcements{!canViewMemberContent && <LockIcon />}
+        </button>
       </div>
 
       {/* Body */}
@@ -2790,6 +2800,146 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
               </tbody>
             </table>
           )}
+          </div>
+        )}
+
+        {/* ── Announcements tab ── */}
+        {detailTab === 'announcements' && (
+          <div className="gd-announcements-section">
+            {/* Post announcement (only for Admin/Moderator) */}
+            {isOwned && (
+              <div className="gd-announce-form">
+                <textarea
+                  placeholder="📢 Post an announcement..."
+                  value={announcementText}
+                  onChange={(e) => setAnnouncementText(e.target.value)}
+                  className="gd-announce-textarea"
+                  style={{
+                    width: '100%',
+                    minHeight: '80px',
+                    padding: '12px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid #252d4a',
+                    background: '#0a0e1a',
+                    color: '#e0e6f8',
+                    fontSize: '14px',
+                    fontFamily: 'Plus Jakarta Sans, sans-serif',
+                    resize: 'vertical',
+                    outline: 'none',
+                    transition: 'all 0.2s'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#3b82f6';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#252d4a';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    if (announcementText.trim()) {
+                      const newAnnouncement = {
+                        _id: Date.now(),
+                        author: authUser?.fullName || authUser?.name,
+                        authorImg: authUser?.profileImage,
+                        text: announcementText,
+                        createdAt: new Date().toLocaleString(),
+                        role: myRole
+                      };
+                      setAnnouncements([newAnnouncement, ...announcements]);
+                      setAnnouncementText('');
+                      dispatch(showToast('Announcement posted!'));
+                    }
+                  }}
+                  style={{
+                    marginTop: '10px',
+                    padding: '10px 20px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: '#3b82f6',
+                    color: '#fff',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.target.style.background = '#2563eb'}
+                  onMouseLeave={(e) => e.target.style.background = '#3b82f6'}
+                >
+                  Post Announcement
+                </button>
+              </div>
+            )}
+
+            {/* Announcements list */}
+            <div className="gd-announce-list" style={{ marginTop: isOwned ? '30px' : '0' }}>
+              {announcements.length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '40px 20px',
+                  color: '#7a8494'
+                }}>
+                  <p style={{ fontSize: '14px' }}>No announcements yet</p>
+                  {isOwned && <p style={{ fontSize: '12px', marginTop: '8px' }}>Post one to get started!</p>}
+                </div>
+              ) : (
+                announcements.map(ann => (
+                  <div
+                    key={ann._id}
+                    style={{
+                      background: '#0a0e1a',
+                      border: '1px solid #252d4a',
+                      borderRadius: '8px',
+                      padding: '16px',
+                      marginBottom: '12px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', gap: '12px', marginBottom: '10px' }}>
+                      <img
+                        src={ann.authorImg || `https://i.pravatar.cc/40?img=${ann.author.charCodeAt(0)}`}
+                        alt={ann.author}
+                        style={{
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '50%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <span style={{ fontSize: '14px', fontWeight: '600', color: '#e0e6f8' }}>
+                            {ann.author}
+                          </span>
+                          <span style={{
+                            fontSize: '11px',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            background: ann.role === 'Admin' ? 'rgba(59,130,246,0.2)' : 'rgba(139,92,246,0.2)',
+                            color: ann.role === 'Admin' ? '#60a5fa' : '#a78bfa'
+                          }}>
+                            {ann.role}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '12px', color: '#7a8494' }}>
+                          {ann.createdAt}
+                        </span>
+                      </div>
+                    </div>
+                    <p style={{
+                      fontSize: '14px',
+                      lineHeight: '1.6',
+                      color: '#c8cfe0',
+                      margin: '0',
+                      wordBreak: 'break-word'
+                    }}>
+                      {ann.text}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         )}
 
