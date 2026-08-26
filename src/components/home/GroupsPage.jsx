@@ -422,6 +422,9 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
   const rdxPosts    = useSelector(s => s.groups.groupPosts[groupId]    ?? null);
   const rdxStats    = useSelector(s => s.groups.adminDashboard[groupId]?.stats ?? null);
 
+  const myId = authUser?._id ?? authUser?.id;
+  const isOwned = !!myId && (group.admin === myId || group.admin?._id === myId);
+
   const [activeTab,      setActiveTab]      = useState('about');
   const [aboutExpanded,  setAboutExpanded]  = useState(false);
   const [searchQuery,    setSearchQuery]    = useState('');
@@ -571,7 +574,7 @@ function GroupAdminDashboard({ group, onBack, onFeedClick, onEventsClick, onCale
     if (id === 'minisites') onMinisitesClick?.();
   }
 
-  function switchTab(tab) { setActiveTab(tab); setSearchQuery(''); setFilterRole(''); setFilterJoined(''); }
+  function switchTab(tab) { setActiveTab(tab); setSearchQuery(''); setFilterRole(''); }
   function handleAccept(requestId) {
     dispatch(acceptGroupRequest({ groupId, requestId })).then(action => {
       if (acceptGroupRequest.fulfilled.match(action)) {
