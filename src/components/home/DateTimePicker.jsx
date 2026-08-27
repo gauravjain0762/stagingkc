@@ -206,10 +206,50 @@ export function CustomTimePicker({ value, onChange, disabled, placeholder = 'Sel
   const ref = useRef(null);
   const hrScrollRef = useRef(null);
   const minScrollRef = useRef(null);
+  // Same fix as CustomDatePicker: this dropdown used to rely on plain CSS
+  // (`position: fixed; right: 0`) to sit under its own field, which only
+  // works when no ancestor has a `transform` — the step-wizard's slide
+  // animation leaves one behind via `animation-fill-mode: both`, which was
+  // making every open time field's dropdown render at the same fixed spot
+  // instead of under whichever field (Start Time vs End Time) was actually
+  // clicked. Portal to document.body with an explicit computed position,
+  // same approach as the calendar dropdown.
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    if (!open || !ref.current) return;
+    const updatePos = () => {
+      const fieldEl = ref.current?.querySelector('.dtp-field');
+      if (!fieldEl) return;
+      const rect = fieldEl.getBoundingClientRect();
+      const dropdownWidth = 240;
+      const dropdownHeight = 320;
+      const spaceBelow = window.innerHeight - rect.bottom;
+
+      let top = rect.bottom + 2;
+      if (spaceBelow < dropdownHeight + 20) top = rect.top - dropdownHeight - 2;
+
+      // Right-aligned to the field by default (matches the old CSS
+      // `right: 0` intent), clamped so it never runs off either edge.
+      let left = rect.right - dropdownWidth;
+      const maxLeft = window.innerWidth - dropdownWidth - 10;
+      left = Math.min(Math.max(10, left), maxLeft);
+
+      setDropdownPos({ top: Math.max(10, top), left });
+    };
+    updatePos();
+    window.addEventListener('resize', updatePos);
+    return () => window.removeEventListener('resize', updatePos);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
-    function handler(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    function handler(e) {
+      if (ref.current?.contains(e.target)) return;
+      if (dropdownRef.current?.contains(e.target)) return;
+      setOpen(false);
+    }
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
@@ -274,8 +314,8 @@ export function CustomTimePicker({ value, onChange, disabled, placeholder = 'Sel
         <svg className={`dtp-chevron${open ? ' dtp-chevron--up' : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
 
-      {open && (
-        <div className="dtp-dropdown dtp-dropdown--time">
+      {open && createPortal(
+        <div className="dtp-dropdown dtp-dropdown--time" ref={dropdownRef} style={{ top: `${dropdownPos.top}px`, left: `${dropdownPos.left}px` }}>
           <div className="dtp-time-header">
             <span>Hour</span>
             <span>Minute</span>
@@ -326,7 +366,8 @@ export function CustomTimePicker({ value, onChange, disabled, placeholder = 'Sel
               <span className="dtp-selected-label">{displayValue}</span>
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

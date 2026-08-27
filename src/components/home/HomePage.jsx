@@ -13,6 +13,7 @@ import LibraryPage from './LibraryPage';
 import ProfilePage from './ProfilePage';
 import UserProfilePage from './UserProfilePage';
 import MiniSitesPage from './MiniSitesPage';
+import PlanManagementPage from '../plans/PlanManagementPage';
 import PostDetailModal from './PostDetailModal';
 import { initSocket } from '../../services/socket';
 import store from '../../store';
@@ -189,10 +190,22 @@ export default function HomePage() {
           setProfileInitTab('Connections');
           // TODO: Pass the tab type (sent-requests) if needed in future
         }}
+        onPlansClick={() => setSection('plans')}
       />
       <div className="home-body">
         {section === 'minisites' ? (
           <MiniSitesPage
+            onBack={() => setSection('feed')}
+            onCoursesClick={() => setSection('courses')}
+            onLibraryClick={() => setSection('library')}
+            onEventsClick={() => setSection('events')}
+            onGroupsClick={() => setSection('groups')}
+            onMessagesClick={() => setSection('messages')}
+            onCalendarClick={() => setSection('calendar')}
+            onMinisitesClick={() => setSection('minisites')}
+          />
+        ) : section === 'plans' ? (
+          <PlanManagementPage
             onBack={() => setSection('feed')}
             onCoursesClick={() => setSection('courses')}
             onLibraryClick={() => setSection('library')}

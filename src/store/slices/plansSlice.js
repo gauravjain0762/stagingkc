@@ -51,6 +51,54 @@ export const selectPlan = createAsyncThunk(
   }
 );
 
+// Changing plan for an already-onboarded member is a different flow from
+// selectPlan above (which only runs during signup, authenticated with the
+// short-lived setupToken) — this needs the regular session token instead.
+// Endpoint isn't confirmed against a real backend yet; treat a 404 as "not
+// built yet" rather than a hard error so the Plans page still renders.
+export const changePlan = createAsyncThunk(
+  'plans/changePlan',
+  async (planId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest('/api/users/me/plan', {
+        method: 'POST',
+        body: { planId },
+        token,
+      });
+      return { planId, user: data?.data?.user ?? data?.user ?? null };
+    } catch (err) {
+      return rejectWithValue({ message: err.message, status: err.status, notBuilt: err.status === 404 });
+    }
+  }
+);
+
+export const fetchPlanHistory = createAsyncThunk(
+  'plans/fetchPlanHistory',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest('/api/users/me/plan-history', { token });
+      return Array.isArray(data) ? data : (data?.data ?? []);
+    } catch (err) {
+      return rejectWithValue({ message: err.message, status: err.status, notBuilt: err.status === 404 });
+    }
+  }
+);
+
+export const fetchBillingHistory = createAsyncThunk(
+  'plans/fetchBillingHistory',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest('/api/users/me/billing-history', { token });
+      return Array.isArray(data) ? data : (data?.data ?? []);
+    } catch (err) {
+      return rejectWithValue({ message: err.message, status: err.status, notBuilt: err.status === 404 });
+    }
+  }
+);
+
 const plansSlice = createSlice({
   name: 'plans',
   initialState: {
@@ -66,6 +114,18 @@ const plansSlice = createSlice({
     loading: false,
     selecting: null,
     error: null,
+
+    changingPlanId: null,
+    changePlanError: null,
+    changePlanNotBuilt: false,
+
+    planHistory: [],
+    planHistoryLoading: false,
+    planHistoryNotBuilt: false,
+
+    billingHistory: [],
+    billingHistoryLoading: false,
+    billingHistoryNotBuilt: false,
   },
   reducers: {
     clearPlansError(state) {
@@ -74,6 +134,9 @@ const plansSlice = createSlice({
     consumeJustSelectedPlan(state) {
       state.justSelectedPlan = false;
       clearOnboardingPending();
+    },
+    clearChangePlanError(state) {
+      state.changePlanError = null;
     },
   },
   extraReducers: (builder) => {
@@ -107,9 +170,52 @@ const plansSlice = createSlice({
       .addCase(selectPlan.rejected, (state, action) => {
         state.selecting = null;
         state.error = action.payload;
+      })
+
+      // ── Change plan (already-onboarded member) ──
+      .addCase(changePlan.pending, (state, action) => {
+        state.changingPlanId = action.meta.arg;
+        state.changePlanError = null;
+        state.changePlanNotBuilt = false;
+      })
+      .addCase(changePlan.fulfilled, (state) => {
+        state.changingPlanId = null;
+      })
+      .addCase(changePlan.rejected, (state, action) => {
+        state.changingPlanId = null;
+        state.changePlanNotBuilt = !!action.payload?.notBuilt;
+        state.changePlanError = action.payload?.notBuilt ? null : action.payload?.message;
+      })
+
+      // ── Plan history ───────────────────────────
+      .addCase(fetchPlanHistory.pending, (state) => {
+        state.planHistoryLoading = true;
+        state.planHistoryNotBuilt = false;
+      })
+      .addCase(fetchPlanHistory.fulfilled, (state, action) => {
+        state.planHistoryLoading = false;
+        state.planHistory = action.payload;
+      })
+      .addCase(fetchPlanHistory.rejected, (state, action) => {
+        state.planHistoryLoading = false;
+        state.planHistoryNotBuilt = !!action.payload?.notBuilt;
+      })
+
+      // ── Billing history ─────────────────────────
+      .addCase(fetchBillingHistory.pending, (state) => {
+        state.billingHistoryLoading = true;
+        state.billingHistoryNotBuilt = false;
+      })
+      .addCase(fetchBillingHistory.fulfilled, (state, action) => {
+        state.billingHistoryLoading = false;
+        state.billingHistory = action.payload;
+      })
+      .addCase(fetchBillingHistory.rejected, (state, action) => {
+        state.billingHistoryLoading = false;
+        state.billingHistoryNotBuilt = !!action.payload?.notBuilt;
       });
   },
 });
 
-export const { clearPlansError, consumeJustSelectedPlan } = plansSlice.actions;
+export const { clearPlansError, consumeJustSelectedPlan, clearChangePlanError } = plansSlice.actions;
 export default plansSlice.reducer;
