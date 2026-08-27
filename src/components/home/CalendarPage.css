@@ -293,11 +293,12 @@
   );
 }
 
-/* ── Event blocks ── */
+/* ── Event blocks ──
+   left/width are set inline per-event (see layoutOverlappingEvents in
+   CalendarPage.jsx) so events overlapping in time sit side-by-side instead
+   of stacking on top of each other. */
 .cal-event {
   position: absolute;
-  left: 4px;
-  right: 4px;
   border-radius: 7px;
   padding: 7px 8px 6px;
   overflow: hidden;
@@ -360,132 +361,44 @@
   opacity: 0.75;
 }
 
-/* ── Right panel ── */
-.cal-right {
-  width: 220px;
-  flex-shrink: 0;
-  border-left: 1px solid #181c30;
-  display: flex;
-  flex-direction: column;
-  padding: 28px 16px 24px;
-  gap: 14px;
-  background: #0b0d17;
-}
-
-.cal-right-head {
+/* ── Header "Filters" trigger + "Create Event" button ──
+   The filter panel itself is the shared .ev-filter-backdrop/.ev-filter-panel
+   slide-in drawer from EventsPage.css (same markup, same animation) —
+   triggered from here instead of living in a permanent sidebar, so the
+   calendar grid keeps the full width by default. */
+.cal-header-create-btn {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-}
-
-.cal-right-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #e8ecf8;
-  margin: 0;
-}
-
-.cal-right-icon-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  background: #131626;
-  border: 1px solid #1e2238;
-  color: #5c6a8c;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-.cal-right-icon-btn:hover { background: #1a1f35; color: #8b9cc8; }
-
-/* Today event cards */
-.cal-today-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  flex: 1;
-}
-
-.cal-today-card {
-  background: #111422;
-  border: 1px solid #1a1f35;
-  border-radius: 12px;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-.cal-today-card:hover { border-color: #252d4a; }
-
-.cal-today-empty {
-  font-size: 13px;
-  color: #4b5a7a;
-  text-align: center;
-  padding: 24px 0;
-}
-
-.cal-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 8px;
-  border-radius: 5px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.6px;
-  width: fit-content;
-}
-
-.cal-tag--gray {
-  background: rgba(100, 116, 139, 0.15);
-  color: #8fa3b8;
-}
-
-.cal-tag--blue {
-  background: rgba(37, 99, 235, 0.18);
-  color: #60a5fa;
-}
-
-.cal-today-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #e0e6f8;
-  margin: 0;
-  line-height: 1.3;
-}
-
-.cal-today-time {
-  font-size: 12px;
-  color: #5c6a8c;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin: 0;
-}
-
-/* Create Event button */
-.cal-create-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 13px;
+  gap: 6px;
+  padding: 8px 16px;
   background: #2563eb;
   border: none;
-  border-radius: 26px;
+  border-radius: 9px;
   color: #fff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
-  flex-shrink: 0;
 }
-.cal-create-btn:hover { background: #1d4ed8; }
+.cal-header-create-btn:hover { background: #1d4ed8; }
+
+.cal-date-range-row { display: flex; align-items: center; gap: 8px; }
+.cal-date-input {
+  flex: 1;
+  min-width: 0;
+  background: #0d1526;
+  border: 1px solid #131d2e;
+  border-radius: 8px;
+  color: #c8d3ea;
+  font-size: 12.5px;
+  padding: 8px;
+  color-scheme: dark;
+}
+.cal-date-range-sep { color: #4b5a7a; font-size: 12px; }
+
+/* Shared Location/Radius filter styles (used by both this page and
+   EventsPage's filter panel) live in EventsPage.css, which this file
+   already imports via CalendarPage.jsx. */
 
 /* ══════════════════════════════════════════
    Month View
@@ -793,16 +706,7 @@
     padding-bottom: calc(24px + env(safe-area-inset-bottom));
   }
 
-  /* Today's Events was a fixed 220px side column competing with the day
-     grid for width on a phone, which is what squeezed the grid down to
-     one barely-visible column. Stack it below instead. */
   .cal-page { flex-direction: column; overflow-y: auto; }
-  .cal-right {
-    width: 100%;
-    border-left: none;
-    border-top: 1px solid #181c30;
-    padding: 20px 16px calc(96px + env(safe-area-inset-bottom));
-  }
 
   .cal-header { padding: 0 16px 16px; }
   .cal-header-row { flex-wrap: wrap; row-gap: 10px; }
