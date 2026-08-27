@@ -37,8 +37,8 @@ export default function ContactFormSection({ siteId, contactEmail }) {
 
     setIsSubmitting(true);
     try {
-      console.log('Sending to:', `/api/mini-sites/${siteId}/contact-form`);
-      const response = await apiRequest(`/api/mini-sites/${siteId}/contact-form`, {
+      console.log('Sending to:', `/api/mini-sites/${siteId}/contact`);
+      const response = await apiRequest(`/api/mini-sites/${siteId}/contact`, {
         method: 'POST',
         body: {
           name: formData.name,
