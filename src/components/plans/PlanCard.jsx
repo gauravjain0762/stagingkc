@@ -36,7 +36,11 @@ function Spinner() {
   return <span className="btn-spinner" aria-hidden="true" />;
 }
 
-export default function PlanCard({ plan, index = 0, isSelected = false, onCardClick }) {
+// `mode="manage"` is used by PlanManagementPage (an existing member browsing
+// plans to switch, not a brand-new signup) — same card, but the button
+// reflects "already on this plan" / "switch to this plan" and calls
+// `onUpgrade` instead of dispatching the onboarding-only selectPlan thunk.
+export default function PlanCard({ plan, index = 0, isSelected = false, onCardClick, mode = 'onboarding', isCurrent = false, onUpgrade, isUpgrading = false, billingCycle = 'monthly', originalPrice }) {
   const dispatch   = useDispatch();
   const { selecting } = useSelector((state) => state.plans);
   const [displayPrice, setDisplayPrice] = useState(0);
@@ -47,12 +51,23 @@ export default function PlanCard({ plan, index = 0, isSelected = false, onCardCl
   const isGold      = plan.tier === 'gold';
   const isPlatinum  = plan.tier === 'platinum';
   const featureList = plan.features.flatMap((f) => f.split('\n')).filter(Boolean);
-  const isSelecting = selecting === plan._id;
-  const isDisabled  = !!selecting;
+  const isManage    = mode === 'manage';
+  const isSelecting = isManage ? isUpgrading : selecting === plan._id;
+  const isDisabled  = isManage ? (isCurrent || isUpgrading) : !!selecting;
+  const buttonLabel = isManage ? (isCurrent ? 'Current Plan' : 'Upgrade') : meta.button;
+  // Free isn't something you "upgrade" to, so it gets no action button in
+  // manage mode unless it's the plan you're already on.
+  const hideManageButton = isManage && !isCurrent && plan.tier === 'free';
+  // On the Annual toggle, `plan.price` already carries the discounted
+  // per-month rate — show the full year's total as the headline number, with
+  // the original (pre-discount) monthly rate struck through for comparison.
+  // Free has nothing to discount, so it keeps the plain monthly display.
+  const isAnnualPricing = isManage && billingCycle === 'annual' && plan.tier !== 'free';
 
   /* ── Price counter ── */
   useEffect(() => {
-    const target = Number(plan.price) || 0;
+    const monthly = Number(plan.price) || 0;
+    const target  = isAnnualPricing ? monthly * 12 : monthly;
     const delay  = COUNTER_DELAYS[index] ?? 500;
     const t = setTimeout(() => {
       if (!target) { setDisplayPrice(0); return; }
@@ -66,7 +81,7 @@ export default function PlanCard({ plan, index = 0, isSelected = false, onCardCl
       return () => clearInterval(iv);
     }, delay);
     return () => clearTimeout(t);
-  }, [plan.price, index]);
+  }, [plan.price, index, isAnnualPricing]);
 
   /* ── Particles (gold only) ── */
   const particles = useMemo(() =>
@@ -94,7 +109,8 @@ export default function PlanCard({ plan, index = 0, isSelected = false, onCardCl
 
   function handleSelect(e) {
     handleRipple(e);
-    dispatch(selectPlan(plan._id));
+    if (isManage) onUpgrade?.(plan._id);
+    else dispatch(selectPlan(plan._id));
   }
 
   const cardDelay = CARD_DELAYS[index] ?? '0.1s';
@@ -103,21 +119,25 @@ export default function PlanCard({ plan, index = 0, isSelected = false, onCardCl
 
   const cardEl = (
     <div
-      className={`plan-card plan-card--${plan.tier}${isPopular ? ' plan-card--popular' : ''}${isSelected ? ' plan-card--selected' : ''}`}
+      className={`plan-card plan-card--${plan.tier}${isPopular ? ' plan-card--popular' : ''}${isSelected ? ' plan-card--selected' : ''}${isCurrent ? ' plan-card--current' : ''}`}
       style={{ '--card-delay': isGold ? undefined : cardDelay, '--tier-color': tierColor }}
       onClick={onCardClick}
     >
-      {isPopular && <div className="popular-badge">Most Popular</div>}
+      {isPopular && !isCurrent && <div className="popular-badge">Most Popular</div>}
+      {isCurrent && <div className="popular-badge popular-badge--current">Current Plan</div>}
 
       <p className="plan-label">{meta.label}</p>
       <h3 className="plan-name">{tierName}</h3>
 
+      {isAnnualPricing && originalPrice > 0 && (
+        <p className="price-strike">${originalPrice}/mo <span>billed monthly</span></p>
+      )}
       <div className="plan-price">
         <span className="price-dollar">$</span>
         <span className={`price-amount${isPlatinum ? ' price-amount--plat' : ''}`}>
           {displayPrice}
         </span>
-        <span className="price-period">/mo</span>
+        <span className="price-period">{isAnnualPricing && originalPrice > 0 ? '/yr' : '/mo'}</span>
       </div>
 
       <ul className="plan-features">
@@ -129,14 +149,16 @@ export default function PlanCard({ plan, index = 0, isSelected = false, onCardCl
         ))}
       </ul>
 
-      <button
-        type="button"
-        className={`plan-btn plan-btn--${meta.variant}`}
-        onClick={handleSelect}
-        disabled={isDisabled}
-      >
-        {isSelecting ? <><Spinner /> Selecting…</> : meta.button}
-      </button>
+      {!hideManageButton && (
+        <button
+          type="button"
+          className={`plan-btn plan-btn--${meta.variant}${isManage && isCurrent ? ' plan-btn--current' : ''}`}
+          onClick={handleSelect}
+          disabled={isDisabled}
+        >
+          {isSelecting ? <><Spinner /> Switching…</> : buttonLabel}
+        </button>
+      )}
 
       {isGold && (
         <div className="gold-particles" aria-hidden="true">

@@ -10,7 +10,7 @@
  */
 const VALID_SECTIONS = new Set([
   'feed', 'minisites', 'profile', 'userProfile', 'library', 'courses',
-  'events', 'messages', 'groups', 'calendar',
+  'events', 'messages', 'groups', 'calendar', 'plans',
 ]);
 
 const SAFE_VALUE = /^[a-zA-Z0-9_-]+$/;

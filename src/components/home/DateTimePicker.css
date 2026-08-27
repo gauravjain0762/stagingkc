@@ -203,10 +203,11 @@
   flex-shrink: 0;
 }
 
-/* ── Time picker ── */
+/* ── Time picker ──
+   top/left are now set inline (see CustomTimePicker's dropdownPos) — the
+   dropdown is portaled to document.body, so `right: 0` here would resolve
+   against the viewport's edge rather than the field's. */
 .dtp-dropdown--time {
-  left: auto;
-  right: 0;
   width: 240px;
   padding: 12px 12px 0;
 }

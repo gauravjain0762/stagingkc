@@ -37,6 +37,14 @@ function SettingsIcon() {
   );
 }
 
+function PlansIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+    </svg>
+  );
+}
+
 function LogoutIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -75,7 +83,7 @@ function timeAgo(dateStr) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsClick, onPostsClick, onPostClick, onUserClick, onNavigateToConnections }) {
+export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsClick, onPostsClick, onPostClick, onUserClick, onNavigateToConnections, onPlansClick }) {
   const dispatch               = useDispatch();
   const { user: authUser }     = useSelector((state) => state.auth);
   const { profile }            = useSelector((state) => state.profile);
@@ -464,6 +472,9 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
               {/* <button className="navbar-ud-item" onClick={() => { setUserOpen(false); onProfileClick?.(); }}>
                 <SettingsIcon /> Settings
               </button> */}
+              <button className="navbar-ud-item" onClick={() => { setUserOpen(false); onPlansClick?.(); }}>
+                <PlansIcon /> Plans &amp; Subscriptions
+              </button>
               <div className="navbar-ud-divider" />
               <button className="navbar-ud-item navbar-ud-item--logout" onClick={() => { disconnectSocket(); dispatch(logout()); dispatch(showLogin()); }}>
                 <LogoutIcon /> Log Out
