@@ -6,7 +6,6 @@ import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
 import PostCard from './PostCard';
 import LikeButton from './LikeButton';
-import PostActionsMenu from './PostActionsMenu';
 import UserInvitations from './UserInvitations';
 import ImageCropper from './ImageCropper';
 import UserProfilePage from './UserProfilePage';
@@ -2833,24 +2832,6 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
                   {isPinned && <div className="gd-post-pinned-badge">📌 Pinned</div>}
                   <div className="gd-post-header">
                     <PostCard post={p} groupId={groupId} />
-                    <PostActionsMenu
-                      isAuthor={isPostAuthor}
-                      isAdmin={isOwned}
-                      isPinned={isPinned}
-                      onDelete={() => {
-                        dispatch(deletePost({ groupId, postId: pid })).then((action) => {
-                          if (deletePost.fulfilled.match(action)) {
-                            dispatch(fetchGroupPosts({ groupId, page: 1 }));
-                            dispatch(showToast({ message: 'Post deleted', type: 'success' }));
-                          }
-                        });
-                      }}
-                      onEdit={() => {}}
-                      onPin={() => dispatch(pinPost({ groupId, postId: pid }))}
-                      onUnpin={() => dispatch(unpinPost({ groupId, postId: pid }))}
-                      isDeleting={isDeleting}
-                      isPinning={isPinning}
-                    />
                   </div>
                 </div>
               );
