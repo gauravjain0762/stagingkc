@@ -10,6 +10,9 @@ import SkeletonImg from '../SkeletonImg';
 import Loader from '../Loader';
 import ShareSheet from './ShareSheet';
 import './ShareSheet.css';
+import { geocode, getCurrentLocation, reverseGeocode, primeGeocode } from '../../utils/geo';
+import useRadiusFilter from '../../hooks/useRadiusFilter';
+import LocationRadiusFilter from './LocationRadiusFilter';
 import {
   fetchEvents, fetchEventDetail, createEvent, updateEvent, deleteEvent,
   saveEvent, unsaveEvent,
@@ -111,7 +114,7 @@ function HealthIcon()      { return <svg width="16" height="16" viewBox="0 0 24 
 function OtherIcon()       { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>; }
 
 /* ── Discovery mock data ── */
-const DISC_CATEGORIES = [
+export const DISC_CATEGORIES = [
   { label: 'All', icon: <AllIcon /> },
   { label: 'Music', icon: <MusicIcon /> },
   { label: 'Sports', icon: <SportsIcon /> },
@@ -655,8 +658,10 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   const [heartParticles, setHeartParticles] = useState({});
   const [showFilter,    setShowFilter]    = useState(false);
   const [viewMode,      setViewMode]      = useState('grid');
-  const [filters,       setFilters]       = useState({ eventType: 'all', categories: new Set(), country: '', city: '', state: '' });
-  const [pendingF,      setPendingF]      = useState({ eventType: 'all', categories: new Set(), country: '', city: '', state: '' });
+  const DEFAULT_EV_FILTERS = { eventType: 'all', categories: new Set(), country: '', city: '', state: '', location: '', radius: 50, radiusUnit: 'mi' };
+  const [filters,       setFilters]       = useState({ ...DEFAULT_EV_FILTERS, categories: new Set() });
+  const [pendingF,      setPendingF]      = useState({ ...DEFAULT_EV_FILTERS, categories: new Set() });
+  const [locatingMe,    setLocatingMe]    = useState(false);
   const [step, setStep] = useState(1);
   const [animDir, setAnimDir] = useState('forward');
   const [createPostOpen, setCreatePostOpen] = useState(false);
@@ -1455,9 +1460,20 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     }
     coverImages.forEach(img => fd.append('coverImage', img.file));
     if (form.eventType === 'offline' || form.eventType === 'both') {
+      // The backend's venue schema wants latitude/longitude alongside the
+      // address so it can do radius search, but nothing in this form ever
+      // captures coordinates — geocode the typed address client-side (free
+      // OpenStreetMap Nominatim, no API key) right before submit. A failed
+      // or unreachable lookup just omits the fields rather than blocking
+      // publish; the event still saves with its address alone.
+      const venueAddress = [venue.street, venue.city, venue.state, venue.pinCode, venue.country].filter(Boolean).join(', ');
+      const venueCoords = venueAddress ? await geocode(venueAddress) : null;
       // Field name is 'venue' (not 'location'), and the venue's own name is
       // the 'name' key (not 'venue') — matches the backend's confirmed shape.
-      fd.append('venue', JSON.stringify({ name: venue.name, street: venue.street, city: venue.city, state: venue.state, country: venue.country, pinCode: venue.pinCode }));
+      fd.append('venue', JSON.stringify({
+        name: venue.name, street: venue.street, city: venue.city, state: venue.state, country: venue.country, pinCode: venue.pinCode,
+        ...(venueCoords ? { latitude: venueCoords.lat, longitude: venueCoords.lng } : {}),
+      }));
       if (parking) fd.append('parking', parking);
       fd.append('organizer', JSON.stringify(organizer));
     }
@@ -2006,6 +2022,9 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     : discTab === 'favorites' ? savedEvents
     : discTab === 'created'   ? createdEvents.filter(ev => ev.status === createdTab)
     : rdxEvents.filter(ev => upcomingSubTab === 'expired' ? ev.startDate < todayStr : ev.startDate >= todayStr);
+  const radiusFilterActive = filters.location.trim().length > 0;
+  const { distanceById, resolving: geoResolving, searchFailed: geoSearchFailed } =
+    useRadiusFilter(baseEvents, filters.location, filters.radiusUnit, radiusFilterActive);
   const filteredEvents = baseEvents.filter(ev => {
     if (discCat !== 'All' && !ev.category.toLowerCase().includes(discCat.toLowerCase())) return false;
     if (filters.categories.size > 0) {
@@ -2020,6 +2039,14 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
     if (filters.country.trim() && !(ev.locationObj?.country ?? '').toLowerCase().includes(filters.country.trim().toLowerCase())) return false;
     if (filters.city.trim()    && !(ev.locationObj?.city    ?? '').toLowerCase().includes(filters.city.trim().toLowerCase()))    return false;
     if (filters.state.trim()   && !(ev.locationObj?.state   ?? '').toLowerCase().includes(filters.state.trim().toLowerCase()))   return false;
+    // Radius: online events have no venue to measure from, so they're
+    // excluded from a location+radius search rather than silently kept.
+    if (radiusFilterActive) {
+      if (ev.eventType === 'online') return false;
+      const dist = distanceById[ev.id];
+      if (dist === undefined) return false; // still resolving, or unresolvable — hide until known
+      if (dist > filters.radius) return false;
+    }
     if (discSearch.trim()) {
       const q = discSearch.trim().toLowerCase();
       const haystack = `${ev.title} ${ev.desc} ${ev.location}`.toLowerCase();
@@ -2044,13 +2071,28 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
   // instead of just clearing the pending fields and leaving the user to
   // press "Apply Filters" afterward to actually see anything change.
   function resetFilters() {
-    const def = { eventType: 'all', categories: new Set(), country: '', city: '', state: '' };
+    const def = { ...DEFAULT_EV_FILTERS, categories: new Set() };
     setPendingF(def);
     commitFilters(def);
   }
   function togglePendingCat(cat) { setPendingF(p => { const s = new Set(p.categories); s.has(cat) ? s.delete(cat) : s.add(cat); return { ...p, categories: s }; }); }
+  async function useMyLocationForFilter() {
+    setLocatingMe(true);
+    try {
+      const coords = await getCurrentLocation();
+      const label = await reverseGeocode(coords.lat, coords.lng);
+      const text = label || `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`;
+      primeGeocode(text, coords);
+      setPendingF(p => ({ ...p, location: text }));
+    } catch (err) {
+      dispatch(showToast({ message: err.message || 'Could not get your location.', type: 'error' }));
+    } finally {
+      setLocatingMe(false);
+    }
+  }
   const activeFilterCount = filters.categories.size + (filters.eventType !== 'all' ? 1 : 0)
-    + (filters.country.trim() ? 1 : 0) + (filters.city.trim() ? 1 : 0) + (filters.state.trim() ? 1 : 0);
+    + (filters.country.trim() ? 1 : 0) + (filters.city.trim() ? 1 : 0) + (filters.state.trim() ? 1 : 0)
+    + (filters.location.trim() ? 1 : 0);
 
   // Live address preview for the create/edit form's map (steps 3 & 4) — built
   // from whatever venue fields are filled in so far.
@@ -2845,7 +2887,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 </div>
                 <div className="ev-disc-card-body">
                   <p className="ev-disc-card-title">{ev.title}</p>
-                  <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <ClickableLocation location={eventLocationLabel(ev)} /> • {ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}</p>
+                  <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <ClickableLocation location={eventLocationLabel(ev)} /> • {ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}{radiusFilterActive && distanceById[ev.id] != null ? ` • ${distanceById[ev.id].toFixed(1)} ${filters.radiusUnit} away` : ''}</p>
                   <p className="ev-disc-card-desc">{ev.desc}</p>
                   {isCardDescTruncated(ev.desc) && (
                     <button type="button" className="ev-desc-seemore-btn" onClick={e => { e.stopPropagation(); setDescModalEvent(ev); }}>See more</button>
@@ -2911,7 +2953,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 <div className="ev-list-body">
                   <p className="ev-disc-card-title">{ev.title}</p>
                   <div className="ev-list-top">
-                    <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <ClickableLocation location={eventLocationLabel(ev)} /> • {ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}</p>
+                    <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <ClickableLocation location={eventLocationLabel(ev)} /> • {ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}{radiusFilterActive && distanceById[ev.id] != null ? ` • ${distanceById[ev.id].toFixed(1)} ${filters.radiusUnit} away` : ''}</p>
                   </div>
                   <p className="ev-list-desc">{ev.desc}</p>
                   {isCardDescTruncated(ev.desc) && (
@@ -3034,6 +3076,16 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                       ))}
                     </div>
                   </div>
+
+                  <LocationRadiusFilter
+                    pendingF={pendingF}
+                    setPendingF={setPendingF}
+                    onUseMyLocation={useMyLocationForFilter}
+                    locatingMe={locatingMe}
+                    radiusFilterActive={radiusFilterActive}
+                    geoResolving={geoResolving}
+                    geoSearchFailed={geoSearchFailed}
+                  />
 
                   {/* Country */}
                   <div className="ev-filter-section">

@@ -1,10 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import './CalendarPage.css';
+import './EventsPage.css';
 import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
 import Loader from '../Loader';
 import { fetchEvents, fetchMyCalendar } from '../../store/slices/eventsSlice';
+import { DISC_CATEGORIES } from './EventsPage';
+import { isEventFree } from '../../utils/eventHelpers';
+import { CountrySelect } from './CountryPicker';
+import LocationRadiusFilter from './LocationRadiusFilter';
+import useRadiusFilter from '../../hooks/useRadiusFilter';
+import { getCurrentLocation, reverseGeocode, primeGeocode } from '../../utils/geo';
+import { showToast } from '../../store/slices/toastSlice';
 
 /* ── Sidebar nav icons ── */
 function FeedNavIcon()     { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>; }
@@ -18,7 +26,7 @@ function ChevronLeftIcon()  { return <svg width="14" height="14" viewBox="0 0 24
 function ChevronRightIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>; }
 function ClockIcon()        { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
 function PlusIcon()         { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
-function CalHeaderIcon()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>; }
+function CalMapPinIcon()    { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>; }
 
 /* ── Constants ── */
 const HOUR_HEIGHT  = 80;
@@ -46,14 +54,6 @@ function parseHM(timeStr) {
   const [h, m] = timeStr.split(':').map(Number);
   if (Number.isNaN(h)) return null;
   return { h, m: Number.isNaN(m) ? 0 : m };
-}
-
-function formatTimeLabel(timeStr) {
-  const p = parseHM(timeStr);
-  if (!p) return 'All day';
-  const period = p.h >= 12 ? 'PM' : 'AM';
-  const h12 = p.h % 12 === 0 ? 12 : p.h % 12;
-  return `${String(h12).padStart(2, '0')}:${String(p.m).padStart(2, '0')} ${period}`;
 }
 
 // Places each event on whichever weekDay column its startDate matches,
@@ -86,6 +86,49 @@ function buildWeekEvents(events, weekDays) {
       color: colorFor(ev.category || ev.title),
     });
   }
+  return layoutOverlappingEvents(out);
+}
+
+// Every event block in the hourly grid used to be a fixed `left:4px;
+// right:4px` — full column width regardless of what else was scheduled at
+// the same time. Two events overlapping on the same day therefore painted
+// exactly on top of each other, with only the last one in DOM order
+// visible — events didn't disappear, they were just hidden behind another
+// one. This assigns each event a column/colCount within its overlap
+// cluster (same greedy interval-graph-coloring approach calendar apps use)
+// so overlapping events render side-by-side instead of stacked.
+function layoutOverlappingEvents(events) {
+  const byDay = new Map();
+  for (const ev of events) {
+    if (!byDay.has(ev.dayIdx)) byDay.set(ev.dayIdx, []);
+    byDay.get(ev.dayIdx).push({ ...ev, startMin: ev.sH * 60 + ev.sM, endMin: ev.eH * 60 + ev.eM });
+  }
+  const out = [];
+  for (const dayEvents of byDay.values()) {
+    dayEvents.sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
+    let cluster = [];
+    let clusterEnd = -Infinity;
+    const flush = () => {
+      if (cluster.length === 0) return;
+      const colEnds = []; // colEnds[i] = end time of the last event placed in column i
+      const placed = [];
+      for (const ev of cluster) {
+        let col = colEnds.findIndex(end => end <= ev.startMin);
+        if (col === -1) { col = colEnds.length; colEnds.push(ev.endMin); }
+        else colEnds[col] = ev.endMin;
+        placed.push({ ...ev, col });
+      }
+      const colCount = colEnds.length;
+      placed.forEach(ev => out.push({ ...ev, colCount }));
+      cluster = [];
+    };
+    for (const ev of dayEvents) {
+      if (cluster.length > 0 && ev.startMin >= clusterEnd) flush();
+      cluster.push(ev);
+      clusterEnd = Math.max(clusterEnd, ev.endMin);
+    }
+    flush();
+  }
   return out;
 }
 
@@ -108,19 +151,6 @@ function buildMonthEvents(events, year, month) {
     });
   }
   return out;
-}
-
-function buildTodayEvents(events) {
-  const todayIso = toISODate(new Date());
-  return events
-    .filter(ev => ev.startDate === todayIso)
-    .map(ev => ({
-      id: ev.id,
-      tag: (ev.category || 'Event').toUpperCase(),
-      tagType: 'blue',
-      title: ev.title || 'Untitled event',
-      time: formatTimeLabel(ev.startTime),
-    }));
 }
 
 // One day's events for the mobile day-agenda view — a plain sorted list,
@@ -263,6 +293,23 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
   // at a time rather than one week at a time, so it tracks its own date.
   const [mobileDay, setMobileDay] = useState(new Date());
 
+  const DEFAULT_CAL_FILTERS = {
+    dateFrom: '', dateTo: '',
+    location: '', radius: 50, radiusUnit: 'mi',
+    country: '', state: '',
+    categories: new Set(),
+    priceType: 'all',
+    eventType: 'all',
+  };
+  // `filters` is what's actually applied to the grid; `pendingF` is what the
+  // slide-in panel edits — same staged Apply/Reset pattern as EventsPage's
+  // filter drawer, so a location typo doesn't refilter (and re-geocode) on
+  // every keystroke.
+  const [filters,    setFilters]    = useState({ ...DEFAULT_CAL_FILTERS, categories: new Set() });
+  const [pendingF,   setPendingF]   = useState({ ...DEFAULT_CAL_FILTERS, categories: new Set() });
+  const [showFilter, setShowFilter] = useState(false);
+  const [locatingMe, setLocatingMe] = useState(false);
+
   useEffect(() => {
     if (scope === 'mine') dispatch(fetchMyCalendar({ limit: 100 }));
     else dispatch(fetchEvents({ tab: 'upcoming', limit: 100 }));
@@ -270,6 +317,62 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
 
   const scopedEvents = scope === 'mine' ? calendarEvents : allEvents;
   const isLoading = scope === 'mine' ? calendarLoading : eventsLoading;
+
+  const radiusFilterActive = filters.location.trim().length > 0;
+  const { distanceById, resolving: geoResolving, searchFailed: geoSearchFailed } =
+    useRadiusFilter(scopedEvents, filters.location, filters.radiusUnit, radiusFilterActive);
+
+  const filteredEvents = scopedEvents.filter(ev => {
+    if (filters.dateFrom && ev.startDate < filters.dateFrom) return false;
+    if (filters.dateTo   && ev.startDate > filters.dateTo)   return false;
+    if (filters.eventType !== 'all' && ev.eventType !== filters.eventType && ev.eventType !== 'both') return false;
+    if (filters.priceType === 'free' && !isEventFree(ev)) return false;
+    if (filters.priceType === 'paid' && isEventFree(ev)) return false;
+    if (filters.categories.size > 0) {
+      const matched = [...filters.categories].some(c => (ev.category || '').toLowerCase().includes(c.toLowerCase()));
+      if (!matched) return false;
+    }
+    if (filters.country.trim() && !(ev.locationObj?.country ?? '').toLowerCase().includes(filters.country.trim().toLowerCase())) return false;
+    if (filters.state.trim()   && !(ev.locationObj?.state   ?? '').toLowerCase().includes(filters.state.trim().toLowerCase()))   return false;
+    if (radiusFilterActive) {
+      if (ev.eventType === 'online') return false;
+      const dist = distanceById[ev.id];
+      if (dist === undefined) return false; // still resolving, or unresolvable — hide until known
+      if (dist > filters.radius) return false;
+    }
+    return true;
+  });
+
+  function openFilter() { setPendingF({ ...filters, categories: new Set(filters.categories) }); setShowFilter(true); }
+  function commitFilters(next) { setFilters(next); setShowFilter(false); }
+  function applyFilters() { commitFilters({ ...pendingF, categories: new Set(pendingF.categories) }); }
+  // Reset applies immediately, same as EventsPage — closes the panel rather
+  // than leaving the user to press Apply again just to see it take effect.
+  function resetFilters() {
+    const def = { ...DEFAULT_CAL_FILTERS, categories: new Set() };
+    setPendingF(def);
+    commitFilters(def);
+  }
+  function togglePendingCat(cat) {
+    setPendingF(p => { const s = new Set(p.categories); s.has(cat) ? s.delete(cat) : s.add(cat); return { ...p, categories: s }; });
+  }
+  async function useMyLocationForFilter() {
+    setLocatingMe(true);
+    try {
+      const coords = await getCurrentLocation();
+      const label = await reverseGeocode(coords.lat, coords.lng);
+      const text = label || `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`;
+      primeGeocode(text, coords);
+      setPendingF(p => ({ ...p, location: text }));
+    } catch (err) {
+      dispatch(showToast({ message: err.message || 'Could not get your location.', type: 'error' }));
+    } finally {
+      setLocatingMe(false);
+    }
+  }
+  const activeFilterCount = filters.categories.size + (filters.eventType !== 'all' ? 1 : 0)
+    + (filters.priceType !== 'all' ? 1 : 0) + (filters.country.trim() ? 1 : 0) + (filters.state.trim() ? 1 : 0)
+    + (filters.location.trim() ? 1 : 0) + (filters.dateFrom ? 1 : 0) + (filters.dateTo ? 1 : 0);
 
   // Report the desktop week/month view up to HomePage so it can keep the URL
   // in sync (?section=calendar&tab=&date=) for refresh restore. The mobile
@@ -284,10 +387,9 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
   const weekDays   = getWeekDays(monday);
   const monthGrid  = getMonthGrid(monthDate.getFullYear(), monthDate.getMonth());
   const monthWeeks = Array.from({ length: 6 }, (_, i) => monthGrid.slice(i * 7, i * 7 + 7));
-  const weekEvents  = buildWeekEvents(scopedEvents, weekDays);
-  const monthEvents = buildMonthEvents(scopedEvents, monthDate.getFullYear(), monthDate.getMonth());
-  const todayEvents = buildTodayEvents(scopedEvents);
-  const dayEvents    = buildDayEvents(scopedEvents, toISODate(mobileDay));
+  const weekEvents  = buildWeekEvents(filteredEvents, weekDays);
+  const monthEvents = buildMonthEvents(filteredEvents, monthDate.getFullYear(), monthDate.getMonth());
+  const dayEvents    = buildDayEvents(filteredEvents, toISODate(mobileDay));
   const isMobileToday = toISODate(mobileDay) === toISODate(new Date());
 
   function prevMobileDay() { const d = new Date(mobileDay); d.setDate(d.getDate() - 1); setMobileDay(d); }
@@ -355,6 +457,13 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
               <span className="cal-date-range">{headerLabel}</span>
               <button className="cal-arrow-btn" onClick={nextPeriod}><ChevronRightIcon /></button>
             </div>
+            <button className={`ev-disc-filter-btn${activeFilterCount > 0 ? ' ev-disc-filter-btn--active' : ''}`} onClick={openFilter}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              Filters{activeFilterCount > 0 && <span className="ev-filter-badge">{activeFilterCount}</span>}
+            </button>
+            <button className="cal-header-create-btn" onClick={() => (onEventsCreateClick ?? onEventsClick)?.()}>
+              <PlusIcon /> Create Event
+            </button>
           </div>
         </div>
 
@@ -391,7 +500,13 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
                   <div key={dayIdx} className={`cal-day-col${d.isToday ? ' cal-day-col--today' : ''}`}>
                     {weekEvents.filter(ev => ev.dayIdx === dayIdx).map(ev => (
                       <div key={ev.id} className={`cal-event cal-event--${ev.color}`}
-                        style={{ top: evTop(ev.sH, ev.sM), height: evH(ev.sH, ev.sM, ev.eH, ev.eM), cursor: onEventClick ? 'pointer' : undefined }}
+                        style={{
+                          top: evTop(ev.sH, ev.sM),
+                          height: evH(ev.sH, ev.sM, ev.eH, ev.eM),
+                          left: `calc(${(ev.col / ev.colCount) * 100}% + 4px)`,
+                          width: `calc(${100 / ev.colCount}% - 8px)`,
+                          cursor: onEventClick ? 'pointer' : undefined,
+                        }}
                         onClick={() => onEventClick?.(ev.id)}>
                         <p className="cal-ev-title">{ev.title}</p>
                         <p className="cal-ev-time">{fmtT(ev.realStartH, ev.realStartM)} –<br />{fmtT(ev.realEndH, ev.realEndM)} {fmtPeriod(ev.realEndH)}</p>
@@ -500,34 +615,124 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
 
       </main>
 
-      {/* ── Right panel ── */}
-      <aside className="cal-right">
-        <div className="cal-right-head">
-          <h2 className="cal-right-title">Today's Events</h2>
-          <button className="cal-right-icon-btn"><CalHeaderIcon /></button>
-        </div>
-        <div className="cal-today-list">
-          {todayEvents.length === 0 && (
-            <p className="cal-today-empty">No events today.</p>
-          )}
-          {todayEvents.map(ev => (
-            <div
-              key={ev.id}
-              className="cal-today-card"
-              style={{ cursor: onEventClick ? 'pointer' : undefined }}
-              onClick={() => onEventClick?.(ev.id)}
-            >
-              <span className={`cal-tag cal-tag--${ev.tagType}`}>{ev.tag}</span>
-              <p className="cal-today-title">{ev.title}</p>
-              <p className="cal-today-time"><ClockIcon /> {ev.time}</p>
+      {/* ── Filter panel overlay — same slide-in drawer as EventsPage's
+          filter panel (identical classes/animation), triggered by the
+          "Filters" button in the header instead of a permanent sidebar, so
+          the calendar grid gets the full width by default. ── */}
+      {showFilter && (
+        <>
+          <div className="ev-filter-backdrop" onClick={() => setShowFilter(false)} />
+          <div className="ev-filter-panel">
+            <div className="ev-filter-panel-header">
+              <span className="ev-filter-panel-title">Filters</span>
+              <div className="ev-filter-header-actions">
+                <button className="ev-filter-reset-btn" onClick={resetFilters}>Reset All</button>
+                <button className="ev-filter-apply-btn" onClick={applyFilters}>Apply Filters</button>
+                <button className="ev-filter-close-btn" onClick={() => setShowFilter(false)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
             </div>
-          ))}
-        </div>
-        <button className="cal-create-btn" onClick={() => (onEventsCreateClick ?? onEventsClick)?.()}>
-          <PlusIcon /> Create Event
-        </button>
-      </aside>
+            <div className="ev-filter-panel-body">
 
+              {/* Date range */}
+              <div className="ev-filter-section">
+                <h4 className="ev-filter-section-title">Date Range</h4>
+                <div className="cal-date-range-row">
+                  <input type="date" className="cal-date-input" value={pendingF.dateFrom} onChange={e => setPendingF(p => ({ ...p, dateFrom: e.target.value }))} />
+                  <span className="cal-date-range-sep">to</span>
+                  <input type="date" className="cal-date-input" value={pendingF.dateTo} onChange={e => setPendingF(p => ({ ...p, dateTo: e.target.value }))} />
+                </div>
+              </div>
+
+              {/* Online / Offline */}
+              <div className="ev-filter-section">
+                <h4 className="ev-filter-section-title">Event Type</h4>
+                <div className="ev-filter-type-row">
+                  {['all', 'offline', 'online'].map(t => (
+                    <button
+                      key={t}
+                      className={`ev-filter-type-btn${pendingF.eventType === t ? ' ev-filter-type-btn--active' : ''}`}
+                      onClick={() => setPendingF(p => ({ ...p, eventType: t }))}
+                    >{t === 'all' ? 'All' : t === 'offline' ? 'Offline' : 'Online'}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Price */}
+              <div className="ev-filter-section">
+                <h4 className="ev-filter-section-title">Price</h4>
+                <div className="ev-filter-type-row">
+                  {['all', 'free', 'paid'].map(t => (
+                    <button
+                      key={t}
+                      className={`ev-filter-type-btn${pendingF.priceType === t ? ' ev-filter-type-btn--active' : ''}`}
+                      onClick={() => setPendingF(p => ({ ...p, priceType: t }))}
+                    >{t === 'all' ? 'All' : t === 'free' ? 'Free' : 'Paid'}</button>
+                  ))}
+                </div>
+              </div>
+
+              <LocationRadiusFilter
+                pendingF={pendingF}
+                setPendingF={setPendingF}
+                onUseMyLocation={useMyLocationForFilter}
+                locatingMe={locatingMe}
+                radiusFilterActive={radiusFilterActive}
+                geoResolving={geoResolving}
+                geoSearchFailed={geoSearchFailed}
+              />
+
+              {/* Country */}
+              <div className="ev-filter-section">
+                <h4 className="ev-filter-section-title">Country</h4>
+                <CountrySelect
+                  value={pendingF.country}
+                  onChange={val => setPendingF(p => ({ ...p, country: val }))}
+                  placeholder="Any country"
+                />
+              </div>
+
+              {/* State */}
+              <div className="ev-filter-section">
+                <h4 className="ev-filter-section-title">State / Province</h4>
+                <div className="ev-filter-location-row">
+                  <CalMapPinIcon />
+                  <input
+                    className="ev-filter-location-input"
+                    placeholder="Enter state or province"
+                    value={pendingF.state}
+                    onChange={e => setPendingF(p => ({ ...p, state: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {/* Categories */}
+              <div className="ev-filter-section">
+                <div className="ev-filter-section-head">
+                  <h4 className="ev-filter-section-title">Categories</h4>
+                  {pendingF.categories.size > 0 && <button className="ev-filter-clear-link" onClick={() => setPendingF(p => ({ ...p, categories: new Set() }))}>Clear all</button>}
+                </div>
+                <div className="ev-filter-cats-grid">
+                  {DISC_CATEGORIES.filter(c => c.label !== 'All').map(cat => (
+                    <label key={cat.label} className="ev-filter-check-label">
+                      <input
+                        type="checkbox"
+                        className="ev-filter-checkbox"
+                        checked={pendingF.categories.has(cat.label)}
+                        onChange={() => togglePendingCat(cat.label)}
+                      />
+                      <span className="ev-filter-check-box" />
+                      {cat.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </>
+      )}
 
     </div>
   );

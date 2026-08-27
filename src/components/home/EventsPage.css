@@ -930,6 +930,102 @@
 .ev-filter-location-input::placeholder { color: #3a4a68; }
 .ev-filter-location-row:focus-within { border-color: #2563eb55; }
 
+.ev-filter-use-location-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #60a5fa;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0 0 12px;
+}
+.ev-filter-use-location-btn svg { width: 13px; height: 13px; }
+.ev-filter-use-location-btn:disabled { opacity: 0.6; cursor: default; }
+
+/* Radius — a "line bar" rather than a dropdown, with the current value
+   called out in a highlighted pill so it isn't easy to miss. Shared by
+   EventsPage and CalendarPage's filter panels. */
+.ev-filter-radius-block { margin-top: 4px; }
+.ev-filter-radius-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.ev-filter-radius-title {
+  color: #93c5fd;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.ev-filter-radius-value {
+  background: #2563eb;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+.ev-filter-radius-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2563eb 0%, #2563eb var(--fill, 50%), #1a2540 var(--fill, 50%), #1a2540 100%);
+  outline: none;
+  cursor: pointer;
+  margin: 4px 0;
+}
+.ev-filter-radius-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #2563eb;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+.ev-filter-radius-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #2563eb;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+.ev-filter-radius-scale {
+  display: flex;
+  justify-content: space-between;
+  color: #4b5a7a;
+  font-size: 11px;
+  margin-bottom: 12px;
+}
+
+.ev-filter-unit-toggle { display: flex; gap: 6px; }
+.ev-filter-unit-btn {
+  background: #0d1526;
+  border: 1px solid #131d2e;
+  border-radius: 8px;
+  color: #a0aec0;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+.ev-filter-unit-btn--active { background: #162040; border-color: #2563eb55; color: #60a5fa; }
+
+.ev-filter-geo-status { color: #6b7ba0; font-size: 12px; margin-top: 6px; }
+.ev-filter-geo-status--error { color: #f87171; }
+
 /* Slider */
 .ev-filter-slider-row {
   display: flex;
