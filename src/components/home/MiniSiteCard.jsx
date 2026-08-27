@@ -9,7 +9,7 @@ function ChevronRightIcon() {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>;
 }
 
-function ImageCarousel({ images = [] }) {
+export function ImageCarousel({ images = [] }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [autoRotate, setAutoRotate] = useState(true);
 
@@ -39,7 +39,7 @@ function ImageCarousel({ images = [] }) {
     return (
       <div className="image-carousel">
         <div className="image-carousel-placeholder">
-          <div className="placeholder-text">No image</div>
+          <div className="placeholder-text">Social Platform</div>
         </div>
       </div>
     );

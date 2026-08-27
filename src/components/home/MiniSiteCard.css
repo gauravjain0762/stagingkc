@@ -62,6 +62,11 @@
   font-size: 14px;
   font-weight: 500;
 }
+.placeholder-text {
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
 
 /* Carousel Buttons */
 .image-carousel-btn {
@@ -100,7 +105,9 @@
   right: 8px;
 }
 
-/* Carousel Indicators */
+/* Carousel Indicators — always visible (not hover-only like the arrows) so
+   it's clear at a glance that a card has more than one photo, even without
+   hovering it first. */
 .image-carousel-indicators {
   position: absolute;
   bottom: 10px;
@@ -109,12 +116,6 @@
   display: flex;
   gap: 6px;
   z-index: 11;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.image-carousel:hover .image-carousel-indicators {
-  opacity: 1;
 }
 
 .image-carousel-indicator {
@@ -126,6 +127,8 @@
   cursor: pointer;
   transition: all 0.2s ease;
   padding: 0;
+  /* Always-visible dots need to read against any photo, light or dark. */
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.6);
 }
 
 .image-carousel-indicator.active {

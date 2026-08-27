@@ -6,6 +6,7 @@ import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
 import Loader from '../Loader';
 import { fetchEvents, fetchMyCalendar } from '../../store/slices/eventsSlice';
+import { CustomDatePicker } from './DateTimePicker';
 import { DISC_CATEGORIES } from './EventsPage';
 import { isEventFree } from '../../utils/eventHelpers';
 import { CountrySelect } from './CountryPicker';
@@ -639,9 +640,19 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
               <div className="ev-filter-section">
                 <h4 className="ev-filter-section-title">Date Range</h4>
                 <div className="cal-date-range-row">
-                  <input type="date" className="cal-date-input" value={pendingF.dateFrom} onChange={e => setPendingF(p => ({ ...p, dateFrom: e.target.value }))} />
+                  <CustomDatePicker
+                    value={pendingF.dateFrom}
+                    onChange={e => setPendingF(p => ({ ...p, dateFrom: e.target.value }))}
+                    max={pendingF.dateTo || undefined}
+                    placeholder="Start date"
+                  />
                   <span className="cal-date-range-sep">to</span>
-                  <input type="date" className="cal-date-input" value={pendingF.dateTo} onChange={e => setPendingF(p => ({ ...p, dateTo: e.target.value }))} />
+                  <CustomDatePicker
+                    value={pendingF.dateTo}
+                    onChange={e => setPendingF(p => ({ ...p, dateTo: e.target.value }))}
+                    min={pendingF.dateFrom || undefined}
+                    placeholder="End date"
+                  />
                 </div>
               </div>
 

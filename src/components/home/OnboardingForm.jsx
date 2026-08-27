@@ -325,7 +325,7 @@ export default function OnboardingForm() {
     <div className="ob-page">
       <div className="ob-card">
         <div className="ob-header">
-          <h1 className="ob-title">Complete  your  profile</h1>
+          <h1 className="ob-title">Complete your profile</h1>
           <p className="ob-subtitle">Tell us a bit about yourself to get started.</p>
         </div>
 

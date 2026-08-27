@@ -9,6 +9,8 @@ import { ALEX_AVATAR } from './mockData';
 import { apiRequest } from '../../services/api';
 import { normalizeSite, timeAgo, siteUrl, displayUrl } from './miniSiteUtils';
 import { SITE_TEMPLATES } from './templateContent';
+import { ImageCarousel } from './MiniSiteCard';
+import './MiniSiteCard.css';
 import './MiniSitesPage.css';
 
 /* ── Icons ── */
@@ -46,7 +48,14 @@ function VisibilityBadge({ visibility }) {
   );
 }
 
-const FALLBACK_THUMB = 'https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=600&q=80&fit=crop';
+// normalizeSite() exposes both a singular `coverImage` and a `coverImages`
+// array — the array is the real per-site gallery a user uploads, so it
+// takes priority; `coverImage` is only a single-image fallback for sites
+// saved before the gallery field existed.
+function siteImages(site) {
+  if (site.coverImages?.length) return site.coverImages;
+  return site.coverImage ? [site.coverImage] : [];
+}
 
 const TABS = [
   { id: 'all-sites', label: 'All Sites' },
@@ -513,7 +522,7 @@ export default function MiniSitesPage({
                   style={{ opacity: busyId === site.id ? 0.6 : 1, pointerEvents: busyId === site.id ? 'none' : 'auto' }}
                 >
                   <div className="ms-site-thumb">
-                    <img src={site.coverImage || FALLBACK_THUMB} alt={site.name} />
+                    <ImageCarousel images={siteImages(site)} />
                     <div className={`ms-site-badge ms-site-badge--${site.status}`}>
                       {site.status === 'live' ? <><LiveDotIcon /> Live</> : <><DraftIcon /> Draft</>}
                     </div>
@@ -608,7 +617,7 @@ export default function MiniSitesPage({
                     style={{ opacity: busyId === site.id ? 0.6 : 1, pointerEvents: busyId === site.id ? 'none' : 'auto' }}
                   >
                     <div className="ms-site-thumb">
-                      <img src={site.coverImage || FALLBACK_THUMB} alt={site.name} />
+                      <ImageCarousel images={siteImages(site)} />
                       <div className={`ms-site-badge ms-site-badge--${site.status}`}>
                         {site.status === 'live' ? <><LiveDotIcon /> Live</> : <><DraftIcon /> Draft</>}
                       </div>
