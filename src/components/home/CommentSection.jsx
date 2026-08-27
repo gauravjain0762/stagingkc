@@ -110,18 +110,23 @@ function CommentSection({ groupId, postId, onCommentCountChange }) {
               const likeCount = likeState?.count ?? comment.likes ?? 0;
               const isDeletingComment = deletingCommentIds.includes(cid);
 
+              // Use local user data as fallback when backend doesn't provide complete author info
+              const authorName = comment.author?.name || (isOwn ? authUser?.fullName ?? authUser?.name : 'Unknown');
+              const authorAvatar = comment.author?.avatar || (isOwn ? authUser?.avatar : null);
+              const authorInitial = (authorName ?? 'U')[0].toUpperCase();
+
               return (
                 <div key={cid} className="comment-item">
                   <div className="comment-avatar">
-                    {comment.author?.avatar ? (
-                      <img src={comment.author.avatar} alt={comment.author.name} />
+                    {authorAvatar ? (
+                      <img src={authorAvatar} alt={authorName} />
                     ) : (
-                      <div className="comment-avatar-placeholder">{(comment.author?.name ?? 'U')[0].toUpperCase()}</div>
+                      <div className="comment-avatar-placeholder">{authorInitial}</div>
                     )}
                   </div>
                   <div className="comment-body">
                     <div className="comment-header">
-                      <p className="comment-author">{comment.author?.name ?? 'Unknown'}</p>
+                      <p className="comment-author">{authorName}</p>
                       <p className="comment-time">
                         {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'now'}
                       </p>
