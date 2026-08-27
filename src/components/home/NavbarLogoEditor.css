@@ -1,0 +1,90 @@
+.navbar-logo-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border: 1px solid rgba(75, 85, 99, 0.2);
+}
+
+.nle-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #d0d6ec;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.nle-upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border: 2px dashed rgba(75, 85, 99, 0.3);
+  background: rgba(59, 130, 246, 0.05);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #93c5fd;
+  transition: all 0.2s ease;
+}
+
+.nle-upload-btn:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.nle-file-input {
+  display: none;
+}
+
+.nle-preview-container {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+  background: #0d1419;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(75, 85, 99, 0.3);
+}
+
+.nle-logo-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 4px;
+}
+
+.nle-remove-btn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.nle-remove-btn:hover {
+  background: rgba(239, 68, 68, 0.8);
+  border-color: #ef4444;
+}
+
+.nle-helper {
+  font-size: 11px;
+  color: #5b6a7c;
+  margin: 0;
+  font-style: italic;
+}

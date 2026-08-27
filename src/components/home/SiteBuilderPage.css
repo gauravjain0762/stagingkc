@@ -303,6 +303,20 @@
   width: 100%;
 }
 
+.wp-navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.wp-navbar-logo-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
 .wp-navbar-logo {
   font-size: 18px;
   font-weight: 700;
@@ -716,6 +730,46 @@
 /* Footer Section */
 .wp-footer-section {
   padding: 0 40px;
+}
+
+.wp-footer-social {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.wp-social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 50%;
+  text-decoration: none;
+  color: #60a5fa;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+
+.wp-social-link:hover {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+  transform: scale(1.1);
+}
+
+.wp-social-link svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.wp-social-icon {
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .wp-footer-links {

@@ -1,6 +1,8 @@
 import { useState, useRef, useId, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import WebsitePreview from './WebsitePreview';
+import NavbarLogoEditor from './NavbarLogoEditor';
+import FooterSocialEditor from './FooterSocialEditor';
 import { SECTION_TYPES, createSection, createId, createStarterSections, SPACING_PRESETS, BUTTON_SHAPES } from './sectionTemplates';
 import { apiRequest } from '../../services/api';
 import { normalizeSite, siteUrl, displayUrl } from './miniSiteUtils';
@@ -454,6 +456,10 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
         return (
           <>
             <TextField label="Logo / Brand Text" value={c.logoText} onChange={(v) => setContent({ logoText: v })} />
+            <NavbarLogoEditor
+              logo={c.logo}
+              onChange={(logo) => setContent({ logo })}
+            />
             <ItemsEditor
               items={c.links}
               onChange={(links) => setContent({ links })}
@@ -595,6 +601,10 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
         return (
           <>
             <TextField label="Footer Text" value={c.text} onChange={(v) => setContent({ text: v })} />
+            <FooterSocialEditor
+              social={c.social}
+              onChange={(social) => setContent({ social })}
+            />
             <ItemsEditor
               items={c.links}
               onChange={(links) => setContent({ links })}
@@ -961,6 +971,8 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
               setActivePropTab('content');
             }}
             device={device}
+            siteId={site._id}
+            contactEmail={site.contactInfo?.email}
           />
         </div>
 
@@ -1098,7 +1110,13 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
             </button>
           </div>
           <div className="sbp-fullpreview-body">
-            <WebsitePreview sections={sections} device={device} interactive={false} />
+            <WebsitePreview
+              sections={sections}
+              device={device}
+              interactive={false}
+              siteId={site._id}
+              contactEmail={site.contactInfo?.email}
+            />
           </div>
         </div>
       )}

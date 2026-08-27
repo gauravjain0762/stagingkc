@@ -39,6 +39,12 @@ export default function PublicSitePage({ slug }) {
           savedToken ? { token: savedToken } : {}
         );
         if (cancelled) return;
+        console.log('📦 Site data loaded:', res?.data);
+        console.log('📋 Sections:', res?.data?.sections);
+        if (res?.data?.sections) {
+          const footerSection = res.data.sections.find(s => s.type === 'footer');
+          console.log('🔗 Footer section:', footerSection);
+        }
         setSite(normalizeSite(res?.data));
         setStatus('ready');
       } catch (err) {
@@ -140,9 +146,21 @@ export default function PublicSitePage({ slug }) {
     );
   }
 
+  // Don't render until site data is fully loaded
+  if (status !== 'ready' || !site) {
+    return <Loader />;
+  }
+
   return (
     <div className="pub-site-page">
-      <WebsitePreview sections={site?.sections || []} device="desktop" interactive={false} />
+      <WebsitePreview
+        key={site._id}
+        sections={site?.sections || []}
+        device="desktop"
+        interactive={false}
+        siteId={site?._id}
+        contactEmail={site?.contactInfo?.email}
+      />
       <div className="pub-site-footer">Made with Kink Catalyst Mini Sites</div>
     </div>
   );

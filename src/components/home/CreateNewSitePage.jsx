@@ -53,13 +53,23 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
     slug: initialName ? slugify(initialName) : '',
     visibility: 'public',
     password: '',
-    coverImage: null,
-    coverImagePreview: null,
+    logo: null,
+    logoPreview: null,
+    coverImages: [],
+    coverImagePreviews: [],
+    contactInfo: {
+      email: '',
+      phone: '',
+      address: '',
+      businessHours: '',
+      mapUrl: '',
+    },
   });
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [cropFile, setCropFile] = useState(null); // raw File pending crop, or null
+  const [cropFile, setCropFile] = useState(null); // raw File pending crop for cover images
+  const [cropLogoFile, setCropLogoFile] = useState(null); // raw File pending crop for logo
 
   // Handle input changes
   const handleInputChange = (e) => {
@@ -98,26 +108,81 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      setErrors(prev => ({ ...prev, coverImage: 'Image size must be less than 5MB' }));
+      setErrors(prev => ({ ...prev, coverImages: 'Image size must be less than 5MB' }));
       return;
     }
     if (!file.type.startsWith('image/')) {
-      setErrors(prev => ({ ...prev, coverImage: 'Please upload a valid image file' }));
+      setErrors(prev => ({ ...prev, coverImages: 'Please upload a valid image file' }));
       return;
     }
-    if (errors.coverImage) setErrors(prev => ({ ...prev, coverImage: '' }));
+    if (errors.coverImages) setErrors(prev => ({ ...prev, coverImages: '' }));
     setCropFile(file);
   };
+
 
   const applyCroppedCover = async (croppedFile) => {
     setCropFile(null);
     const dataUrl = await fileToDataUrl(croppedFile);
     setFormData(prev => ({
       ...prev,
-      coverImage: croppedFile,
-      coverImagePreview: dataUrl,
+      coverImages: [...prev.coverImages, croppedFile],
+      coverImagePreviews: [...prev.coverImagePreviews, dataUrl],
     }));
   };
+
+  const removeImage = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      coverImages: prev.coverImages.filter((_, i) => i !== index),
+      coverImagePreviews: prev.coverImagePreviews.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      setErrors(prev => ({ ...prev, logo: 'Logo size must be less than 2MB' }));
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      setErrors(prev => ({ ...prev, logo: 'Please upload a valid image file' }));
+      return;
+    }
+    if (errors.logo) setErrors(prev => ({ ...prev, logo: '' }));
+    setCropLogoFile(file);
+  };
+
+  const applyLogoFromCropper = async (croppedFile) => {
+    setCropLogoFile(null);
+    const dataUrl = await fileToDataUrl(croppedFile);
+    setFormData(prev => ({
+      ...prev,
+      logo: croppedFile,
+      logoPreview: dataUrl,
+    }));
+  };
+
+  const removeLogo = () => {
+    setFormData(prev => ({
+      ...prev,
+      logo: null,
+      logoPreview: null,
+    }));
+  };
+
+  const handleContactInfoChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      contactInfo: {
+        ...prev.contactInfo,
+        [field]: value,
+      },
+    }));
+  };
+
 
   // Validate form
   const validateForm = () => {
@@ -158,7 +223,9 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
           description: formData.description,
           visibility: formData.visibility,
           password: formData.visibility === 'password' ? formData.password : null,
-          coverImage: formData.coverImagePreview || undefined,
+          logo: formData.logoPreview || undefined,
+          coverImages: formData.coverImagePreviews.length > 0 ? formData.coverImagePreviews : undefined,
+          contactInfo: Object.values(formData.contactInfo).some(v => v) ? formData.contactInfo : undefined,
         },
       });
       const newSite = normalizeSite(res?.data);
@@ -176,6 +243,15 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
       <div className="csp-container">
         {/* Header */}
         <div className="csp-header">
+          <button
+            type="button"
+            className="csp-close-btn"
+            onClick={onCancel}
+            title="Close"
+            aria-label="Close"
+          >
+            <CloseIcon />
+          </button>
           <h1 className="csp-title">Create New Site</h1>
           <p className="csp-subtitle">Build a beautiful website in minutes</p>
           {templateName && (
@@ -278,64 +354,174 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
             )}
           </div>
 
-          {/* Cover Image Upload */}
+          {/* Logo Upload */}
           <div className="csp-form-group">
-            <label className="csp-label">Cover Image</label>
-            <div className="csp-image-upload">
-              {formData.coverImagePreview ? (
-                <div className="csp-image-preview">
-                  <img src={formData.coverImagePreview} alt="Preview" className="csp-preview-img" />
+            <label className="csp-label">Logo (Optional)</label>
+            <div className="csp-logo-upload">
+              {formData.logoPreview ? (
+                <div className="csp-logo-preview">
+                  <img src={formData.logoPreview} alt="Logo" className="csp-logo-img" />
                   <button
                     type="button"
-                    className="csp-remove-image-btn"
-                    onClick={() => setFormData(prev => ({
-                      ...prev,
-                      coverImage: null,
-                      coverImagePreview: null,
-                    }))}
-                    title="Remove image"
+                    className="csp-remove-logo-btn"
+                    onClick={removeLogo}
+                    title="Remove logo"
                   >
                     <CloseIcon />
                   </button>
                 </div>
               ) : (
-                <>
-                  <label className="csp-upload-area">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="csp-file-input"
-                    />
-                    <div className="csp-upload-content">
-                      <div className="csp-upload-icon"><UploadIcon /></div>
-                      <p className="csp-upload-text">Click to upload or drag and drop</p>
-                      <p className="csp-upload-hint">PNG, JPG, GIF up to 5MB</p>
-                    </div>
-                  </label>
-                  <div className="csp-cover-url-fallback">
-                    <span className="csp-cover-url-divider">or paste an image URL</span>
-                    <input
-                      type="text"
-                      className="csp-input"
-                      placeholder="https://example.com/image.jpg"
-                      onKeyDown={(e) => {
-                        if (e.key !== 'Enter') return;
-                        e.preventDefault();
-                        const url = e.target.value.trim();
-                        if (url) setFormData(prev => ({ ...prev, coverImage: url, coverImagePreview: url }));
-                      }}
-                      onBlur={(e) => {
-                        const url = e.target.value.trim();
-                        if (url) setFormData(prev => ({ ...prev, coverImage: url, coverImagePreview: url }));
-                      }}
-                    />
+                <label className="csp-logo-upload-area">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    className="csp-file-input"
+                  />
+                  <div className="csp-upload-content">
+                    <div className="csp-upload-icon"><UploadIcon /></div>
+                    <p className="csp-upload-text">Upload Logo</p>
+                    <p className="csp-upload-hint">PNG, JPG up to 2MB</p>
                   </div>
-                </>
+                </label>
               )}
-              {errors.coverImage && <p className="csp-error">{errors.coverImage}</p>}
-              <p className="csp-helper">Recommended: 1200x600px for best results. Uploading a file currently fails on the server (known backend bug) — pasting a direct image URL works reliably in the meantime.</p>
+              {errors.logo && <p className="csp-error">{errors.logo}</p>}
+              <p className="csp-helper">Use this logo for branding. Recommended: 200x200px.</p>
             </div>
+          </div>
+
+          {/* Cover Images Upload */}
+          <div className="csp-form-group">
+            <label className="csp-label">Cover Images</label>
+            <div className="csp-image-upload">
+              {/* Image Grid - Show all uploaded images */}
+              {formData.coverImagePreviews.length > 0 && (
+                <div className="csp-images-grid">
+                  {formData.coverImagePreviews.map((preview, index) => (
+                    <div key={index} className="csp-image-preview">
+                      <img src={preview} alt={`Preview ${index + 1}`} className="csp-preview-img" />
+                      <button
+                        type="button"
+                        className="csp-remove-image-btn"
+                        onClick={() => removeImage(index)}
+                        title="Remove image"
+                      >
+                        <CloseIcon />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Upload Area - Always visible */}
+              <>
+                <label className="csp-upload-area">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="csp-file-input"
+                  />
+                  <div className="csp-upload-content">
+                    <div className="csp-upload-icon"><UploadIcon /></div>
+                    <p className="csp-upload-text">Click to upload or drag and drop</p>
+                    <p className="csp-upload-hint">PNG, JPG, GIF up to 5MB</p>
+                  </div>
+                </label>
+                <div className="csp-cover-url-fallback">
+                  <span className="csp-cover-url-divider">or paste an image URL</span>
+                  <input
+                    type="text"
+                    className="csp-input"
+                    placeholder="https://example.com/image.jpg"
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter') return;
+                      e.preventDefault();
+                      const url = e.target.value.trim();
+                      if (url) {
+                        setFormData(prev => ({
+                          ...prev,
+                          coverImages: [...prev.coverImages, url],
+                          coverImagePreviews: [...prev.coverImagePreviews, url]
+                        }));
+                        e.target.value = '';
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const url = e.target.value.trim();
+                      if (url) {
+                        setFormData(prev => ({
+                          ...prev,
+                          coverImages: [...prev.coverImages, url],
+                          coverImagePreviews: [...prev.coverImagePreviews, url]
+                        }));
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </div>
+              </>
+              {errors.coverImages && <p className="csp-error">{errors.coverImages}</p>}
+              <p className="csp-helper">Upload multiple images. Recommended: 1200x600px for best results. Uploading a file currently fails on the server (known backend bug) — pasting a direct image URL works reliably in the meantime.</p>
+            </div>
+          </div>
+
+          {/* Contact Information */}
+          <div className="csp-form-group">
+            <label className="csp-label">Contact Information (Optional)</label>
+            <div className="csp-contact-grid">
+              <div>
+                <label className="csp-label csp-label--small">Email</label>
+                <input
+                  type="email"
+                  className="csp-input"
+                  placeholder="contact@example.com"
+                  value={formData.contactInfo.email}
+                  onChange={(e) => handleContactInfoChange('email', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="csp-label csp-label--small">Phone</label>
+                <input
+                  type="tel"
+                  className="csp-input"
+                  placeholder="+1-234-567-8900"
+                  value={formData.contactInfo.phone}
+                  onChange={(e) => handleContactInfoChange('phone', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="csp-label csp-label--small">Address</label>
+                <input
+                  type="text"
+                  className="csp-input"
+                  placeholder="123 Main St, New York, NY 10001"
+                  value={formData.contactInfo.address}
+                  onChange={(e) => handleContactInfoChange('address', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="csp-label csp-label--small">Business Hours</label>
+                <input
+                  type="text"
+                  className="csp-input"
+                  placeholder="Mon-Fri: 9AM-6PM, Sat: 10AM-4PM"
+                  value={formData.contactInfo.businessHours}
+                  onChange={(e) => handleContactInfoChange('businessHours', e.target.value)}
+                />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label className="csp-label csp-label--small">Google Maps URL</label>
+                <input
+                  type="url"
+                  className="csp-input"
+                  placeholder="https://maps.google.com/?q=..."
+                  value={formData.contactInfo.mapUrl}
+                  onChange={(e) => handleContactInfoChange('mapUrl', e.target.value)}
+                />
+              </div>
+            </div>
+            <p className="csp-helper">Fill in your contact details. Contact forms will send emails to the address above.</p>
           </div>
 
           {errors.submit && <p className="csp-error" style={{ textAlign: 'center' }}>{errors.submit}</p>}
@@ -369,6 +555,17 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
         onCancel={() => setCropFile(null)}
         onSkip={() => applyCroppedCover(cropFile)}
         onSave={applyCroppedCover}
+      />
+    )}
+
+    {cropLogoFile && (
+      <ImageCropper
+        file={cropLogoFile}
+        defaultAspect="square"
+        cropShape="round"
+        onCancel={() => setCropLogoFile(null)}
+        onSkip={() => applyLogoFromCropper(cropLogoFile)}
+        onSave={applyLogoFromCropper}
       />
     )}
     </>
