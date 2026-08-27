@@ -48,6 +48,7 @@ export function CustomDatePicker({ value, onChange, min, max, disabled, placehol
       if (!fieldEl) return;
       const rect = fieldEl.getBoundingClientRect();
       const dropdownHeight = 360;
+      const dropdownWidth = 300;
       const spaceBelow = window.innerHeight - rect.bottom;
 
       let top = rect.bottom + 2;
@@ -55,9 +56,17 @@ export function CustomDatePicker({ value, onChange, min, max, disabled, placehol
         top = rect.top - dropdownHeight - 2;
       }
 
+      // A field near the right edge (e.g. "End date" in a narrow side
+      // panel) would otherwise push the fixed-width dropdown past the
+      // viewport and get clipped — right-align it to the field instead of
+      // letting it overflow.
+      let left = rect.left;
+      const maxLeft = window.innerWidth - dropdownWidth - 10;
+      if (left > maxLeft) left = Math.max(10, rect.right - dropdownWidth);
+
       setDropdownPos({
         top: Math.max(10, top),
-        left: rect.left
+        left: Math.max(10, left),
       });
     };
 

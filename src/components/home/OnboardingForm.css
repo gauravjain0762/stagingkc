@@ -14,12 +14,12 @@
   background: #111422;
   border: 1px solid #1a1f35;
   border-radius: 16px;
-  padding: 28px 28px 24px;
+  padding: 34px 32px 24px;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
   height: fit-content;
 }
 
-.ob-header { margin-bottom: 24px; }
+.ob-header { margin-bottom: 28px; }
 
 /* ── Stepper ── */
 .ob-steps { display: flex; align-items: center; margin-bottom: 22px; }
@@ -87,7 +87,7 @@
   font-size: 22px;
   font-weight: 700;
   color: #e8ecf8;
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 .ob-subtitle { font-size: 13.5px; color: #5c6a8c; margin: 0; }
