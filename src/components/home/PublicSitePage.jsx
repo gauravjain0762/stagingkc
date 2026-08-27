@@ -154,11 +154,11 @@ export default function PublicSitePage({ slug }) {
   return (
     <div className="pub-site-page">
       <WebsitePreview
-        key={site._id}
+        key={site.id}
         sections={site?.sections || []}
         device="desktop"
         interactive={false}
-        siteId={site?._id}
+        siteId={site?.id}
         contactEmail={site?.contactInfo?.email}
       />
       <div className="pub-site-footer">Made with Kink Catalyst Mini Sites</div>
