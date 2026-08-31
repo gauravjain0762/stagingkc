@@ -437,15 +437,13 @@
 .ev-disc-card-loc {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 4px;
   font-size: 11.5px;
   color: #4b5a7a;
   margin: 0;
-  flex-wrap: wrap;
 }
 
-.ev-disc-card-loc > :last-child {
+.ev-disc-event-type {
   flex-shrink: 0;
   padding: 2px 8px;
   background: rgba(99, 102, 241, 0.1);
