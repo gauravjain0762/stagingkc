@@ -2887,7 +2887,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 </div>
                 <div className="ev-disc-card-body">
                   <p className="ev-disc-card-title">{ev.title}</p>
-                  <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <ClickableLocation location={eventLocationLabel(ev)} /> • <span className="ev-disc-event-type">{ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}</span>{radiusFilterActive && distanceById[ev.id] != null ? ` • ${distanceById[ev.id].toFixed(1)} ${filters.radiusUnit} away` : ''}</p>
+                  <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <ClickableLocation location={eventLocationLabel(ev)} /> <span className="ev-disc-event-type">• {ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}</span>{radiusFilterActive && distanceById[ev.id] != null ? ` • ${distanceById[ev.id].toFixed(1)} ${filters.radiusUnit} away` : ''}</p>
                   <p className="ev-disc-card-desc">{ev.desc}</p>
                   {isCardDescTruncated(ev.desc) && (
                     <button type="button" className="ev-desc-seemore-btn" onClick={e => { e.stopPropagation(); setDescModalEvent(ev); }}>See more</button>
@@ -2953,7 +2953,7 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 <div className="ev-list-body">
                   <p className="ev-disc-card-title">{ev.title}</p>
                   <div className="ev-list-top">
-                    <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <ClickableLocation location={eventLocationLabel(ev)} /> • <span className="ev-disc-event-type">{ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}</span>{radiusFilterActive && distanceById[ev.id] != null ? ` • ${distanceById[ev.id].toFixed(1)} ${filters.radiusUnit} away` : ''}</p>
+                    <p className="ev-disc-card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <ClickableLocation location={eventLocationLabel(ev)} /> <span className="ev-disc-event-type">• {ev.eventType === 'online' ? 'Online' : ev.eventType === 'offline' ? 'Offline' : 'Both'}</span>{radiusFilterActive && distanceById[ev.id] != null ? ` • ${distanceById[ev.id].toFixed(1)} ${filters.radiusUnit} away` : ''}</p>
                   </div>
                   <p className="ev-list-desc">{ev.desc}</p>
                   {isCardDescTruncated(ev.desc) && (
