@@ -112,6 +112,13 @@ export default function PlanManagementPage({ onBack, onCoursesClick, onLibraryCl
   const [loadingPlanData, setLoadingPlanData] = useState(false);
   const [planDataError, setPlanDataError] = useState('');
 
+  // Billing history states
+  const [billingHistory, setBillingHistory] = useState([]);
+  const [loadingBilling, setLoadingBilling] = useState(false);
+  const [billingError, setBillingError] = useState('');
+  const [billingPage, setBillingPage] = useState(1);
+  const [billingPagination, setBillingPagination] = useState(null);
+
   // Fetch user's plan data from API
   useEffect(() => {
     async function fetchPlanData() {
@@ -140,6 +147,28 @@ export default function PlanManagementPage({ onBack, onCoursesClick, onLibraryCl
   useEffect(() => {
     dispatch(fetchPlans());
   }, [dispatch]);
+
+  // Fetch billing history when tab changes or page changes
+  useEffect(() => {
+    if (activeTab === 'billing' && !billingHistory.length) {
+      fetchBillingHistory(1);
+    }
+  }, [activeTab]);
+
+  async function fetchBillingHistory(page = 1) {
+    setLoadingBilling(true);
+    setBillingError('');
+    try {
+      const res = await apiRequest(`/api/users/me/billing/history?page=${page}&limit=10`, { token });
+      setBillingHistory(res?.data?.invoices || []);
+      setBillingPagination(res?.data?.pagination);
+      setBillingPage(page);
+    } catch (err) {
+      setBillingError(err.message || 'Failed to load billing history');
+    } finally {
+      setLoadingBilling(false);
+    }
+  }
 
   // Use API data if available, fallback to user state
   const currentTier = planData?.currentMembership?.tier || (typeof user?.membership === 'string' ? user.membership : user?.membership?.tier);
@@ -356,30 +385,55 @@ export default function PlanManagementPage({ onBack, onCoursesClick, onLibraryCl
         {activeTab === 'billing' && (
           <>
             <h3 className="pm-section-title">Billing History</h3>
-            <div className="pm-table-wrap">
-              <table className="pm-table">
-                <thead>
-                  <tr><th>Date</th><th>Description</th><th>Amount</th><th /></tr>
-                </thead>
-                <tbody>
-                  {[...STATIC_BILLING_HISTORY, ...(showMoreBilling ? STATIC_BILLING_HISTORY_MORE : [])].map(b => (
-                    <tr key={b.id}>
-                      <td>{formatDisplayDate(b.date)}</td>
-                      <td>{b.description}</td>
-                      <td>{formatAmount(b.amount)}</td>
-                      <td>
-                        <button type="button" className="pm-view-btn" onClick={() => setViewingBill(b)}>View</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {!showMoreBilling && (
-                <div className="pm-load-more-row">
-                  <button type="button" className="pm-load-more-btn" onClick={() => setShowMoreBilling(true)}>Load more</button>
+
+            {billingError && (
+              <div style={{ padding: '20px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px', color: '#fecaca', marginBottom: '20px' }}>
+                {billingError}
+              </div>
+            )}
+
+            {loadingBilling && billingHistory.length === 0 ? (
+              <div className="plans-loading"><span className="spinner spinner--lg" aria-label="Loading billing history" /></div>
+            ) : billingHistory.length === 0 ? (
+              <div style={{ padding: '40px 20px', textAlign: 'center', color: '#6b7280' }}>
+                No invoices found
+              </div>
+            ) : (
+              <>
+                <div className="pm-table-wrap">
+                  <table className="pm-table">
+                    <thead>
+                      <tr><th>Date</th><th>Description</th><th>Amount</th><th /></tr>
+                    </thead>
+                    <tbody>
+                      {billingHistory.map(b => (
+                        <tr key={b.id}>
+                          <td>{formatDisplayDate(b.date)}</td>
+                          <td>{b.description}</td>
+                          <td>{formatAmount(b.total)}</td>
+                          <td>
+                            <button type="button" className="pm-view-btn" onClick={() => setViewingBill(b)}>View</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              )}
-            </div>
+
+                {billingPagination?.hasMore && (
+                  <div className="pm-load-more-row">
+                    <button
+                      type="button"
+                      className="pm-load-more-btn"
+                      onClick={() => fetchBillingHistory(billingPage + 1)}
+                      disabled={loadingBilling}
+                    >
+                      {loadingBilling ? 'Loading...' : 'Load more'}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </>
         )}
       </div>
@@ -413,19 +467,19 @@ export default function PlanManagementPage({ onBack, onCoursesClick, onLibraryCl
             <div className="pm-invoice-meta-grid">
               <div>
                 <p className="pm-invoice-label">Invoice Number</p>
-                <p className="pm-invoice-value">{viewingBill.invoiceNumber}</p>
+                <p className="pm-invoice-value">{viewingBill?.invoiceNumber || '—'}</p>
               </div>
               <div>
                 <p className="pm-invoice-label">Date Issued</p>
-                <p className="pm-invoice-value">{formatDisplayDate(viewingBill.date)}</p>
+                <p className="pm-invoice-value">{formatDisplayDate(viewingBill?.date)}</p>
               </div>
               <div>
                 <p className="pm-invoice-label">Billing Period</p>
-                <p className="pm-invoice-value">{viewingBill.period}</p>
+                <p className="pm-invoice-value">{viewingBill?.period || '—'}</p>
               </div>
               <div>
                 <p className="pm-invoice-label">Payment Method</p>
-                <p className="pm-invoice-value">{viewingBill.paymentMethod}</p>
+                <p className="pm-invoice-value">{viewingBill?.paymentMethod || '—'}</p>
               </div>
             </div>
 
@@ -447,18 +501,30 @@ export default function PlanManagementPage({ onBack, onCoursesClick, onLibraryCl
                 <tr><th>Description</th><th>Amount</th></tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>
-                    {viewingBill.description}
-                    <span className="pm-invoice-item-sub">{viewingBill.period}</span>
-                  </td>
-                  <td>{formatAmount(viewingBill.amount)}</td>
-                </tr>
+                {viewingBill?.items && viewingBill.items.length > 0 ? (
+                  viewingBill.items.map((item, idx) => (
+                    <tr key={item.id || idx}>
+                      <td>
+                        {item.description}
+                        {item.quantity > 1 && <span className="pm-invoice-item-sub">Qty: {item.quantity}</span>}
+                      </td>
+                      <td>{formatAmount(item.lineTotal)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td>
+                      {viewingBill?.description}
+                      <span className="pm-invoice-item-sub">{viewingBill?.period}</span>
+                    </td>
+                    <td>{formatAmount(viewingBill?.total || 0)}</td>
+                  </tr>
+                )}
               </tbody>
               <tfoot>
-                <tr><td>Subtotal</td><td>{formatAmount(viewingBill.amount)}</td></tr>
-                <tr><td>Tax</td><td>{formatAmount(0)}</td></tr>
-                <tr className="pm-invoice-total-row"><td>Total</td><td>{formatAmount(viewingBill.amount)}</td></tr>
+                <tr><td>Subtotal</td><td>{formatAmount(viewingBill?.subtotal || viewingBill?.total || 0)}</td></tr>
+                <tr><td>Tax</td><td>{formatAmount(viewingBill?.tax || 0)}</td></tr>
+                <tr className="pm-invoice-total-row"><td>Total</td><td>{formatAmount(viewingBill?.total || 0)}</td></tr>
               </tfoot>
             </table>
 
