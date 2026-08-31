@@ -246,7 +246,8 @@
       "Bash(node mobile-check.mjs)",
       "Bash(node measure-overflow.mjs)",
       "Bash(node -e \"const fs = require\\('fs'\\); const code = fs.readFileSync\\('src/components/home/EventsPage.jsx', 'utf8'\\); console.log\\('EventsPage.jsx syntax check passed'\\);\")",
-      "Bash(node -e \"const fs = require\\('fs'\\); const code = fs.readFileSync\\('src/components/home/EventAttendeesList.jsx', 'utf8'\\); console.log\\('EventAttendeesList.jsx syntax check passed'\\);\")"
+      "Bash(node -e \"const fs = require\\('fs'\\); const code = fs.readFileSync\\('src/components/home/EventAttendeesList.jsx', 'utf8'\\); console.log\\('EventAttendeesList.jsx syntax check passed'\\);\")",
+      "Bash(node -e \"const fs = require\\('fs'\\); const code = fs.readFileSync\\('src/components/plans/PlanManagementPage.jsx', 'utf8'\\); console.log\\('✅ PlanManagementPage.jsx syntax check passed'\\);\")"
     ]
   },
   "enableAllProjectMcpServers": true,

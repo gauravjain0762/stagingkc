@@ -4,6 +4,7 @@ import AnimatedNav from '../home/AnimatedNav';
 import PlanCard from './PlanCard';
 import { fetchPlans } from '../../store/slices/plansSlice';
 import { showToast } from '../../store/slices/toastSlice';
+import { apiRequest } from '../../services/api';
 import '../home/MiniSitesPage.css';
 import './PlansPage.css';
 import './PlanManagementPage.css';
@@ -98,42 +99,76 @@ const TABS = [
 
 export default function PlanManagementPage({ onBack, onCoursesClick, onLibraryClick, onEventsClick, onGroupsClick, onMessagesClick, onCalendarClick, onMinisitesClick }) {
   const dispatch = useDispatch();
-  const { user } = useSelector(s => s.auth);
+  const { user, token } = useSelector(s => s.auth);
   const { plans, loading } = useSelector(s => s.plans);
 
   const [activeTab, setActiveTab] = useState('plans');
   const [viewingBill, setViewingBill] = useState(null);
-  const [billingCycle, setBillingCycle] = useState('monthly'); // UI-only toggle — see ANNUAL_DISCOUNT
+  const [billingCycle, setBillingCycle] = useState('monthly');
   const [showMoreBilling, setShowMoreBilling] = useState(false);
 
-  // The plan catalog itself is real backend data (same endpoint the signup
-  // plan-selection screen uses) — only the history tables below are static
-  // placeholders until their endpoints exist.
+  // API data states
+  const [planData, setPlanData] = useState(null);
+  const [loadingPlanData, setLoadingPlanData] = useState(false);
+  const [planDataError, setPlanDataError] = useState('');
+
+  // Fetch user's plan data from API
+  useEffect(() => {
+    async function fetchPlanData() {
+      setLoadingPlanData(true);
+      setPlanDataError('');
+      try {
+        const res = await apiRequest('/api/users/me/plan', { token });
+        setPlanData(res?.data);
+        // Set billing cycle from API if available
+        if (res?.data?.subscription?.billingCycle) {
+          setBillingCycle(res.data.subscription.billingCycle);
+        }
+      } catch (err) {
+        setPlanDataError(err.message || 'Failed to load plan data');
+      } finally {
+        setLoadingPlanData(false);
+      }
+    }
+
+    if (token) {
+      fetchPlanData();
+    }
+  }, [token]);
+
+  // Fetch plans catalog
   useEffect(() => {
     dispatch(fetchPlans());
   }, [dispatch]);
 
-  // `user.membership` shape isn't confirmed against a real backend response
-  // yet — accept either a plain tier string or an object carrying one.
-  const currentTier = typeof user?.membership === 'string' ? user.membership : user?.membership?.tier;
+  // Use API data if available, fallback to user state
+  const currentTier = planData?.currentMembership?.tier || (typeof user?.membership === 'string' ? user.membership : user?.membership?.tier);
   const sortedPlans = [...plans].sort((a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier));
   const currentPlan = sortedPlans.find(p => p.tier === currentTier) ?? null;
-  // Annual price shown here is a per-month equivalent after the discount —
-  // same framing as "billed annually" pricing elsewhere (Railway, Claude).
-  // `originalPrice` is carried alongside so PlanCard can show the
-  // pre-discount monthly rate struck through next to the annual total.
+
   const isFreeTier = !currentTier || currentTier === 'free';
-  // Don't show tiers below the one you're already on — there's no downgrade
-  // path here, so a Gold member never sees Free in "All Plans".
   const currentTierIndex = TIER_ORDER.indexOf(currentTier ?? 'free');
+
+  // Calculate displayed plans with pricing
+  const annualDiscount = planData?.pricingOptions?.annualSavingsPercentage ? (planData.pricingOptions.annualSavingsPercentage / 100) : ANNUAL_DISCOUNT;
   const displayedPlans = sortedPlans
     .filter(p => TIER_ORDER.indexOf(p.tier) >= currentTierIndex)
-    .map(p => ({
-      ...p,
-      price: billingCycle === 'annual' ? Math.round(p.price * (1 - ANNUAL_DISCOUNT)) : p.price,
-      originalPrice: p.price,
-    }));
-  const renewalDate = currentPlan && !isFreeTier ? nextRenewalDate(CURRENT_PLAN_START_DATE, billingCycle) : null;
+    .map(p => {
+      // Get pricing from API data if available
+      const apiPlan = planData?.allPlans?.find(ap => ap.tier === p.tier);
+      const monthlyPrice = apiPlan?.monthlyPrice ?? p.price;
+      const annualPrice = apiPlan?.annualPrice ?? (monthlyPrice * 12);
+
+      return {
+        ...p,
+        price: billingCycle === 'annual' ? Math.round(annualPrice / 12) : monthlyPrice,
+        originalPrice: monthlyPrice,
+        monthlyPrice,
+        annualPrice,
+      };
+    });
+
+  const renewalDate = planData?.subscription?.renewalDate ? new Date(planData.subscription.renewalDate) : (currentPlan && !isFreeTier ? nextRenewalDate(CURRENT_PLAN_START_DATE, billingCycle) : null);
 
   function handleNav(id) {
     if (id === 'home')      onBack?.();
@@ -183,84 +218,117 @@ export default function PlanManagementPage({ onBack, onCoursesClick, onLibraryCl
 
         {activeTab === 'plans' && (
           <>
-            {/* Current plan hero — one horizontal row (plan info | dates |
-                billing cycle) instead of stacking everything vertically, so
-                the card stays short and "All Plans" fits on screen without
-                scrolling. */}
-            <div className="pm-hero">
-              <div className="pm-hero-left">
-                <div className="pm-hero-icon"><CreditCardIcon /></div>
-                <div>
-                  <p className="pm-hero-eyebrow">Current Plan</p>
-                  <h2 className="pm-hero-title">
-                    {currentPlan ? `You're on the ${currentPlan.tier.charAt(0).toUpperCase() + currentPlan.tier.slice(1)} Plan` : "You're on the Free Plan"}
-                  </h2>
-                  {currentPlan && (
-                    <p className="pm-hero-price">
-                      {formatAmount(billingCycle === 'annual' && !isFreeTier ? Math.round(currentPlan.price * (1 - ANNUAL_DISCOUNT)) * 12 : currentPlan.price)}
-                      <span>{billingCycle === 'annual' && !isFreeTier ? '/yr' : '/mo'}</span>
-                    </p>
-                  )}
-                </div>
+            {/* Current plan hero */}
+            {loadingPlanData ? (
+              <div className="plans-loading"><span className="spinner spinner--lg" aria-label="Loading plan data" /></div>
+            ) : planDataError ? (
+              <div style={{ padding: '20px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px', color: '#fecaca', marginBottom: '20px' }}>
+                {planDataError}
               </div>
-
-              {!isFreeTier && renewalDate && (
-                <div className="pm-hero-dates">
+            ) : (
+              <div className="pm-hero">
+                <div className="pm-hero-left">
+                  <div className="pm-hero-icon"><CreditCardIcon /></div>
                   <div>
-                    <p className="pm-hero-date-label">Subscribed</p>
-                    <p className="pm-hero-date-value">{formatDisplayDate(CURRENT_PLAN_START_DATE)}</p>
-                  </div>
-                  <div>
-                    <p className="pm-hero-date-label">Renews on</p>
-                    <p className="pm-hero-date-value">{formatDisplayDate(renewalDate)}</p>
-                  </div>
-                </div>
-              )}
-
-              {!isFreeTier && (
-                <div className="pm-hero-cycle">
-                  <div className="pm-cycle-toggle">
-                    <button
-                      type="button"
-                      className={`pm-cycle-btn${billingCycle === 'monthly' ? ' pm-cycle-btn--active' : ''}`}
-                      onClick={() => setBillingCycle('monthly')}
-                    >Monthly</button>
-                    <button
-                      type="button"
-                      className={`pm-cycle-btn${billingCycle === 'annual' ? ' pm-cycle-btn--active' : ''}`}
-                      onClick={() => setBillingCycle('annual')}
-                    >Annual <span className="pm-cycle-save">Save {Math.round(ANNUAL_DISCOUNT * 100)}%</span></button>
-                  </div>
-                  <p className={`pm-hero-cycle-note${billingCycle === 'annual' ? ' pm-hero-cycle-note--positive' : ''}`}>
-                    <InfoIcon />
-                    {billingCycle === 'monthly' ? (
-                      <span>Monthly plan. <button type="button" onClick={() => setBillingCycle('annual')}>Switch to annual, save {Math.round(ANNUAL_DISCOUNT * 100)}%.</button></span>
-                    ) : (
-                      <span>Saving {Math.round(ANNUAL_DISCOUNT * 100)}% on annual billing.</span>
+                    <p className="pm-hero-eyebrow">Current Plan</p>
+                    <h2 className="pm-hero-title">
+                      {planData?.currentMembership?.displayName || (currentPlan ? `You're on the ${currentPlan.tier.charAt(0).toUpperCase() + currentPlan.tier.slice(1)} Plan` : "You're on the Free Plan")}
+                    </h2>
+                    {planData?.currentMembership && (
+                      <p className="pm-hero-price">
+                        {formatAmount(billingCycle === 'annual' && !isFreeTier ? planData.currentMembership.annualPrice : planData.currentMembership.monthlyPrice)}
+                        <span>{billingCycle === 'annual' && !isFreeTier ? '/yr' : '/mo'}</span>
+                      </p>
                     )}
-                  </p>
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {!isFreeTier && (planData?.subscription || renewalDate) && (
+                  <div className="pm-hero-dates">
+                    <div>
+                      <p className="pm-hero-date-label">Subscribed</p>
+                      <p className="pm-hero-date-value">{formatDisplayDate(planData?.subscription?.startDate || CURRENT_PLAN_START_DATE)}</p>
+                    </div>
+                    <div>
+                      <p className="pm-hero-date-label">Renews on</p>
+                      <p className="pm-hero-date-value">{formatDisplayDate(planData?.subscription?.renewalDate || renewalDate)}</p>
+                    </div>
+                  </div>
+                )}
+
+                {!isFreeTier && (
+                  <div className="pm-hero-cycle">
+                    <div className="pm-cycle-toggle">
+                      <button
+                        type="button"
+                        className={`pm-cycle-btn${billingCycle === 'monthly' ? ' pm-cycle-btn--active' : ''}`}
+                        onClick={() => setBillingCycle('monthly')}
+                      >Monthly</button>
+                      <button
+                        type="button"
+                        className={`pm-cycle-btn${billingCycle === 'annual' ? ' pm-cycle-btn--active' : ''}`}
+                        onClick={() => setBillingCycle('annual')}
+                      >Annual <span className="pm-cycle-save">Save {Math.round(annualDiscount * 100)}%</span></button>
+                    </div>
+                    <p className={`pm-hero-cycle-note${billingCycle === 'annual' ? ' pm-hero-cycle-note--positive' : ''}`}>
+                      <InfoIcon />
+                      {billingCycle === 'monthly' ? (
+                        <span>Monthly plan. <button type="button" onClick={() => setBillingCycle('annual')}>Switch to annual, save {Math.round(annualDiscount * 100)}%.</button></span>
+                      ) : (
+                        <span>Saving {Math.round(annualDiscount * 100)}% on annual billing.</span>
+                      )}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* All plans */}
             <h3 className="pm-section-title">All Plans</h3>
-            {loading ? (
+            {loading || loadingPlanData ? (
               <div className="plans-loading"><span className="spinner spinner--lg" aria-label="Loading plans" /></div>
             ) : (
               <div className="plans-grid pm-plans-grid">
-                {displayedPlans.map((plan, i) => (
-                  <PlanCard
-                    key={plan._id}
-                    plan={plan}
-                    index={i}
-                    mode="manage"
-                    isCurrent={plan.tier === currentTier}
-                    onUpgrade={handleUpgrade}
-                    billingCycle={billingCycle}
-                    originalPrice={plan.originalPrice}
-                  />
-                ))}
+                {planData?.allPlans && planData.allPlans.length > 0 ? (
+                  // Use API plans if available
+                  planData.allPlans.map((apiPlan, i) => {
+                    const catalogPlan = displayedPlans.find(p => p.tier === apiPlan.tier);
+                    return (
+                      <PlanCard
+                        key={apiPlan.id}
+                        plan={{
+                          ...catalogPlan,
+                          ...apiPlan,
+                          _id: apiPlan.id,
+                          tier: apiPlan.tier,
+                          category: apiPlan.category,
+                          price: billingCycle === 'annual' ? Math.round(apiPlan.annualPrice / 12) : apiPlan.monthlyPrice,
+                          originalPrice: apiPlan.monthlyPrice,
+                        }}
+                        index={i}
+                        mode="manage"
+                        isCurrent={apiPlan.isCurrentPlan}
+                        onUpgrade={handleUpgrade}
+                        billingCycle={billingCycle}
+                        originalPrice={apiPlan.monthlyPrice}
+                      />
+                    );
+                  })
+                ) : (
+                  // Fallback to catalog plans
+                  displayedPlans.map((plan, i) => (
+                    <PlanCard
+                      key={plan._id}
+                      plan={plan}
+                      index={i}
+                      mode="manage"
+                      isCurrent={plan.tier === currentTier}
+                      onUpgrade={handleUpgrade}
+                      billingCycle={billingCycle}
+                      originalPrice={plan.originalPrice}
+                    />
+                  ))
+                )}
               </div>
             )}
 
