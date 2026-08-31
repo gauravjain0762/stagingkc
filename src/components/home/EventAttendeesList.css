@@ -1,0 +1,277 @@
+.eal-container {
+  padding: 24px;
+  background: #0d1424;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.eal-header {
+  margin-bottom: 24px;
+}
+
+.eal-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.eal-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #e8ecf8;
+  margin: 0;
+}
+
+.eal-count {
+  font-size: 14px;
+  color: #6b7280;
+  background: rgba(99, 102, 241, 0.1);
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.eal-controls {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.eal-search {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 14px;
+  background: #1a2342;
+  border: 1px solid #2a3a52;
+  border-radius: 8px;
+  color: #e8ecf8;
+  font-size: 14px;
+  transition: border-color 0.25s ease;
+}
+
+.eal-search:focus {
+  outline: none;
+  border-color: rgba(99, 102, 241, 0.5);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.eal-search::placeholder {
+  color: #6b7280;
+}
+
+.eal-filter {
+  padding: 10px 14px;
+  background: #1a2342;
+  border: 1px solid #2a3a52;
+  border-radius: 8px;
+  color: #e8ecf8;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.25s ease;
+}
+
+.eal-filter:focus {
+  outline: none;
+  border-color: rgba(99, 102, 241, 0.5);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.eal-filter option {
+  background: #0d1424;
+  color: #e8ecf8;
+}
+
+.eal-refresh-btn {
+  padding: 10px 16px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 8px;
+  color: #6366f1;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.eal-refresh-btn:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+.eal-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.eal-error {
+  padding: 12px 16px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #fecaca;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.eal-loading,
+.eal-empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.eal-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #1a2342;
+  border-radius: 8px;
+}
+
+.eal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.eal-th {
+  background: #1a2342;
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #94a3b8;
+  border-bottom: 1px solid #2a3a52;
+  white-space: nowrap;
+}
+
+.eal-th--name {
+  min-width: 180px;
+}
+
+.eal-th--age {
+  min-width: 60px;
+}
+
+.eal-th--ticket {
+  min-width: 120px;
+}
+
+.eal-th--status {
+  min-width: 110px;
+}
+
+.eal-th--amount {
+  min-width: 80px;
+  text-align: right;
+}
+
+.eal-th--date {
+  min-width: 110px;
+}
+
+.eal-tr {
+  border-bottom: 1px solid #1a2342;
+  transition: background 0.2s ease;
+}
+
+.eal-tr:hover {
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.eal-td {
+  padding: 12px 16px;
+  color: #e8ecf8;
+  vertical-align: middle;
+}
+
+.eal-td--amount {
+  text-align: right;
+  color: #10b981;
+  font-weight: 500;
+}
+
+.eal-td--date {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.eal-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.eal-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid #2a3a52;
+}
+
+.eal-avatar--fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3));
+  font-weight: 600;
+  color: #6366f1;
+  font-size: 14px;
+}
+
+.eal-status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .eal-controls {
+    flex-direction: column;
+  }
+
+  .eal-search {
+    min-width: auto;
+    flex: 1;
+  }
+
+  .eal-th--name {
+    min-width: 140px;
+  }
+
+  .eal-th--ticket {
+    min-width: 100px;
+  }
+}
+
+@media (max-width: 768px) {
+  .eal-container {
+    padding: 16px;
+  }
+
+  .eal-title {
+    font-size: 18px;
+  }
+
+  .eal-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .eal-th,
+  .eal-td {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .eal-avatar {
+    width: 32px;
+    height: 32px;
+  }
+}

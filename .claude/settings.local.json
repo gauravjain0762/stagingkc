@@ -244,7 +244,9 @@
       "Bash(timeout 30 bash -c 'until curl -sf http://localhost:5173 >/dev/null; do sleep 1; done')",
       "Bash(node \"/private/tmp/claude-501/-Users-jaymandaliya-Documents-2026-13Aug2026KinkAnalystFrontEnd-Kink-Catalyst-Platform/cbb40d8d-f0f8-4972-8fa9-6a036ed0c30e/scratchpad/mobile-check.mjs\")",
       "Bash(node mobile-check.mjs)",
-      "Bash(node measure-overflow.mjs)"
+      "Bash(node measure-overflow.mjs)",
+      "Bash(node -e \"const fs = require\\('fs'\\); const code = fs.readFileSync\\('src/components/home/EventsPage.jsx', 'utf8'\\); console.log\\('EventsPage.jsx syntax check passed'\\);\")",
+      "Bash(node -e \"const fs = require\\('fs'\\); const code = fs.readFileSync\\('src/components/home/EventAttendeesList.jsx', 'utf8'\\); console.log\\('EventAttendeesList.jsx syntax check passed'\\);\")"
     ]
   },
   "enableAllProjectMcpServers": true,

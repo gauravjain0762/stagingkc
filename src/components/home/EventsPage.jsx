@@ -10,6 +10,7 @@ import SkeletonImg from '../SkeletonImg';
 import Loader from '../Loader';
 import ShareSheet from './ShareSheet';
 import './ShareSheet.css';
+import EventAttendeesList from './EventAttendeesList';
 import { geocode, getCurrentLocation, reverseGeocode, primeGeocode } from '../../utils/geo';
 import useRadiusFilter from '../../hooks/useRadiusFilter';
 import LocationRadiusFilter from './LocationRadiusFilter';
@@ -2169,6 +2170,12 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
               >
                 Discussion{!canViewDiscussion && <LockIcon />}
               </button>
+              {selectedEvent._sourceTab === 'created' && (
+                <button
+                  className={`ev-detail-tab${evDetailTab === 'users' ? ' ev-detail-tab--active' : ''}`}
+                  onClick={() => setEvDetailTab('users')}
+                >Users</button>
+              )}
             </div>
             <div className="ev-detail-actions">
               {selectedEvent._sourceTab === 'created' && (
@@ -2735,6 +2742,14 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
 
                 </div>
               </>
+            )}
+
+            {/* Users tab */}
+            {evDetailTab === 'users' && (
+              <EventAttendeesList
+                eventId={selectedEvent?.id}
+                token={authToken}
+              />
             )}
 
           </div>
