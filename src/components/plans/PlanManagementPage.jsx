@@ -210,13 +210,54 @@ export default function PlanManagementPage({ onBack, onCoursesClick, onLibraryCl
     if (id === 'minisites') onMinisitesClick?.();
   }
 
-  // UI-only for now — no change-plan endpoint exists yet, so this doesn't
-  // pretend to actually switch the account's plan (that would mean faking
-  // auth state). It just confirms the click landed.
+  // BACKEND TODO: Implement POST /api/users/me/plan/upgrade endpoint
+  // See specification in comments below
   function handleUpgrade(planId) {
     const plan = sortedPlans.find(p => p._id === planId);
     const tierLabel = plan ? plan.tier.charAt(0).toUpperCase() + plan.tier.slice(1) : 'this plan';
-    dispatch(showToast({ message: `Upgrade to ${tierLabel} requested — billing isn't connected yet.`, type: 'info' }));
+
+    dispatch(showToast({
+      message: `🔄 Backend is creating the upgrade API — coming soon!`,
+      type: 'info'
+    }));
+
+    // Once backend creates POST /api/users/me/plan/upgrade, uncomment below:
+    /*
+    if (!token) {
+      dispatch(showToast({ message: 'Please log in first', type: 'error' }));
+      return;
+    }
+
+    async function upgradePlan() {
+      try {
+        const res = await apiRequest('/api/users/me/plan/upgrade', {
+          method: 'POST',
+          body: {
+            tier: plan.tier,
+            billingCycle: billingCycle
+          },
+          token
+        });
+
+        if (res?.success) {
+          dispatch(showToast({
+            message: `✅ Successfully upgraded to ${tierLabel}!`,
+            type: 'success'
+          }));
+          // Refresh plan data
+          const planRes = await apiRequest('/api/users/me/plan', { token });
+          setPlanData(planRes?.data);
+        }
+      } catch (err) {
+        dispatch(showToast({
+          message: err.message || `Failed to upgrade to ${tierLabel}`,
+          type: 'error'
+        }));
+      }
+    }
+
+    upgradePlan();
+    */
   }
 
   return (
