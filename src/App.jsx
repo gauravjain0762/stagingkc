@@ -43,3 +43,4 @@ export default function App() {
   if (page === 'forgot-password') return <><Toast /><ForgotPasswordPage /></>;
   return <><Toast /><SignupPage /></>;
 }
+// Updated deployment trigger
