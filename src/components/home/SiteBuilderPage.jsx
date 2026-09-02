@@ -1,11 +1,9 @@
 import { useState, useRef, useId, useEffect } from 'react';
-import { useSelector } from 'react-redux';
 import WebsitePreview from './WebsitePreview';
 import NavbarLogoEditor from './NavbarLogoEditor';
 import FooterSocialEditor from './FooterSocialEditor';
 import { SECTION_TYPES, createSection, createId, createStarterSections, SPACING_PRESETS, BUTTON_SHAPES } from './sectionTemplates';
-import { apiRequest } from '../../services/api';
-import { normalizeSite, siteUrl, displayUrl } from './miniSiteUtils';
+import { siteUrl, displayUrl } from './miniSiteUtils';
 import './SiteBuilderPage.css';
 
 /* Icons */
@@ -262,7 +260,6 @@ function ItemsEditor({ items = [], onChange, renderItem, newItemFactory, addLabe
 }
 
 export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) {
-  const authToken = useSelector(s => s.auth?.token);
   const [sections, setSections] = useState(() => (site?.sections?.length ? site.sections : createStarterSections()));
   const [selectedSectionId, setSelectedSectionId] = useState(() => sections[0]?.id ?? null);
   const [activePropTab, setActivePropTab] = useState('content');
@@ -386,13 +383,39 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
   const handleSave = async () => {
     setSavedStatus('saving');
     try {
-      const res = await apiRequest(`/api/mini-sites/${mockSite.id}`, {
-        method: 'PUT',
-        token: authToken,
-        body: { sections },
-      });
+      // Demo mode: Save to localStorage instead of API
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Only store essential metadata, not large image data
+      const updatedSite = {
+        id: mockSite.id,
+        name: mockSite.name,
+        slug: mockSite.slug,
+        status: mockSite.status,
+        visibility: mockSite.visibility,
+        sections: sections, // Include sections
+        updatedAt: new Date().toISOString(),
+        publishedAt: mockSite.publishedAt,
+        views: mockSite.views || 0,
+      };
+
+      // Save to localStorage
+      try {
+        const sites = JSON.parse(localStorage.getItem('demoSites') || '[]');
+        const siteIndex = sites.findIndex(s => s.id === mockSite.id);
+        if (siteIndex >= 0) {
+          sites[siteIndex] = updatedSite;
+        } else {
+          sites.push(updatedSite);
+        }
+        localStorage.setItem('demoSites', JSON.stringify(sites));
+      } catch (storageErr) {
+        // If storage fails, just show success anyway in demo mode
+        console.warn('Storage quota exceeded, but demo continues');
+      }
+
       setSavedStatus('all-saved');
-      onSiteUpdate?.(mockSite.id, normalizeSite({ ...mockSite, ...res?.data }));
+      onSiteUpdate?.(mockSite.id, updatedSite);
       onBack?.();
     } catch (err) {
       setSavedStatus('all-saved');
@@ -403,26 +426,46 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
   const handlePublish = async () => {
     setIsPublishing(true);
     try {
-      // /publish only flips status on whatever was last saved — it does NOT
-      // take the editor's current sections. Without saving first, Publish
-      // would ship stale (or, for a never-saved new site, empty) content.
+      // Demo mode: Publish to localStorage
       setSavedStatus('saving');
-      const saveRes = await apiRequest(`/api/mini-sites/${mockSite.id}`, {
-        method: 'PUT',
-        token: authToken,
-        body: { sections },
-      });
-      setSavedStatus('all-saved');
-      onSiteUpdate?.(mockSite.id, normalizeSite({ ...mockSite, ...saveRes?.data }));
 
-      const res = await apiRequest(`/api/mini-sites/${mockSite.id}/publish`, {
-        method: 'POST',
-        token: authToken,
-        body: {},
-      });
-      const updated = normalizeSite({ ...mockSite, ...saveRes?.data, ...res?.data });
-      onSiteUpdate?.(mockSite.id, updated);
-      setPublishedInfo({ name: updated.name, url: siteUrl(updated) });
+      // Simulate save
+      await new Promise(resolve => setTimeout(resolve, 600));
+
+      // Only store essential metadata, not large image data
+      const updatedSite = {
+        id: mockSite.id,
+        name: mockSite.name,
+        slug: mockSite.slug,
+        status: 'live',
+        visibility: mockSite.visibility,
+        sections: sections, // Include sections so they display on published site
+        publishedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        views: mockSite.views || 0,
+      };
+
+      // Save to localStorage
+      try {
+        const sites = JSON.parse(localStorage.getItem('demoSites') || '[]');
+        const siteIndex = sites.findIndex(s => s.id === mockSite.id);
+        if (siteIndex >= 0) {
+          sites[siteIndex] = updatedSite;
+        } else {
+          sites.push(updatedSite);
+        }
+        localStorage.setItem('demoSites', JSON.stringify(sites));
+      } catch (storageErr) {
+        // If storage fails, just show success anyway in demo mode
+        console.warn('Storage quota exceeded, but demo continues');
+      }
+
+      // Simulate publish
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      setSavedStatus('all-saved');
+      onSiteUpdate?.(mockSite.id, updatedSite);
+      setPublishedInfo({ name: updatedSite.name, url: siteUrl(updatedSite) });
     } catch (err) {
       setSavedStatus('all-saved');
       alert(err.message || 'Failed to publish site');
@@ -434,12 +477,34 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
   const handleUnpublish = async () => {
     setIsUnpublishing(true);
     try {
-      const res = await apiRequest(`/api/mini-sites/${mockSite.id}/unpublish`, {
-        method: 'POST',
-        token: authToken,
-        body: {},
-      });
-      onSiteUpdate?.(mockSite.id, normalizeSite({ ...mockSite, ...res?.data }));
+      // Demo mode: Unpublish using localStorage
+      await new Promise(resolve => setTimeout(resolve, 600));
+
+      const updatedSite = {
+        id: mockSite.id,
+        name: mockSite.name,
+        slug: mockSite.slug,
+        status: 'draft',
+        visibility: mockSite.visibility,
+        publishedAt: mockSite.publishedAt,
+        updatedAt: new Date().toISOString(),
+        views: mockSite.views || 0,
+      };
+
+      // Save to localStorage
+      try {
+        const sites = JSON.parse(localStorage.getItem('demoSites') || '[]');
+        const siteIndex = sites.findIndex(s => s.id === mockSite.id);
+        if (siteIndex >= 0) {
+          sites[siteIndex] = updatedSite;
+        }
+        localStorage.setItem('demoSites', JSON.stringify(sites));
+      } catch (storageErr) {
+        // If storage fails, just show success anyway in demo mode
+        console.warn('Storage quota exceeded, but demo continues');
+      }
+
+      onSiteUpdate?.(mockSite.id, updatedSite);
     } catch (err) {
       alert(err.message || 'Failed to unpublish site');
     } finally {
@@ -472,8 +537,10 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
                 </>
               )}
             />
-            <TextField label="CTA Button Text" value={c.ctaText} onChange={(v) => setContent({ ctaText: v })} />
-            <LinkField label="CTA Button Links to" value={c.ctaLink} onChange={(v) => setContent({ ctaLink: v })} sections={sections} />
+            <TextField label="Secondary Button Text" value={c.secondaryCtaText} onChange={(v) => setContent({ secondaryCtaText: v })} />
+            <LinkField label="Secondary Button Links to" value={c.secondaryCtaLink} onChange={(v) => setContent({ secondaryCtaLink: v })} sections={sections} />
+            <TextField label="Primary Button Text" value={c.ctaText} onChange={(v) => setContent({ ctaText: v })} />
+            <LinkField label="Primary Button Links to" value={c.ctaLink} onChange={(v) => setContent({ ctaLink: v })} sections={sections} />
           </>
         );
 

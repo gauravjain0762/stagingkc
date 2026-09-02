@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import WebsitePreview from './WebsitePreview';
+import MiniSiteFeed from './MiniSiteFeed';
 import Loader from '../Loader';
-import { apiRequest } from '../../services/api';
 import { normalizeSite } from './miniSiteUtils';
 import './PublicSitePage.css';
 
@@ -25,6 +25,7 @@ export default function PublicSitePage({ slug }) {
   const [password, setPassword] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [passwordError, setPasswordError] = useState('');
+  const [showFeed, setShowFeed] = useState(false);
   const viewTracked = useRef(false);
 
   useEffect(() => {
@@ -32,32 +33,48 @@ export default function PublicSitePage({ slug }) {
 
     async function load() {
       setStatus('loading');
-      const savedToken = localStorage.getItem(siteTokenKey(slug));
+      // Demo mode: Load from localStorage instead of API
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      if (cancelled) return;
+
       try {
-        const res = await apiRequest(
-          `/api/mini-sites/public/${encodeURIComponent(slug)}`,
-          savedToken ? { token: savedToken } : {}
-        );
-        if (cancelled) return;
-        console.log('📦 Site data loaded:', res?.data);
-        console.log('📋 Sections:', res?.data?.sections);
-        if (res?.data?.sections) {
-          const footerSection = res.data.sections.find(s => s.type === 'footer');
+        // Get all sites from localStorage
+        const sites = JSON.parse(localStorage.getItem('demoSites') || '[]');
+
+        // Find site by slug
+        const foundSite = sites.find(s => s.slug === slug && s.status === 'live');
+
+        if (!foundSite) {
+          setStatus('notfound');
+          return;
+        }
+
+        console.log('📦 Site data loaded:', foundSite);
+        console.log('📋 Sections:', foundSite?.sections);
+        if (foundSite?.sections) {
+          const footerSection = foundSite.sections.find(s => s.type === 'footer');
           console.log('🔗 Footer section:', footerSection);
         }
-        setSite(normalizeSite(res?.data));
+
+        // Check visibility
+        if (foundSite.visibility === 'private') {
+          setStatus('forbidden');
+          return;
+        }
+
+        if (foundSite.visibility === 'members') {
+          setStatus('needs-password'); // Show password as placeholder for members-only
+          return;
+        }
+
+        // Public site
+        setSite(normalizeSite(foundSite));
         setStatus('ready');
       } catch (err) {
         if (cancelled) return;
-        // The backend returns an identical 404 "Site not found" for a truly
-        // missing slug, a private site, AND a password-protected one — there's
-        // no way to tell them apart from this response alone (confirmed live).
-        // Only /verify-password can disambiguate (401 = wrong password, so it
-        // IS password-protected; 404 = not a password site at all), so default
-        // to showing the password gate and let a verify-password attempt
-        // downgrade to "not found" if it turns out there's nothing to unlock.
-        if (err.status === 403) setStatus('forbidden');
-        else setStatus('needs-password');
+        console.error('Failed to load site:', err);
+        setStatus('notfound');
       }
     }
 
@@ -65,33 +82,72 @@ export default function PublicSitePage({ slug }) {
     return () => { cancelled = true; };
   }, [slug]);
 
-  // Record the page view once the site actually renders.
+  // Demo mode: Skip view tracking since we're using localStorage
   useEffect(() => {
     if (status !== 'ready' || viewTracked.current) return;
     viewTracked.current = true;
-    const referrer = document.referrer ? (() => { try { return new URL(document.referrer).hostname; } catch { return ''; } })() : '';
-    apiRequest(`/api/mini-sites/public/${encodeURIComponent(slug)}/view`, {
-      method: 'POST',
-      body: { referrer },
-    }).catch(() => {});
+    console.log('📊 View tracked for site:', slug);
   }, [status, slug]);
+
+  // Listen for feed link click
+  useEffect(() => {
+    const handleOpenFeed = (e) => {
+      setShowFeed(true);
+    };
+    window.addEventListener('openFeed', handleOpenFeed);
+    return () => window.removeEventListener('openFeed', handleOpenFeed);
+  }, []);
+
+  // Listen for navbar section link clicks and exit feed view
+  useEffect(() => {
+    const handleNavClick = (e) => {
+      const target = e.target.closest('a');
+      if (target && target.href) {
+        const url = new URL(target.href);
+        const hash = url.hash;
+        // If clicking a section link (not feed), exit feed view
+        if (hash && hash !== '#feed' && showFeed) {
+          setShowFeed(false);
+        }
+      }
+    };
+
+    window.addEventListener('click', handleNavClick);
+    return () => window.removeEventListener('click', handleNavClick);
+  }, [showFeed]);
 
   async function handleVerifyPassword(e) {
     e.preventDefault();
     setVerifying(true);
     setPasswordError('');
     try {
-      const res = await apiRequest(`/api/mini-sites/public/${encodeURIComponent(slug)}/verify-password`, {
-        method: 'POST',
-        body: { password },
-      });
-      if (res?.token) localStorage.setItem(siteTokenKey(slug), res.token);
-      setSite(normalizeSite(res?.data));
+      // Demo mode: Accept any password for members-only sites
+      await new Promise(resolve => setTimeout(resolve, 600));
+
+      const sites = JSON.parse(localStorage.getItem('demoSites') || '[]');
+      const foundSite = sites.find(s => s.slug === slug && s.status === 'live');
+
+      if (!foundSite) {
+        setStatus('notfound');
+        return;
+      }
+
+      if (foundSite.visibility !== 'members') {
+        setStatus('notfound');
+        return;
+      }
+
+      // Demo: Accept any non-empty password
+      if (!password.trim()) {
+        setPasswordError('Please enter a password');
+        setVerifying(false);
+        return;
+      }
+
+      localStorage.setItem(siteTokenKey(slug), 'demo-token');
+      setSite(normalizeSite(foundSite));
       setStatus('ready');
     } catch (err) {
-      // 404 here means this slug was never password-protected in the first
-      // place (truly missing, or a private site) — now we know for sure.
-      if (err.status === 404) { setStatus('notfound'); return; }
       setPasswordError(err.message || 'Invalid password');
     } finally {
       setVerifying(false);
@@ -151,16 +207,39 @@ export default function PublicSitePage({ slug }) {
     return <Loader />;
   }
 
+  // Render site with Feed as inline section
   return (
     <div className="pub-site-page">
-      <WebsitePreview
-        key={site.id}
-        sections={site?.sections || []}
-        device="desktop"
-        interactive={false}
-        siteId={site?.id}
-        contactEmail={site?.contactInfo?.email}
-      />
+      {showFeed ? (
+        <>
+          {/* Show navbar only */}
+          {site?.sections?.[0]?.type === 'navbar' && (
+            <WebsitePreview
+              sections={[site.sections[0]]}
+              device="desktop"
+              interactive={false}
+              siteId={site?.id}
+              contactEmail={site?.contactInfo?.email}
+            />
+          )}
+          {/* Show feed inline */}
+          <div className="pub-site-feed-inline">
+            <MiniSiteFeed
+              siteId={site.id}
+              siteName={site.name}
+            />
+          </div>
+        </>
+      ) : (
+        <WebsitePreview
+          key={site.id}
+          sections={site?.sections || []}
+          device="desktop"
+          interactive={false}
+          siteId={site?.id}
+          contactEmail={site?.contactInfo?.email}
+        />
+      )}
       <div className="pub-site-footer">Made with Kink Catalyst Mini Sites</div>
     </div>
   );

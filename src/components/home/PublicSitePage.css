@@ -91,6 +91,83 @@
 .pub-site-password-submit:hover:not(:disabled) { background: #2563eb; }
 .pub-site-password-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
+/* Feed View - Inline */
+.pub-site-feed-inline {
+  background: #ffffff;
+  min-height: calc(100vh - 200px);
+}
+
+/* Light theme overrides for feed */
+.pub-site-feed-inline .home-feed {
+  background: #ffffff;
+}
+
+.pub-site-feed-inline .post-creator {
+  background: #f5f5f5;
+  border-color: #e0e0e0;
+}
+
+.pub-site-feed-inline .creator-input {
+  background: #f5f1ed !important;
+  border-color: #d0d0d0 !important;
+  color: #666666 !important;
+}
+
+.pub-site-feed-inline .creator-input:hover {
+  border-color: #a68e7e !important;
+  color: #a68e7e !important;
+}
+
+.pub-site-feed-inline .creator-input:focus {
+  background: #f5f1ed !important;
+  border-color: #a68e7e !important;
+  box-shadow: 0 0 0 3px rgba(166, 142, 126, 0.1) !important;
+  color: #a68e7e !important;
+}
+
+.pub-site-feed-inline .creator-input::placeholder {
+  color: #999999 !important;
+}
+
+.pub-site-feed-inline .post-creator:hover .creator-input {
+  border-color: #a68e7e !important;
+  background: #f5f1ed !important;
+}
+
+.pub-site-feed-inline .post-creator:hover .creator-input::placeholder {
+  color: #a68e7e !important;
+}
+
+.pub-site-feed-inline .post-creator--clicked .creator-input {
+  border-color: #a68e7e !important;
+  animation: none !important;
+}
+
+.pub-site-feed-inline .creator-media-btn {
+  color: #666666 !important;
+  border-color: #d0d0d0 !important;
+  background: #ffffff !important;
+}
+
+.pub-site-feed-inline .creator-media-btn:hover {
+  background: #fafafa !important;
+  border-color: #a68e7e !important;
+  color: #a68e7e !important;
+}
+
+.pub-site-feed-inline .creator-post-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+}
+
+.pub-site-feed-inline .creator-post-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+}
+
+.pub-site-feed-inline .feed-posts {
+  background: #ffffff;
+}
+
 /* ── Responsive ──
    The actual site content (nav/hero/gallery/etc.) is rendered by
    WebsitePreview using the .wp-* classes defined in SiteBuilderPage.css

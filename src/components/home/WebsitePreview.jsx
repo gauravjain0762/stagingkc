@@ -56,12 +56,24 @@ function SectionContent({ section, interactive, siteId, contactEmail }) {
             {(c.links || []).map((l, i) => (
               <a key={i} href={l.url} onClick={(e) => handleNavLinkClick(e, l.url, interactive)}>{l.label}</a>
             ))}
+            <a href="#feed" onClick={(e) => {
+              if (interactive) { e.preventDefault(); return; }
+              e.preventDefault();
+              window.dispatchEvent(new CustomEvent('openFeed', { detail: { siteId } }));
+            }}>Feed</a>
           </nav>
-          {c.ctaText && (
-            <a href={c.ctaLink || '#'} className="wp-btn wp-btn-primary wp-navbar-cta" onClick={(e) => handleNavLinkClick(e, c.ctaLink, interactive)}>
-              {c.ctaText}
-            </a>
-          )}
+          <div className="wp-navbar-actions">
+            {c.secondaryCtaText && (
+              <a href={c.secondaryCtaLink || '#'} className="wp-btn wp-btn-secondary wp-navbar-cta" onClick={(e) => handleNavLinkClick(e, c.secondaryCtaLink, interactive)}>
+                {c.secondaryCtaText}
+              </a>
+            )}
+            {c.ctaText && (
+              <a href={c.ctaLink || '#'} className="wp-btn wp-btn-primary wp-navbar-cta" onClick={(e) => handleNavLinkClick(e, c.ctaLink, interactive)}>
+                {c.ctaText}
+              </a>
+            )}
+          </div>
         </div>
       );
 

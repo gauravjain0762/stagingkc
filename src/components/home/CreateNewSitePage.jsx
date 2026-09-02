@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { useSelector } from 'react-redux';
-import { apiRequest } from '../../services/api';
-import { normalizeSite, publicSiteUrl, displayUrl } from './miniSiteUtils';
+import { publicSiteUrl, displayUrl } from './miniSiteUtils';
 import ImageCropper from './ImageCropper';
 import './CreateNewSitePage.css';
 
@@ -46,24 +44,17 @@ function slugify(name) {
 }
 
 export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName = '', templateName = '' }) {
-  const authToken = useSelector(s => s.auth?.token);
   const [formData, setFormData] = useState({
     siteName: initialName,
     description: '',
     slug: initialName ? slugify(initialName) : '',
     visibility: 'public',
-    password: '',
+    joinPolicy: 'anyone',
+    memberListVisibility: 'everyone',
     logo: null,
     logoPreview: null,
     coverImages: [],
     coverImagePreviews: [],
-    contactInfo: {
-      email: '',
-      phone: '',
-      address: '',
-      businessHours: '',
-      mapUrl: '',
-    },
   });
 
   const [errors, setErrors] = useState({});
@@ -173,15 +164,6 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
     }));
   };
 
-  const handleContactInfoChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      contactInfo: {
-        ...prev.contactInfo,
-        [field]: value,
-      },
-    }));
-  };
 
 
   // Validate form
@@ -197,15 +179,12 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
     if (formData.description.length > 160) {
       newErrors.description = 'Description must be less than 160 characters';
     }
-    if (formData.visibility === 'password' && !formData.password.trim()) {
-      newErrors.password = 'Password is required for a password-protected site';
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
+  // Handle form submission — demo mode, no API
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -215,20 +194,24 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
 
     setIsSubmitting(true);
     try {
-      const res = await apiRequest('/api/mini-sites', {
-        method: 'POST',
-        token: authToken,
-        body: {
-          name: formData.siteName,
-          description: formData.description,
-          visibility: formData.visibility,
-          password: formData.visibility === 'password' ? formData.password : null,
-          logo: formData.logoPreview || undefined,
-          coverImages: formData.coverImagePreviews.length > 0 ? formData.coverImagePreviews : undefined,
-          contactInfo: Object.values(formData.contactInfo).some(v => v) ? formData.contactInfo : undefined,
-        },
-      });
-      const newSite = normalizeSite(res?.data);
+      // Create a mock site object (demo mode — no API)
+      const newSite = {
+        id: 'site-' + Date.now(),
+        name: formData.siteName,
+        description: formData.description,
+        slug: formData.slug,
+        visibility: formData.visibility,
+        logo: formData.logoPreview || null,
+        coverImage: formData.coverImagePreviews[0] || null,
+        coverImages: formData.coverImagePreviews.length > 0 ? formData.coverImagePreviews : [],
+        status: 'draft',
+        views: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        publishedAt: null,
+        sections: [],
+      };
+
       onSiteCreated?.(newSite);
     } catch (err) {
       setErrors(prev => ({ ...prev, submit: err.message || 'Failed to create site' }));
@@ -309,12 +292,12 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
 
           {/* Visibility */}
           <div className="csp-form-group">
-            <label className="csp-label">Visibility</label>
+            <label className="csp-label">Who can see this Mini-Site?</label>
             <div className="csp-visibility-options">
               {[
-                { value: 'public', label: 'Public', Icon: GlobeIcon, description: 'Anyone can view' },
-                { value: 'private', label: 'Private', Icon: LockIcon, description: 'Only you can view' },
-                { value: 'password', label: 'Password Protected', Icon: KeyIcon, description: 'Requires password' },
+                { value: 'public', label: 'Public', Icon: GlobeIcon, description: 'Anyone can see' },
+                { value: 'members', label: 'Members Only', Icon: LockIcon, description: 'Community members only' },
+                { value: 'private', label: 'Private', Icon: KeyIcon, description: 'Only you can see' },
               ].map(option => (
                 <label key={option.value} className="csp-visibility-option">
                   <input
@@ -326,7 +309,7 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
                     className="csp-radio-input"
                   />
                   <div className="csp-visibility-card">
-                    <span className="csp-visibility-icon"><option.Icon /></span>
+                    <span className="csp-visibility-icon csp-visibility-icon--small"><option.Icon /></span>
                     <div className="csp-visibility-content">
                       <p className="csp-visibility-label">{option.label}</p>
                       <p className="csp-visibility-desc">{option.description}</p>
@@ -338,20 +321,66 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
                 </label>
               ))}
             </div>
-            {formData.visibility === 'password' && (
-              <div className="csp-form-group" style={{ marginTop: 12 }}>
-                <label className="csp-label">Site Password *</label>
-                <input
-                  type="text"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  placeholder="Enter a password visitors will need"
-                  className={`csp-input ${errors.password ? 'csp-input--error' : ''}`}
-                />
-                {errors.password && <p className="csp-error">{errors.password}</p>}
-              </div>
-            )}
+          </div>
+
+          {/* Who can join? */}
+          <div className="csp-form-group">
+            <label className="csp-label">Who can join?</label>
+            <div className="csp-options-compact">
+              {[
+                { value: 'anyone', label: 'Anyone can join', description: 'No approval needed' },
+                { value: 'approval', label: 'Approval required', description: 'Members must be approved' },
+                { value: 'invite', label: 'Invite only', description: 'By invitation only' },
+              ].map(option => (
+                <label key={option.value} className="csp-option-compact">
+                  <input
+                    type="radio"
+                    name="joinPolicy"
+                    value={option.value}
+                    checked={formData.joinPolicy === option.value}
+                    onChange={handleInputChange}
+                    className="csp-radio-input"
+                  />
+                  <div className="csp-option-content">
+                    <p className="csp-option-label">{option.label}</p>
+                    <p className="csp-option-desc">{option.description}</p>
+                  </div>
+                  <div className={`csp-radio-check ${formData.joinPolicy === option.value ? 'csp-radio-check--active' : ''}`}>
+                    <CheckIcon />
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Member List Visibility */}
+          <div className="csp-form-group">
+            <label className="csp-label">Member List Visibility</label>
+            <div className="csp-options-compact">
+              {[
+                { value: 'everyone', label: 'Everyone', description: 'All members visible to all' },
+                { value: 'members', label: 'Members only', description: 'Only members can see the list' },
+                { value: 'admin', label: 'Admin/Moderator only', description: 'Only admins and moderators' },
+              ].map(option => (
+                <label key={option.value} className="csp-option-compact">
+                  <input
+                    type="radio"
+                    name="memberListVisibility"
+                    value={option.value}
+                    checked={formData.memberListVisibility === option.value}
+                    onChange={handleInputChange}
+                    className="csp-radio-input"
+                  />
+                  <div className="csp-option-content">
+                    <p className="csp-option-label">{option.label}</p>
+                    <p className="csp-option-desc">{option.description}</p>
+                  </div>
+                  <div className={`csp-radio-check ${formData.memberListVisibility === option.value ? 'csp-radio-check--active' : ''}`}>
+                    <CheckIcon />
+                  </div>
+                </label>
+              ))}
+            </div>
           </div>
 
           {/* Logo Upload */}
@@ -464,64 +493,6 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
               {errors.coverImages && <p className="csp-error">{errors.coverImages}</p>}
               <p className="csp-helper">Upload multiple images. Recommended: 1200x600px for best results. Uploading a file currently fails on the server (known backend bug) — pasting a direct image URL works reliably in the meantime.</p>
             </div>
-          </div>
-
-          {/* Contact Information */}
-          <div className="csp-form-group">
-            <label className="csp-label">Contact Information (Optional)</label>
-            <div className="csp-contact-grid">
-              <div>
-                <label className="csp-label csp-label--small">Email</label>
-                <input
-                  type="email"
-                  className="csp-input"
-                  placeholder="contact@example.com"
-                  value={formData.contactInfo.email}
-                  onChange={(e) => handleContactInfoChange('email', e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="csp-label csp-label--small">Phone</label>
-                <input
-                  type="tel"
-                  className="csp-input"
-                  placeholder="+1-234-567-8900"
-                  value={formData.contactInfo.phone}
-                  onChange={(e) => handleContactInfoChange('phone', e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="csp-label csp-label--small">Address</label>
-                <input
-                  type="text"
-                  className="csp-input"
-                  placeholder="123 Main St, New York, NY 10001"
-                  value={formData.contactInfo.address}
-                  onChange={(e) => handleContactInfoChange('address', e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="csp-label csp-label--small">Business Hours</label>
-                <input
-                  type="text"
-                  className="csp-input"
-                  placeholder="Mon-Fri: 9AM-6PM, Sat: 10AM-4PM"
-                  value={formData.contactInfo.businessHours}
-                  onChange={(e) => handleContactInfoChange('businessHours', e.target.value)}
-                />
-              </div>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label className="csp-label csp-label--small">Google Maps URL</label>
-                <input
-                  type="url"
-                  className="csp-input"
-                  placeholder="https://maps.google.com/?q=..."
-                  value={formData.contactInfo.mapUrl}
-                  onChange={(e) => handleContactInfoChange('mapUrl', e.target.value)}
-                />
-              </div>
-            </div>
-            <p className="csp-helper">Fill in your contact details. Contact forms will send emails to the address above.</p>
           </div>
 
           {errors.submit && <p className="csp-error" style={{ textAlign: 'center' }}>{errors.submit}</p>}

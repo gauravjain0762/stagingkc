@@ -342,6 +342,13 @@
   opacity: 1;
 }
 
+.wp-navbar-actions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
 .wp-navbar-cta {
   flex-shrink: 0;
 }

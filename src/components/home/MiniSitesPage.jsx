@@ -3,6 +3,11 @@ import { useSelector } from 'react-redux';
 import AnimatedNav from './AnimatedNav';
 import CreateNewSitePage from './CreateNewSitePage';
 import SiteBuilderPage from './SiteBuilderPage';
+import OrganizationRegistrationForm from './OrganizationRegistrationForm';
+import OrganizationLoginForm from './OrganizationLoginForm';
+import CommunitiesPage from './CommunitiesPage';
+import CommunityManagementPanel from './CommunityManagementPanel';
+import CommunityDashboard from './CommunityDashboard';
 import Loader from '../Loader';
 import SiteAnalyticsModal from './SiteAnalyticsModal';
 import { ALEX_AVATAR } from './mockData';
@@ -23,6 +28,7 @@ function BarChartIcon() { return <svg width="20" height="20" viewBox="0 0 24 24"
 function LinkIcon()   { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>; }
 function DotsIcon()   { return <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>; }
 function FlagIcon()   { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>; }
+function UsersIcon()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
 function LiveDotIcon() { return <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><circle cx="4" cy="4" r="4"/></svg>; }
 function DraftIcon()  { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>; }
 function PublishIcon()   { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>; }
@@ -58,9 +64,49 @@ function siteImages(site) {
 }
 
 const TABS = [
-  { id: 'all-sites', label: 'All Sites' },
-  { id: 'my-sites',  label: 'My Sites' },
-  { id: 'templates', label: 'Templates' },
+  { id: 'my-sites',      label: 'My Sites' },
+  { id: 'joined',        label: 'Joined Communities' },
+  { id: 'templates',     label: 'Templates' },
+];
+
+const JOINED_COMMUNITIES_DEMO = [
+  {
+    id: 'joined-1',
+    name: 'Tech Innovators',
+    description: 'A community for tech enthusiasts and innovators',
+    memberCount: 234,
+    logo: '🚀',
+    joinedDate: '2026-08-15',
+    type: 'Community',
+  },
+  {
+    id: 'joined-2',
+    name: 'Design Collective',
+    description: 'Designers sharing ideas and collaborating on projects',
+    memberCount: 189,
+    logo: '🎨',
+    joinedDate: '2026-08-10',
+    type: 'Club',
+  },
+  {
+    id: 'joined-3',
+    name: 'Business Network',
+    description: 'Connecting entrepreneurs and business professionals',
+    memberCount: 456,
+    logo: '💼',
+    joinedDate: '2026-08-05',
+    type: 'Business',
+  },
+];
+
+const JOINED_FILTER_TYPES = [
+  { label: 'All' },
+  { label: 'Club' },
+  { label: 'Organization' },
+  { label: 'Community' },
+  { label: 'Business' },
+  { label: 'Non-profit' },
+  { label: 'Other' },
 ];
 
 const REPORT_REASONS = [
@@ -185,9 +231,19 @@ export default function MiniSitesPage({
   const avatarUrl = useSelector(s => s.auth?.user?.avatar) || ALEX_AVATAR;
   const authToken = useSelector(s => s.auth?.token);
   const currentUserId = useSelector(s => s.auth?.user?._id ?? s.auth?.user?.id);
-  const [activeTab,        setActiveTab]        = useState('my-sites');
-  const [showCreateSite,   setShowCreateSite]   = useState(false);
-  const [pendingTemplate,  setPendingTemplate]  = useState(null); // template picked via "Use Template", applied on next create
+  const [activeTab,            setActiveTab]            = useState('my-sites');
+  const [showCreateSite,       setShowCreateSite]       = useState(false);
+  const [showOrgForm,          setShowOrgForm]          = useState(false);
+  const [showOrgLogin,         setShowOrgLogin]         = useState(false);
+  const [showCommunities,      setShowCommunities]      = useState(false);
+  const [leftCommunities,      setLeftCommunities]      = useState(new Set());
+  const [selectedJoinedType,   setSelectedJoinedType]   = useState('All');
+  const [showCommunityMgmt,    setShowCommunityMgmt]    = useState(false);
+  const [selectedSiteForCommunity, setSelectedSiteForCommunity] = useState(null);
+  const [userOrganization,     setUserOrganization]    = useState(null);
+  const [isOrgLoggedIn,        setIsOrgLoggedIn]       = useState(false);
+  const [communityDashboard,   setCommunityDashboard]  = useState(null);
+  const [pendingTemplate,      setPendingTemplate]     = useState(null); // template picked via "Use Template", applied on next create
   const [tplThemeChoice,   setTplThemeChoice]   = useState({}); // { [templateKey]: themeKey } — per-card theme override
   const [currentBuilder,   setCurrentBuilder]   = useState(null);
   const [openMenuId,       setOpenMenuId]       = useState(null);
@@ -283,20 +339,101 @@ export default function MiniSitesPage({
   };
 
   function handleNav(id) {
-    if (id === 'create')    { setShowCreateSite(true); return; }
-    if (id === 'home')      onBack?.();
-    if (id === 'courses')   onCoursesClick?.();
-    if (id === 'library')   onLibraryClick?.();
-    if (id === 'events')    onEventsClick?.();
-    if (id === 'friends')   onGroupsClick?.();
-    if (id === 'messages')  onMessagesClick?.();
-    if (id === 'calendar')  onCalendarClick?.();
-    if (id === 'minisites') onMinisitesClick?.();
+    if (id === 'create')      { setShowCreateSite(true); return; }
+    if (id === 'communities') { setShowCommunities(true); return; }
+    if (id === 'home')        onBack?.();
+    if (id === 'courses')     onCoursesClick?.();
+    if (id === 'library')     onLibraryClick?.();
+    if (id === 'events')      onEventsClick?.();
+    if (id === 'friends')     onGroupsClick?.();
+    if (id === 'messages')    onMessagesClick?.();
+    if (id === 'calendar')    onCalendarClick?.();
+    if (id === 'minisites')   onMinisitesClick?.();
   }
 
-  const handleCreateSite = () => { setPendingTemplate(null); setShowCreateSite(true); };
+  const handleCreateSite = () => {
+    // Check if user is logged in
+    if (!authToken) {
+      alert('🔐 Please log in first to create a mini site');
+      return;
+    }
+    // Check if organization exists
+    if (!userOrganization) {
+      alert('📋 Please create an organization first before creating mini sites');
+      return;
+    }
+    // Check if logged into organization
+    if (!isOrgLoggedIn) {
+      alert('🔒 Please log in to your organization first');
+      return;
+    }
+    setPendingTemplate(null);
+    setShowCreateSite(true);
+  };
 
   const handleUseTemplate = (tpl, theme) => { setPendingTemplate({ tpl, theme }); setShowCreateSite(true); };
+
+  const handleOpenCommunityMgmt = (site) => {
+    setSelectedSiteForCommunity(site);
+    setShowCommunityMgmt(true);
+  };
+
+  const handleCommunityJoined = (community) => {
+    // User joined a community, close the communities page
+    setShowCommunities(false);
+    alert(`✅ Successfully joined "${community.name}" community!`);
+  };
+
+  const handleOpenCommunityDashboard = (site) => {
+    setCommunityDashboard(site);
+  };
+
+  const handleCloseCommunityDashboard = () => {
+    setCommunityDashboard(null);
+  };
+
+  // Load organization and login session from localStorage on mount
+  useEffect(() => {
+    const savedOrg = localStorage.getItem('userOrganization');
+    if (savedOrg) {
+      try {
+        setUserOrganization(JSON.parse(savedOrg));
+      } catch (err) {
+        console.error('Failed to load organization:', err);
+      }
+    }
+
+    // Check for login session
+    const loginSession = localStorage.getItem('orgLoginSession');
+    if (loginSession) {
+      try {
+        setIsOrgLoggedIn(true);
+      } catch (err) {
+        console.error('Failed to load login session:', err);
+      }
+    }
+  }, []);
+
+  const handleOrganizationSubmit = (formData) => {
+    // Organization is already saved to localStorage in the form
+    // Just update state to close form and display it
+    const savedOrg = localStorage.getItem('userOrganization');
+    if (savedOrg) {
+      try {
+        setUserOrganization(JSON.parse(savedOrg));
+      } catch (err) {
+        console.error('Failed to load organization:', err);
+      }
+    }
+    setShowOrgForm(false);
+  };
+
+  const handleOrgLogin = (loginData) => {
+    // Login session is already saved to localStorage in the form
+    // Update state to reflect logged in status
+    setIsOrgLoggedIn(true);
+    setShowOrgLogin(false);
+  };
 
   const handleSiteCreated = (newSite) => {
     // The site is created empty on the backend either way — a template just
@@ -344,6 +481,13 @@ export default function MiniSitesPage({
   const handlePublishSite = async (site, e) => {
     e?.stopPropagation();
     setOpenMenuId(null);
+
+    // Prevent publishing if no sections
+    if (site.status !== 'live' && (!site.sections || site.sections.length === 0)) {
+      alert('Please add at least one section to your site before publishing. Click Edit and add sections using the sidebar.');
+      return;
+    }
+
     setBusyId(site.id);
     const action = site.status === 'live' ? 'unpublish' : 'publish';
     try {
@@ -388,6 +532,42 @@ export default function MiniSitesPage({
     { Icon: LinkIcon,     label: 'DRAFT SITES', value: String(draftSites.length), color: '#f59e0b' },
   ];
 
+  // Show community dashboard
+  if (communityDashboard) {
+    return (
+      <CommunityDashboard
+        site={communityDashboard}
+        onBack={handleCloseCommunityDashboard}
+      />
+    );
+  }
+
+  // Show organization registration form
+  if (showOrgForm) {
+    return (
+      <div className="ms-page">
+        <AnimatedNav activeId="minisites" avatarUrl={avatarUrl} onNavigate={handleNav} />
+        <OrganizationRegistrationForm
+          onClose={() => setShowOrgForm(false)}
+          onSubmit={handleOrganizationSubmit}
+        />
+      </div>
+    );
+  }
+
+  // Show organization login form
+  if (showOrgLogin) {
+    return (
+      <div className="ms-page">
+        <AnimatedNav activeId="minisites" avatarUrl={avatarUrl} onNavigate={handleNav} />
+        <OrganizationLoginForm
+          onClose={() => setShowOrgLogin(false)}
+          onLogin={handleOrgLogin}
+        />
+      </div>
+    );
+  }
+
   // Show create site page
   if (showCreateSite) {
     return (
@@ -412,6 +592,32 @@ export default function MiniSitesPage({
     );
   }
 
+  // Show communities page
+  if (showCommunities) {
+    return (
+      <div className="ms-page">
+        <AnimatedNav activeId="minisites" avatarUrl={avatarUrl} onNavigate={handleNav} />
+        <CommunitiesPage
+          onBack={() => setShowCommunities(false)}
+          onCommunityClick={handleCommunityJoined}
+        />
+      </div>
+    );
+  }
+
+  // Show community management page
+  if (showCommunityMgmt && selectedSiteForCommunity) {
+    return (
+      <CommunityManagementPanel
+        onBack={() => {
+          setShowCommunityMgmt(false);
+          setSelectedSiteForCommunity(null);
+        }}
+        avatarUrl={avatarUrl}
+      />
+    );
+  }
+
   // Show mini sites dashboard
   return (
     <>
@@ -424,10 +630,60 @@ export default function MiniSitesPage({
         <div className="ms-header">
           <div>
             <h1 className="ms-title">Mini Sites</h1>
-            <p className="ms-subtitle">Build and manage your personal web pages</p>
+            <p className="ms-subtitle">
+              {userOrganization
+                ? `Manage mini sites for ${userOrganization.name}`
+                : 'Build and manage your personal web pages'}
+            </p>
           </div>
-          <button className="ms-create-btn" onClick={handleCreateSite}><PlusIcon /> Create New Site</button>
+          <div className="ms-header-buttons">
+            <button
+              className="ms-create-btn ms-create-btn--secondary"
+              onClick={() => setShowCommunities(true)}
+              title="Browse and join communities"
+            >
+              🌐 Browse Communities
+            </button>
+            {!authToken ? (
+              <button className="ms-create-btn ms-create-btn--disabled" disabled title="Please log in first">
+                <PlusIcon /> Log In Required
+              </button>
+            ) : !userOrganization ? (
+              <button
+                className="ms-create-btn ms-create-btn--primary"
+                onClick={() => setShowOrgForm(true)}
+              >
+                <PlusIcon /> Create Organization
+              </button>
+            ) : !isOrgLoggedIn ? (
+              <button
+                className="ms-create-btn ms-create-btn--primary"
+                onClick={() => setShowOrgLogin(true)}
+              >
+                <PlusIcon /> Log In to Organization
+              </button>
+            ) : (
+              <button className="ms-create-btn" onClick={handleCreateSite}>
+                <PlusIcon /> Create New Site
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Organization Details */}
+        {userOrganization && (
+          <div className="ms-org-banner">
+            <div className="ms-org-content">
+              {userOrganization.logo && (
+                <img src={userOrganization.logo} alt="Logo" className="ms-org-logo" />
+              )}
+              <div className="ms-org-info">
+                <h2 className="ms-org-name">{userOrganization.name}</h2>
+                <p className="ms-org-type">{userOrganization.type.charAt(0).toUpperCase() + userOrganization.type.slice(1)}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Stat cards */}
         <div className="ms-stats">
@@ -506,13 +762,6 @@ export default function MiniSitesPage({
 
         {activeTab === 'my-sites' && (!loading || sites.length > 0) && !loadError && (
           <div className="ms-sites-grid">
-            {/* New site card */}
-            <button className="ms-new-card" onClick={handleCreateSite}>
-              <div className="ms-new-icon"><PlusIcon /></div>
-              <p className="ms-new-label">Create New Site</p>
-              <p className="ms-new-sub">Start from scratch or use a template</p>
-            </button>
-
             {filteredSites.length > 0 ? (
               filteredSites.map(site => (
                 <div
@@ -544,7 +793,7 @@ export default function MiniSitesPage({
                           <div className="ms-site-dropdown">
                             <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handleEditSite(site.id); }}><EditIcon /> Edit</button>
                             <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); setOpenMenuId(null); }}><EyeIcon /> Preview</button>
-                            <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); setAnalyticsSite(site); setOpenMenuId(null); }}><BarChartIcon /> Analytics</button>
+                            <button className="ms-dd-item"><KeyIcon /> Admin login</button>
                             <button className="ms-dd-item" onClick={(e) => handlePublishSite(site, e)}>{site.status === 'live' ? <><UnpublishIcon /> Unpublish</> : <><PublishIcon /> Publish</>}</button>
                             <button className="ms-dd-item ms-dd-item--danger" onClick={(e) => handleDeleteSite(site, e)}><TrashIcon /> Delete</button>
                           </div>
@@ -644,7 +893,7 @@ export default function MiniSitesPage({
                               <div className="ms-site-dropdown">
                                 <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handleEditSite(site.id); }}><EditIcon /> Edit</button>
                                 <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); setOpenMenuId(null); }}><EyeIcon /> Preview</button>
-                                <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); setAnalyticsSite(site); setOpenMenuId(null); }}><BarChartIcon /> Analytics</button>
+                                <button className="ms-dd-item"><KeyIcon /> Admin login</button>
                                 <button className="ms-dd-item" onClick={(e) => handlePublishSite(site, e)}>{site.status === 'live' ? <><UnpublishIcon /> Unpublish</> : <><PublishIcon /> Publish</>}</button>
                                 <button className="ms-dd-item ms-dd-item--danger" onClick={(e) => handleDeleteSite(site, e)}><TrashIcon /> Delete</button>
                               </div>
@@ -737,6 +986,79 @@ export default function MiniSitesPage({
               );
             })}
           </div>
+        )}
+
+        {/* Joined Communities Tab */}
+        {activeTab === 'joined' && (
+          <>
+            {/* Filter Pills */}
+            <div className="ms-joined-filters">
+              {JOINED_FILTER_TYPES.map(type => (
+                <button
+                  key={type.label}
+                  className={`ms-joined-filter-pill${selectedJoinedType === type.label ? ' ms-joined-filter-pill--active' : ''}`}
+                  onClick={() => setSelectedJoinedType(type.label)}
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="ms-joined-communities">
+              {JOINED_COMMUNITIES_DEMO.filter(c =>
+                !leftCommunities.has(c.id) &&
+                (selectedJoinedType === 'All' || c.type === selectedJoinedType)
+              ).map(community => (
+              <div key={community.id} className="ms-joined-card">
+                <div className="ms-joined-header">
+                  <div className="ms-joined-logo">{community.logo}</div>
+                  <div className="ms-joined-info">
+                    <h3 className="ms-joined-name">{community.name}</h3>
+                    <p className="ms-joined-members">👥 {community.memberCount.toLocaleString()} members</p>
+                  </div>
+                </div>
+                <p className="ms-joined-description">{community.description}</p>
+                <div className="ms-joined-footer">
+                  <button
+                    className="ms-joined-btn ms-joined-btn--view"
+                    onClick={() => alert(`Opening ${community.name}`)}
+                  >
+                    View
+                  </button>
+                  <button
+                    className="ms-joined-btn ms-joined-btn--leave"
+                    onClick={() => setLeftCommunities(prev => new Set([...prev, community.id]))}
+                  >
+                    Leave
+                  </button>
+                </div>
+              </div>
+            ))}
+            {JOINED_COMMUNITIES_DEMO.filter(c =>
+              !leftCommunities.has(c.id) &&
+              (selectedJoinedType === 'All' || c.type === selectedJoinedType)
+            ).length === 0 && (
+              <div className="ms-empty-state">
+                <p className="ms-empty-icon">🌐</p>
+                <p className="ms-empty-text">No joined communities yet</p>
+                <p className="ms-empty-sub">Browse communities to join and collaborate with others</p>
+              </div>
+            )}
+            </div>
+
+            {/* Connect with more communities section */}
+            <div className="ms-joined-footer-cta">
+              <div className="ms-joined-cta-content">
+                <p className="ms-joined-cta-text">Connect with more communities and grow your network</p>
+                <button
+                  className="ms-joined-cta-btn"
+                  onClick={() => setShowCommunities(true)}
+                >
+                  Browse Communities →
+                </button>
+              </div>
+            </div>
+          </>
         )}
 
       </div>

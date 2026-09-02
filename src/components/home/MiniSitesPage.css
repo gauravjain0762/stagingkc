@@ -36,6 +36,14 @@
   margin: 0;
 }
 
+.ms-header-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .ms-create-btn {
   display: inline-flex;
   align-items: center;
@@ -51,7 +59,104 @@
   transition: background 0.18s, transform 0.15s;
   font-family: inherit;
 }
-.ms-create-btn:hover { background: #2563eb; transform: translateY(-1px); }
+
+.ms-create-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.ms-create-btn--primary {
+  background: linear-gradient(135deg, #64c8ff, #4a90e2);
+  font-weight: 700;
+  padding: 10px 24px;
+  font-size: 14px;
+}
+
+.ms-create-btn--primary:hover {
+  background: linear-gradient(135deg, #4ab8ff, #3a80d2);
+  box-shadow: 0 4px 12px rgba(100, 200, 255, 0.3);
+}
+
+.ms-create-btn--secondary {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(100, 200, 255, 0.3);
+  color: #64c8ff;
+}
+
+.ms-create-btn--secondary:hover {
+  background: rgba(100, 200, 255, 0.1);
+  border-color: rgba(100, 200, 255, 0.5);
+}
+
+.ms-create-btn--disabled {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.ms-create-btn--disabled:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.4);
+  transform: none;
+}
+
+/* ── Organization Banner ── */
+.ms-org-banner {
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, rgba(100, 200, 255, 0.1), rgba(74, 144, 226, 0.05));
+  border: 1px solid rgba(100, 200, 255, 0.2);
+  border-radius: 14px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ms-org-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.ms-org-logo {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(100, 200, 255, 0.2);
+}
+
+.ms-org-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ms-org-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #e2e8f0;
+  letter-spacing: -0.3px;
+}
+
+.ms-org-type {
+  margin: 0;
+  font-size: 12px;
+  color: #64c8ff;
+  font-weight: 500;
+  text-transform: capitalize;
+}
 
 /* ── Stats ── */
 .ms-stats {
@@ -150,9 +255,19 @@
   font-family: inherit;
   min-height: 220px;
 }
-.ms-new-card:hover {
+.ms-new-card:hover:not(:disabled) {
   border-color: #2563eb;
   background: #0f1a30;
+}
+
+.ms-new-card--disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.ms-new-card--disabled:hover {
+  border-color: #1a2540;
+  background: #0d1526;
 }
 
 .ms-new-icon {
@@ -510,6 +625,100 @@
   display: flex;
   justify-content: center;
   margin-top: 24px;
+}
+
+/* ── Feed ── */
+.ms-feed-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px 0;
+}
+
+.ms-feed-wrapper {
+  position: relative;
+}
+
+.ms-feed-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  margin-bottom: 20px;
+  background: rgba(75, 85, 99, 0.15);
+  border: 1px solid rgba(75, 85, 99, 0.3);
+  border-radius: 8px;
+  color: #8b95a5;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ms-feed-back-btn:hover {
+  background: rgba(75, 85, 99, 0.25);
+  border-color: rgba(75, 85, 99, 0.5);
+  color: #e0e6ed;
+}
+
+.ms-feed-select {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.ms-feed-select-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e0e6ed;
+  margin-bottom: 24px;
+}
+
+.ms-feed-sites-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.ms-feed-site-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(75, 85, 99, 0.2);
+  border-radius: 10px;
+  color: #e0e6ed;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.ms-feed-site-btn:hover {
+  background: rgba(59, 130, 246, 0.05);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+}
+
+.ms-feed-site-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ms-feed-site-arrow {
+  margin-left: 12px;
+  flex-shrink: 0;
+}
+
+.ms-feed-no-sites {
+  font-size: 14px;
+  color: #8b95a5;
+  margin: 0;
 }
 
 /* ── Templates Grid ── */
@@ -975,3 +1184,197 @@
   transition: background 0.15s;
 }
 .ms-delete-confirm-btn:hover { background: #b91c1c; }
+
+/* ── Joined Communities ── */
+.ms-joined-communities {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.ms-joined-card {
+  background: linear-gradient(135deg, #0d1526 0%, #1a2540 100%);
+  border: 1px solid #1a2540;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.ms-joined-card:hover {
+  border-color: rgba(100, 200, 255, 0.4);
+  box-shadow: 0 8px 24px rgba(100, 200, 255, 0.1);
+  transform: translateY(-4px);
+  background: linear-gradient(135deg, #1a2540 0%, #2a3550 100%);
+}
+
+.ms-joined-header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.ms-joined-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: rgba(100, 200, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.ms-joined-info {
+  flex: 1;
+}
+
+.ms-joined-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.ms-joined-members {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.ms-joined-description {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+}
+
+.ms-joined-footer {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(100, 200, 255, 0.1);
+}
+
+.ms-joined-btn {
+  flex: 1;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.ms-joined-btn--view {
+  background: rgba(100, 200, 255, 0.2);
+  color: #64c8ff;
+  border: 1px solid rgba(100, 200, 255, 0.3);
+}
+
+.ms-joined-btn--view:hover {
+  background: rgba(100, 200, 255, 0.3);
+  border-color: rgba(100, 200, 255, 0.5);
+}
+
+.ms-joined-btn--leave {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.ms-joined-btn--leave:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+/* ── Joined Communities Filter ── */
+.ms-joined-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.ms-joined-filter-pill {
+  padding: 6px 18px;
+  border-radius: 20px;
+  border: 1px solid #1a2540;
+  background: #0d1526;
+  color: #4b5a7a;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.ms-joined-filter-pill--active {
+  background: #1d4ed8;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.ms-joined-filter-pill:not(.ms-joined-filter-pill--active):hover {
+  background: #1a2540;
+  color: #93c5fd;
+  border-color: #1a2540;
+}
+
+/* ── Joined Communities Footer CTA ── */
+.ms-joined-footer-cta {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(100, 200, 255, 0.15);
+}
+
+.ms-joined-cta-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(100, 200, 255, 0.08) 0%, rgba(100, 200, 255, 0.04) 100%);
+  border: 1px solid rgba(100, 200, 255, 0.15);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.ms-joined-cta-content:hover {
+  background: linear-gradient(135deg, rgba(100, 200, 255, 0.12) 0%, rgba(100, 200, 255, 0.08) 100%);
+  border-color: rgba(100, 200, 255, 0.3);
+  box-shadow: 0 8px 24px rgba(100, 200, 255, 0.1);
+}
+
+.ms-joined-cta-text {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.ms-joined-cta-btn {
+  padding: 10px 24px;
+  border: 1px solid rgba(100, 200, 255, 0.3);
+  border-radius: 8px;
+  background: rgba(100, 200, 255, 0.15);
+  color: #64c8ff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.ms-joined-cta-btn:hover {
+  background: rgba(100, 200, 255, 0.25);
+  border-color: rgba(100, 200, 255, 0.5);
+  transform: translateX(4px);
+}

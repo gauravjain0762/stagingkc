@@ -88,6 +88,8 @@ function defaultContent(type) {
           { label: 'Services', url: '#services' },
           { label: 'Contact', url: '#contact' },
         ],
+        secondaryCtaText: 'Join Community',
+        secondaryCtaLink: '#',
         ctaText: 'Get Started',
         ctaLink: '#',
       };
