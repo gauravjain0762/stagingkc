@@ -121,9 +121,9 @@ export default function CommunitiesPage({ onBack, onCommunityClick }) {
 
   return (
     <div className="communities-page">
-      <AnimatedNav avatarUrl={ALEX_AVATAR} activeId="minisites" />
+      <AnimatedNav avatarUrl={ALEX_AVATAR} activeId="minisites" onNavigate={onBack} />
 
-      <div className="communities-container">
+      <div className="communities-container" style={{ marginLeft: '72px' }}>
         {/* Header */}
         <div className="communities-header">
           <button className="communities-back-btn" onClick={onBack} title="Back">
