@@ -11,14 +11,43 @@ const DEVICE_WIDTH = {
 // navigate — it's editing, not browsing. On the real published/preview
 // render (interactive=false), an in-page "#id" link smooth-scrolls to the
 // matching section; anything else (an external URL) is left to navigate
-// normally.
-function handleNavLinkClick(e, url, interactive) {
+// normally. For mini sites, special links like #feed navigate to pages.
+function handleNavLinkClick(e, url, interactive, siteId) {
   if (interactive) { e.preventDefault(); return; }
-  if (!url || !url.startsWith('#') || url.length < 2) return;
-  const target = document.getElementById(url.slice(1));
-  if (!target) return;
+  if (!url) return;
+
   e.preventDefault();
-  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Handle special mini site links
+  if (url === '#feed') {
+    window.location.hash = 'feed';
+    window.dispatchEvent(new CustomEvent('openFeed', { detail: { siteId } }));
+    return;
+  }
+  if (url === '#members') {
+    window.location.hash = 'members';
+    window.dispatchEvent(new CustomEvent('openMembers', { detail: { siteId } }));
+    return;
+  }
+  if (url === '#calendar') {
+    window.location.hash = 'calendar';
+    window.dispatchEvent(new CustomEvent('openCalendar', { detail: { siteId } }));
+    return;
+  }
+  if (url === '#groups') {
+    window.location.hash = 'groups';
+    window.dispatchEvent(new CustomEvent('openGroups', { detail: { siteId } }));
+    return;
+  }
+
+  // Handle regular anchor links
+  if (url.startsWith('#') && url.length > 1) {
+    const target = document.getElementById(url.slice(1));
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    return;
+  }
 }
 
 const BODY_TRUNCATE_AT = 240;
@@ -53,23 +82,32 @@ function SectionContent({ section, interactive, siteId, contactEmail }) {
             <div className="wp-navbar-logo">{c.logoText}</div>
           </div>
           <nav className="wp-navbar-links">
-            {(c.links || []).map((l, i) => (
-              <a key={i} href={l.url} onClick={(e) => handleNavLinkClick(e, l.url, interactive)}>{l.label}</a>
-            ))}
-            <a href="#feed" onClick={(e) => {
-              if (interactive) { e.preventDefault(); return; }
-              e.preventDefault();
-              window.dispatchEvent(new CustomEvent('openFeed', { detail: { siteId } }));
-            }}>Feed</a>
+            {(() => {
+              // Ensure mandatory links are always present
+              const mandatoryLinks = [
+                { label: 'Feed', url: '#feed' },
+                { label: 'Members', url: '#members' },
+                { label: 'Calendar', url: '#calendar' },
+                { label: 'Groups', url: '#groups' },
+              ];
+              const existingUrls = new Set((c.links || []).map(l => l.url));
+              const allLinks = [
+                ...(c.links || []),
+                ...mandatoryLinks.filter(ml => !existingUrls.has(ml.url))
+              ];
+              return allLinks.map((l, i) => (
+                <a key={i} href={l.url} onClick={(e) => handleNavLinkClick(e, l.url, interactive, siteId)}>{l.label}</a>
+              ));
+            })()}
           </nav>
           <div className="wp-navbar-actions">
             {c.secondaryCtaText && (
-              <a href={c.secondaryCtaLink || '#'} className="wp-btn wp-btn-secondary wp-navbar-cta" onClick={(e) => handleNavLinkClick(e, c.secondaryCtaLink, interactive)}>
+              <a href={c.secondaryCtaLink || '#'} className="wp-btn wp-btn-secondary wp-navbar-cta" onClick={(e) => handleNavLinkClick(e, c.secondaryCtaLink, interactive, siteId)}>
                 {c.secondaryCtaText}
               </a>
             )}
             {c.ctaText && (
-              <a href={c.ctaLink || '#'} className="wp-btn wp-btn-primary wp-navbar-cta" onClick={(e) => handleNavLinkClick(e, c.ctaLink, interactive)}>
+              <a href={c.ctaLink || '#'} className="wp-btn wp-btn-primary wp-navbar-cta" onClick={(e) => handleNavLinkClick(e, c.ctaLink, interactive, siteId)}>
                 {c.ctaText}
               </a>
             )}
@@ -81,17 +119,16 @@ function SectionContent({ section, interactive, siteId, contactEmail }) {
       return (
         <div className="wp-hero">
           <div className="wp-hero-content">
-            <span className="wp-section-badge">{section.icon}</span>
             <h1>{c.headline}</h1>
             <p>{c.subheadline}</p>
             <div className="wp-hero-buttons">
               {c.primaryButtonText && (
-                <a href={c.primaryButtonLink || '#'} className="wp-btn wp-btn-primary" onClick={(e) => handleNavLinkClick(e, c.primaryButtonLink, interactive)}>
+                <a href={c.primaryButtonLink || '#'} className="wp-btn wp-btn-primary" onClick={(e) => handleNavLinkClick(e, c.primaryButtonLink, interactive, siteId)}>
                   {c.primaryButtonText}
                 </a>
               )}
               {c.secondaryButtonText && (
-                <a href={c.secondaryButtonLink || '#'} className="wp-btn wp-btn-secondary" onClick={(e) => handleNavLinkClick(e, c.secondaryButtonLink, interactive)}>
+                <a href={c.secondaryButtonLink || '#'} className="wp-btn wp-btn-secondary" onClick={(e) => handleNavLinkClick(e, c.secondaryButtonLink, interactive, siteId)}>
                   {c.secondaryButtonText}
                 </a>
               )}
@@ -101,7 +138,7 @@ function SectionContent({ section, interactive, siteId, contactEmail }) {
             {c.image ? (
               <img src={c.image} alt={c.headline} className="wp-hero-img" />
             ) : (
-              <div className="wp-placeholder-img">{section.icon}</div>
+              <div className="wp-placeholder-img"></div>
             )}
           </div>
         </div>
@@ -110,7 +147,6 @@ function SectionContent({ section, interactive, siteId, contactEmail }) {
     case 'text':
       return (
         <div className="wp-text-section">
-          <div className="wp-text-icon">{c.icon}</div>
           <h2>{c.headline}</h2>
           <TextBody text={c.body} />
         </div>
@@ -123,7 +159,6 @@ function SectionContent({ section, interactive, siteId, contactEmail }) {
           <div className="wp-grid">
             {(c.items || []).map((item, i) => (
               <div key={i} className="wp-grid-item">
-                <div className="wp-grid-icon">{item.icon}</div>
                 <h3>{item.title}</h3>
                 <p>{item.description}</p>
               </div>
@@ -142,7 +177,7 @@ function SectionContent({ section, interactive, siteId, contactEmail }) {
                 {item.image ? (
                   <img src={item.image} alt={item.caption} className="wp-gallery-img" />
                 ) : (
-                  <div className="wp-gallery-placeholder">{section.icon}</div>
+                  <div className="wp-gallery-placeholder"></div>
                 )}
                 {item.caption && <p className="wp-gallery-caption">{item.caption}</p>}
               </div>
@@ -180,7 +215,7 @@ function SectionContent({ section, interactive, siteId, contactEmail }) {
           <h2>{c.headline}</h2>
           <p>{c.subheadline}</p>
           {c.buttonText && (
-            <a href={c.buttonLink || '#'} className="wp-btn wp-btn-primary" onClick={(e) => handleNavLinkClick(e, c.buttonLink, interactive)}>
+            <a href={c.buttonLink || '#'} className="wp-btn wp-btn-primary" onClick={(e) => handleNavLinkClick(e, c.buttonLink, interactive, siteId)}>
               {c.buttonText}
             </a>
           )}
@@ -255,7 +290,7 @@ function SectionContent({ section, interactive, siteId, contactEmail }) {
           )}
           <div className="wp-footer-links">
             {(c.links || []).map((l, i) => (
-              <a key={i} href={l.url} onClick={(e) => handleNavLinkClick(e, l.url, interactive)}>{l.label}</a>
+              <a key={i} href={l.url} onClick={(e) => handleNavLinkClick(e, l.url, interactive, siteId)}>{l.label}</a>
             ))}
           </div>
           <p className="wp-footer-text">{c.text}</p>
@@ -265,7 +300,6 @@ function SectionContent({ section, interactive, siteId, contactEmail }) {
     default:
       return (
         <div className="wp-default-section">
-          <div className="wp-section-icon">{section.icon}</div>
           <h2>{section.name}</h2>
           <p className="wp-section-type">Type: {section.type}</p>
         </div>

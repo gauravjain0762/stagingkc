@@ -275,7 +275,7 @@ function getEventsInWeek(week, events) {
 /* ══════════════════════════════
    Main Component
 ══════════════════════════════ */
-export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreateClick, onEventClick, onGroupsClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick, initialView, initialDate, onViewStateChange }) {
+export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreateClick, onEventClick, onGroupsClick, onMessagesClick, onLibraryClick, onCoursesClick, onMinisitesClick, initialView, initialDate, onViewStateChange, hideNav }) {
   const dispatch = useDispatch();
   // "upcoming" is the only general-listing tab the events API exposes today
   // (see EventsPage), so a week/month you navigate into the past will show
@@ -423,19 +423,21 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
     <div className="cal-page">
 
       {/* ── Left sidebar ── */}
-      <AnimatedNav
-        activeId="calendar"
-        onNavigate={id => {
-          if (id === 'create')   { setCreatePostOpen(true); return; }
-          if (id === 'home')     onFeedClick?.();
-          if (id === 'courses')  onCoursesClick?.();
-          if (id === 'library')  onLibraryClick?.();
-          if (id === 'events')   onEventsClick?.();
-          if (id === 'friends')  onGroupsClick?.();
-          if (id === 'messages')  onMessagesClick?.();
-          if (id === 'minisites') onMinisitesClick?.();
-        }}
-      />
+      {!hideNav && (
+        <AnimatedNav
+          activeId="calendar"
+          onNavigate={id => {
+            if (id === 'create')   { setCreatePostOpen(true); return; }
+            if (id === 'home')     onFeedClick?.();
+            if (id === 'courses')  onCoursesClick?.();
+            if (id === 'library')  onLibraryClick?.();
+            if (id === 'events')   onEventsClick?.();
+            if (id === 'friends')  onGroupsClick?.();
+            if (id === 'messages')  onMessagesClick?.();
+            if (id === 'minisites') onMinisitesClick?.();
+          }}
+        />
+      )}
       {createPostOpen && <CreatePostModal onClose={() => setCreatePostOpen(false)} />}
 
       {/* ── Main area ── */}

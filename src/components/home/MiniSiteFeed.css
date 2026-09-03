@@ -6,10 +6,248 @@
   background: #ffffff;
 }
 
+/* Override home-feed styles for mini sites */
+.minisite-feed-container {
+  background: #ffffff !important;
+  scrollbar-color: #d1d5db transparent !important;
+}
+
+/* White-blue theme overrides for PostCard elements in mini sites */
+.minisite-feed-container .post-menu-dropdown {
+  background: #ffffff !important;
+  border-color: #e5e7eb !important;
+  scrollbar-color: #d1d5db transparent !important;
+}
+
+.minisite-feed-container .post-menu-item:hover {
+  background: #f3f4f6 !important;
+}
+
+.minisite-feed-container .post-menu-item-title {
+  color: #1f2937 !important;
+}
+
+.minisite-feed-container .post-menu-item-sub {
+  color: #6b7280 !important;
+}
+
+.minisite-feed-container .post-menu-divider {
+  background: #e5e7eb !important;
+}
+
+.minisite-feed-container .report-modal {
+  background: #ffffff !important;
+  border-color: #e5e7eb !important;
+}
+
+.minisite-feed-container .report-modal-header {
+  border-bottom-color: #e5e7eb !important;
+}
+
+.minisite-feed-container .report-modal-title {
+  color: #1f2937 !important;
+}
+
+.minisite-feed-container .report-close-btn {
+  background: #f3f4f6 !important;
+  border-color: #e5e7eb !important;
+  color: #6b7280 !important;
+}
+
+.minisite-feed-container .report-close-btn:hover {
+  background: #e5e7eb !important;
+  color: #1f2937 !important;
+}
+
+.minisite-feed-container .report-modal-body {
+  scrollbar-color: #e5e7eb transparent !important;
+}
+
+.minisite-feed-container .report-question {
+  color: #1f2937 !important;
+}
+
+.minisite-feed-container .report-subtitle {
+  color: #6b7280 !important;
+}
+
+.minisite-feed-container .report-reason-label:hover {
+  background: #f3f4f6 !important;
+}
+
+.minisite-feed-container .report-reason-text {
+  color: #6b7280 !important;
+}
+
+.minisite-feed-container .report-radio {
+  border-color: #d1d5db !important;
+}
+
+.minisite-feed-container .report-modal-footer {
+  border-top-color: #e5e7eb !important;
+}
+
+.minisite-feed-container .post-card {
+  background: #ffffff !important;
+  border-color: #e5e7eb !important;
+}
+
+.minisite-feed-container .post-card:hover {
+  border-color: rgba(37, 99, 235, 0.3) !important;
+}
+
+.minisite-feed-container .post-avatar {
+  background: rgba(59, 130, 246, 0.1) !important;
+}
+
+.minisite-feed-container .post-author {
+  color: #1f2937 !important;
+}
+
+.minisite-feed-container .post-header:hover .post-author {
+  color: #3b82f6 !important;
+}
+
+.minisite-feed-container .post-image {
+  background: #f9fafb !important;
+}
+
+.minisite-feed-container .post-action-btn {
+  color: #6b7280 !important;
+}
+
+.minisite-feed-container .post-action-btn:hover {
+  color: #3b82f6 !important;
+  background: rgba(59, 130, 246, 0.05) !important;
+}
+
+.minisite-feed-container .pc-comment-text {
+  color: #1f2937 !important;
+}
+
+.minisite-feed-container .pc-comment-author {
+  color: #1f2937 !important;
+}
+
+.minisite-feed-container .pc-comment-time {
+  color: #6b7280 !important;
+}
+
+.minisite-feed-container .pc-comment-input {
+  background: #ffffff !important;
+  border-color: #e5e7eb !important;
+  color: #1f2937 !important;
+}
+
+.minisite-feed-container .pc-comment-input::placeholder {
+  color: #9ca3af !important;
+}
+
+.minisite-feed-container .pc-comment-input:focus {
+  border-color: #3b82f6 !important;
+  background: #ffffff !important;
+}
+
+.minisite-feed-container textarea {
+  background: #ffffff !important;
+  border-color: #e5e7eb !important;
+  color: #1f2937 !important;
+}
+
+.minisite-feed-container textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+.minisite-feed-container textarea:focus {
+  border-color: #3b82f6 !important;
+  background: #ffffff !important;
+}
+
+/* Comment input field overrides */
+.minisite-feed-container input[type="text"],
+.minisite-feed-container input[placeholder*="Comment"],
+.minisite-feed-container input[placeholder*="Write"],
+.minisite-feed-container [class*="comment"] input,
+.minisite-feed-container [class*="comment"] textarea {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  color: #1f2937 !important;
+}
+
+.minisite-feed-container input[type="text"]::placeholder,
+.minisite-feed-container input[placeholder*="Comment"]::placeholder,
+.minisite-feed-container input[placeholder*="Write"]::placeholder,
+.minisite-feed-container [class*="comment"] input::placeholder,
+.minisite-feed-container [class*="comment"] textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+.minisite-feed-container input[type="text"]:focus,
+.minisite-feed-container input[placeholder*="Comment"]:focus,
+.minisite-feed-container input[placeholder*="Write"]:focus,
+.minisite-feed-container [class*="comment"] input:focus,
+.minisite-feed-container [class*="comment"] textarea:focus {
+  border-color: #3b82f6 !important;
+  background: #ffffff !important;
+  outline: none !important;
+}
+
+/* Force all inputs and textareas in minisite feed */
+.minisite-feed-container .post-card input,
+.minisite-feed-container .post-card textarea,
+.minisite-feed-container .pc-comment-box input,
+.minisite-feed-container .pc-comment-box textarea,
+.minisite-feed-container .comment-input-wrapper input,
+.minisite-feed-container .comment-input-wrapper textarea {
+  background: #ffffff !important;
+  border-color: #e5e7eb !important;
+  color: #1f2937 !important;
+}
+
+.minisite-feed-container .post-card input::placeholder,
+.minisite-feed-container .post-card textarea::placeholder,
+.minisite-feed-container .pc-comment-box input::placeholder,
+.minisite-feed-container .pc-comment-box textarea::placeholder,
+.minisite-feed-container .comment-input-wrapper input::placeholder,
+.minisite-feed-container .comment-input-wrapper textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+/* Specific overrides for PostCard comment input */
+.minisite-feed-container .comment-input {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  color: #1f2937 !important;
+  caret-color: #1f2937 !important;
+}
+
+.minisite-feed-container .comment-input::placeholder {
+  color: #9ca3af !important;
+}
+
+.minisite-feed-container .comment-input:focus {
+  border-color: #3b82f6 !important;
+  background: #ffffff !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+.minisite-feed-container .comment-input-wrap {
+  background: #ffffff !important;
+}
+
+.minisite-feed-container .comment-input-icons button {
+  color: #6b7280 !important;
+}
+
+.minisite-feed-container .comment-input-icons button:hover {
+  color: #3b82f6 !important;
+}
+
 /* Post Creator */
 .msf-creator {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(75, 85, 99, 0.2);
+  background: rgba(59, 130, 246, 0.03);
+  border: 1px solid rgba(209, 213, 219, 0.5);
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 24px;
@@ -37,10 +275,10 @@
 .msf-creator-input {
   flex: 1;
   padding: 12px 14px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(75, 85, 99, 0.2);
+  background: rgba(59, 130, 246, 0.03);
+  border: 1px solid rgba(209, 213, 219, 0.5);
   border-radius: 8px;
-  color: #e0e6ed;
+  color: #1f2937;
   font-family: inherit;
   font-size: 14px;
   resize: vertical;
@@ -54,7 +292,7 @@
 }
 
 .msf-creator-input::placeholder {
-  color: #8b95a5;
+  color: #6b7280;
 }
 
 .msf-creator-actions {
@@ -65,10 +303,10 @@
 .msf-creator-btn {
   flex: 1;
   padding: 10px 12px;
-  background: transparent;
-  border: 1px solid rgba(75, 85, 99, 0.2);
+  background: #ffffff;
+  border: 1px solid rgba(209, 213, 219, 0.5);
   border-radius: 8px;
-  color: #8b95a5;
+  color: #6b7280;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -116,8 +354,8 @@
 }
 
 .msf-modal {
-  background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
-  border: 1px solid rgba(75, 85, 99, 0.2);
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+  border: 1px solid rgba(209, 213, 219, 0.5);
   border-radius: 16px;
   width: 100%;
   max-width: 500px;
@@ -131,14 +369,14 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 1px solid rgba(75, 85, 99, 0.2);
+  border-bottom: 1px solid rgba(209, 213, 219, 0.5);
 }
 
 .msf-modal-header h3 {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #e0e6ed;
+  color: #1f2937;
 }
 
 .msf-modal-close {
@@ -146,8 +384,8 @@
   height: 36px;
   border: none;
   border-radius: 8px;
-  background: transparent;
-  color: #8b95a5;
+  background: #ffffff;
+  color: #6b7280;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -156,8 +394,8 @@
 }
 
 .msf-modal-close:hover {
-  background: rgba(75, 85, 99, 0.2);
-  color: #e0e6ed;
+  background: rgba(209, 213, 219, 0.5);
+  color: #1f2937;
 }
 
 /* Tabs */
@@ -165,16 +403,16 @@
   display: flex;
   gap: 0;
   padding: 0 20px;
-  border-bottom: 1px solid rgba(75, 85, 99, 0.2);
+  border-bottom: 1px solid rgba(209, 213, 219, 0.5);
 }
 
 .msf-tab {
   flex: 1;
   padding: 12px 16px;
-  background: transparent;
+  background: #ffffff;
   border: none;
   border-bottom: 2px solid transparent;
-  color: #8b95a5;
+  color: #6b7280;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -186,7 +424,7 @@
 }
 
 .msf-tab:hover {
-  color: #e0e6ed;
+  color: #1f2937;
 }
 
 .msf-tab.active {
@@ -202,10 +440,10 @@
 .msf-post-textarea {
   width: 100%;
   padding: 12px 14px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(75, 85, 99, 0.2);
+  background: rgba(59, 130, 246, 0.03);
+  border: 1px solid rgba(209, 213, 219, 0.5);
   border-radius: 8px;
-  color: #e0e6ed;
+  color: #1f2937;
   font-family: inherit;
   font-size: 14px;
   resize: vertical;
@@ -220,7 +458,7 @@
 }
 
 .msf-post-textarea::placeholder {
-  color: #8b95a5;
+  color: #6b7280;
 }
 
 /* Image Preview Grid */
@@ -235,7 +473,7 @@
   position: relative;
   width: 100%;
   padding-bottom: 100%;
-  background: rgba(75, 85, 99, 0.2);
+  background: rgba(209, 213, 219, 0.5);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -292,7 +530,7 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  color: #8b95a5;
+  color: #6b7280;
   text-align: center;
 }
 
@@ -305,13 +543,13 @@
   display: flex;
   gap: 12px;
   padding: 20px;
-  border-top: 1px solid rgba(75, 85, 99, 0.2);
+  border-top: 1px solid rgba(209, 213, 219, 0.5);
 }
 
 .msf-btn-cancel {
   flex: 1;
   padding: 10px 16px;
-  background: rgba(75, 85, 99, 0.15);
+  background: rgba(219, 224, 235, 0.5);
   border: 1px solid rgba(75, 85, 99, 0.3);
   border-radius: 8px;
   color: #d0d6ec;
@@ -322,7 +560,7 @@
 }
 
 .msf-btn-cancel:hover {
-  background: rgba(75, 85, 99, 0.25);
+  background: rgba(219, 224, 235, 0.7);
   border-color: rgba(75, 85, 99, 0.5);
 }
 
@@ -359,13 +597,13 @@
 .msf-empty-state {
   text-align: center;
   padding: 40px 20px;
-  color: #8b95a5;
+  color: #6b7280;
 }
 
 /* Post Card */
 .msf-post-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(75, 85, 99, 0.2);
+  background: rgba(59, 130, 246, 0.03);
+  border: 1px solid rgba(209, 213, 219, 0.5);
   border-radius: 12px;
   overflow: hidden;
   transition: all 0.2s ease;
@@ -373,12 +611,12 @@
 
 .msf-post-card:hover {
   border-color: rgba(75, 85, 99, 0.3);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(59, 130, 246, 0.03);
 }
 
 .msf-post-header {
   padding: 16px;
-  border-bottom: 1px solid rgba(75, 85, 99, 0.15);
+  border-bottom: 1px solid rgba(219, 224, 235, 0.5);
 }
 
 .msf-post-author {
@@ -407,13 +645,13 @@
   margin: 0;
   font-size: 13px;
   font-weight: 600;
-  color: #e0e6ed;
+  color: #1f2937;
 }
 
 .msf-post-time {
   margin: 2px 0 0;
   font-size: 12px;
-  color: #8b95a5;
+  color: #6b7280;
 }
 
 /* Post Content */
@@ -424,7 +662,7 @@
 .msf-post-text {
   margin: 0;
   font-size: 14px;
-  color: #e0e6ed;
+  color: #1f2937;
   line-height: 1.5;
   word-break: break-word;
 }
@@ -434,7 +672,7 @@
   display: grid;
   gap: 2px;
   margin-bottom: 12px;
-  background: #0a0e14;
+  background: #ffffff;
 }
 
 .msf-post-images--single {
@@ -453,7 +691,7 @@
   position: relative;
   width: 100%;
   padding-bottom: 100%;
-  background: #1a1f2e;
+  background: #f9fafb;
   overflow: hidden;
 }
 
@@ -471,16 +709,16 @@
   display: flex;
   gap: 0;
   padding: 8px 0 0;
-  border-top: 1px solid rgba(75, 85, 99, 0.15);
+  border-top: 1px solid rgba(219, 224, 235, 0.5);
 }
 
 .msf-action-btn {
   flex: 1;
   padding: 8px 12px;
-  background: transparent;
+  background: #ffffff;
   border: none;
-  border-right: 1px solid rgba(75, 85, 99, 0.15);
-  color: #8b95a5;
+  border-right: 1px solid rgba(219, 224, 235, 0.5);
+  color: #6b7280;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;

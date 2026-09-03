@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import WebsitePreview from './WebsitePreview';
 import MiniSiteFeed from './MiniSiteFeed';
+import MiniSiteGroupsPage from './MiniSiteGroupsPage';
+import MiniSiteCalendarPage from './MiniSiteCalendarPage';
+import MiniSiteMembersPage from './MiniSiteMembersPage';
 import Loader from '../Loader';
 import { normalizeSite } from './miniSiteUtils';
 import './PublicSitePage.css';
@@ -26,6 +29,9 @@ export default function PublicSitePage({ slug }) {
   const [verifying, setVerifying] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [showFeed, setShowFeed] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [showGroups, setShowGroups] = useState(false);
   const viewTracked = useRef(false);
 
   useEffect(() => {
@@ -89,13 +95,44 @@ export default function PublicSitePage({ slug }) {
     console.log('📊 View tracked for site:', slug);
   }, [status, slug]);
 
-  // Listen for feed link click
+  // Listen for navigation link clicks
   useEffect(() => {
     const handleOpenFeed = (e) => {
       setShowFeed(true);
+      setShowMembers(false);
+      setShowCalendar(false);
+      setShowGroups(false);
     };
+    const handleOpenMembers = (e) => {
+      setShowFeed(false);
+      setShowMembers(true);
+      setShowCalendar(false);
+      setShowGroups(false);
+    };
+    const handleOpenCalendar = (e) => {
+      setShowFeed(false);
+      setShowMembers(false);
+      setShowCalendar(true);
+      setShowGroups(false);
+    };
+    const handleOpenGroups = (e) => {
+      setShowFeed(false);
+      setShowMembers(false);
+      setShowCalendar(false);
+      setShowGroups(true);
+    };
+
     window.addEventListener('openFeed', handleOpenFeed);
-    return () => window.removeEventListener('openFeed', handleOpenFeed);
+    window.addEventListener('openMembers', handleOpenMembers);
+    window.addEventListener('openCalendar', handleOpenCalendar);
+    window.addEventListener('openGroups', handleOpenGroups);
+
+    return () => {
+      window.removeEventListener('openFeed', handleOpenFeed);
+      window.removeEventListener('openMembers', handleOpenMembers);
+      window.removeEventListener('openCalendar', handleOpenCalendar);
+      window.removeEventListener('openGroups', handleOpenGroups);
+    };
   }, []);
 
   // Listen for navbar section link clicks and exit feed view
@@ -207,28 +244,47 @@ export default function PublicSitePage({ slug }) {
     return <Loader />;
   }
 
-  // Render site with Feed as inline section
+  // Render site with different views
+  const renderNavbarOnly = () => (
+    site?.sections?.[0]?.type === 'navbar' && (
+      <WebsitePreview
+        sections={[site.sections[0]]}
+        device="desktop"
+        interactive={false}
+        siteId={site?.id}
+        contactEmail={site?.contactInfo?.email}
+      />
+    )
+  );
+
   return (
     <div className="pub-site-page">
       {showFeed ? (
         <>
-          {/* Show navbar only */}
-          {site?.sections?.[0]?.type === 'navbar' && (
-            <WebsitePreview
-              sections={[site.sections[0]]}
-              device="desktop"
-              interactive={false}
-              siteId={site?.id}
-              contactEmail={site?.contactInfo?.email}
-            />
-          )}
-          {/* Show feed inline */}
+          {renderNavbarOnly()}
           <div className="pub-site-feed-inline">
-            <MiniSiteFeed
-              siteId={site.id}
+            <MiniSiteFeed siteId={site.id} siteName={site.name} />
+          </div>
+        </>
+      ) : showMembers ? (
+        <>
+          {renderNavbarOnly()}
+          <div className="pub-site-view-inline">
+            <MiniSiteMembersPage
               siteName={site.name}
+              onBack={() => setShowMembers(false)}
             />
           </div>
+        </>
+      ) : showCalendar ? (
+        <>
+          {renderNavbarOnly()}
+          <MiniSiteCalendarPage siteName={site.name} />
+        </>
+      ) : showGroups ? (
+        <>
+          {renderNavbarOnly()}
+          <MiniSiteGroupsPage siteName={site.name} />
         </>
       ) : (
         <WebsitePreview

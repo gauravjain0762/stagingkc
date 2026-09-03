@@ -8,6 +8,8 @@ import OrganizationLoginForm from './OrganizationLoginForm';
 import CommunitiesPage from './CommunitiesPage';
 import CommunityManagementPanel from './CommunityManagementPanel';
 import CommunityDashboard from './CommunityDashboard';
+import MiniSitesLanding from './MiniSitesLanding';
+import SiteManagementPage from './SiteManagementPage';
 import Loader from '../Loader';
 import SiteAnalyticsModal from './SiteAnalyticsModal';
 import { ALEX_AVATAR } from './mockData';
@@ -75,7 +77,7 @@ const JOINED_COMMUNITIES_DEMO = [
     name: 'Tech Innovators',
     description: 'A community for tech enthusiasts and innovators',
     memberCount: 234,
-    logo: '🚀',
+    cover: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&h=300&fit=crop',
     joinedDate: '2026-08-15',
     type: 'Community',
   },
@@ -84,7 +86,7 @@ const JOINED_COMMUNITIES_DEMO = [
     name: 'Design Collective',
     description: 'Designers sharing ideas and collaborating on projects',
     memberCount: 189,
-    logo: '🎨',
+    cover: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=600&h=300&fit=crop',
     joinedDate: '2026-08-10',
     type: 'Club',
   },
@@ -93,7 +95,7 @@ const JOINED_COMMUNITIES_DEMO = [
     name: 'Business Network',
     description: 'Connecting entrepreneurs and business professionals',
     memberCount: 456,
-    logo: '💼',
+    cover: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=300&fit=crop',
     joinedDate: '2026-08-05',
     type: 'Business',
   },
@@ -238,6 +240,9 @@ export default function MiniSitesPage({
   const [showCommunities,      setShowCommunities]      = useState(false);
   const [leftCommunities,      setLeftCommunities]      = useState(new Set());
   const [selectedJoinedType,   setSelectedJoinedType]   = useState('All');
+  const [showLanding,          setShowLanding]          = useState(true);
+  const [selectedOrg,          setSelectedOrg]          = useState(null);
+  const [managedSite,          setManagedSite]          = useState(null);
   const [showCommunityMgmt,    setShowCommunityMgmt]    = useState(false);
   const [selectedSiteForCommunity, setSelectedSiteForCommunity] = useState(null);
   const [userOrganization,     setUserOrganization]    = useState(null);
@@ -478,6 +483,10 @@ export default function MiniSitesPage({
     window.open(siteUrl(site), '_blank', 'noopener,noreferrer');
   };
 
+  const handleManageSite = (site) => {
+    setManagedSite(site);
+  };
+
   const handlePublishSite = async (site, e) => {
     e?.stopPropagation();
     setOpenMenuId(null);
@@ -531,6 +540,33 @@ export default function MiniSitesPage({
     { Icon: BarChartIcon, label: 'LIVE SITES',  value: String(liveSites.length), color: '#8b5cf6' },
     { Icon: LinkIcon,     label: 'DRAFT SITES', value: String(draftSites.length), color: '#f59e0b' },
   ];
+
+  // Show landing page
+  if (showLanding) {
+    return (
+      <div className="ms-page">
+        <AnimatedNav activeId="minisites" avatarUrl={avatarUrl} onNavigate={handleNav} />
+        <MiniSitesLanding
+          onCreateOrganization={() => setShowOrgForm(true)}
+          onSelectOrganization={(org) => {
+            setSelectedOrg(org);
+            setShowLanding(false);
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Show site management page
+  if (managedSite) {
+    return (
+      <SiteManagementPage
+        site={managedSite}
+        avatarUrl={avatarUrl}
+        onBack={() => setManagedSite(null)}
+      />
+    );
+  }
 
   // Show community dashboard
   if (communityDashboard) {
@@ -600,6 +636,13 @@ export default function MiniSitesPage({
         <CommunitiesPage
           onBack={() => setShowCommunities(false)}
           onCommunityClick={handleCommunityJoined}
+          onMessagesClick={onMessagesClick}
+          onEventsClick={onEventsClick}
+          onGroupsClick={onGroupsClick}
+          onCalendarClick={onCalendarClick}
+          onCoursesClick={onCoursesClick}
+          onLibraryClick={onLibraryClick}
+          onMinisitesClick={onMinisitesClick}
         />
       </div>
     );
@@ -637,13 +680,6 @@ export default function MiniSitesPage({
             </p>
           </div>
           <div className="ms-header-buttons">
-            <button
-              className="ms-create-btn ms-create-btn--secondary"
-              onClick={() => setShowCommunities(true)}
-              title="Browse and join communities"
-            >
-              🌐 Browse Communities
-            </button>
             {!authToken ? (
               <button className="ms-create-btn ms-create-btn--disabled" disabled title="Please log in first">
                 <PlusIcon /> Log In Required
@@ -814,7 +850,11 @@ export default function MiniSitesPage({
                     </div>
                     <div className="ms-site-actions">
                       <button className="ms-action-btn ms-action-btn--secondary" onClick={(e) => { e.stopPropagation(); handleEditSite(site.id); }}>Edit</button>
-                      <button className="ms-action-btn ms-action-btn--secondary" onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); }}>Preview</button>
+                      {site.status === 'live' ? (
+                        <button className="ms-action-btn ms-action-btn--secondary" onClick={(e) => { e.stopPropagation(); handleManageSite(site); }}>Manage</button>
+                      ) : (
+                        <button className="ms-action-btn ms-action-btn--secondary" onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); }}>Preview</button>
+                      )}
                       <button className={`ms-action-btn ${site.status === 'live' ? 'ms-action-btn--unpublish' : 'ms-action-btn--publish'}`} onClick={(e) => handlePublishSite(site, e)}>
                         {site.status === 'live' ? 'Unpublish' : 'Publish'}
                       </button>
@@ -825,7 +865,7 @@ export default function MiniSitesPage({
             ) : (
               <div className="ms-empty-state">
                 <p className="ms-empty-icon"><InboxIcon /></p>
-                <p className="ms-empty-text">No {filterStatus !== 'all' ? filterStatus : ''} sites found</p>
+                <p className="ms-empty-text">Create your first site</p>
                 <button className="ms-create-btn" onClick={handleCreateSite}>Create your first site</button>
               </div>
             )}
@@ -1010,27 +1050,27 @@ export default function MiniSitesPage({
                 (selectedJoinedType === 'All' || c.type === selectedJoinedType)
               ).map(community => (
               <div key={community.id} className="ms-joined-card">
-                <div className="ms-joined-header">
-                  <div className="ms-joined-logo">{community.logo}</div>
+                <div className="ms-joined-card-cover" style={{ backgroundImage: `url(${community.cover})` }} />
+                <div className="ms-joined-card-content">
                   <div className="ms-joined-info">
                     <h3 className="ms-joined-name">{community.name}</h3>
-                    <p className="ms-joined-members">👥 {community.memberCount.toLocaleString()} members</p>
+                    <p className="ms-joined-members">{community.memberCount.toLocaleString()} members</p>
                   </div>
-                </div>
-                <p className="ms-joined-description">{community.description}</p>
-                <div className="ms-joined-footer">
-                  <button
-                    className="ms-joined-btn ms-joined-btn--view"
-                    onClick={() => alert(`Opening ${community.name}`)}
-                  >
-                    View
-                  </button>
-                  <button
-                    className="ms-joined-btn ms-joined-btn--leave"
-                    onClick={() => setLeftCommunities(prev => new Set([...prev, community.id]))}
-                  >
-                    Leave
-                  </button>
+                  <p className="ms-joined-description">{community.description}</p>
+                  <div className="ms-joined-footer">
+                    <button
+                      className="ms-joined-btn ms-joined-btn--view"
+                      onClick={() => alert(`Opening ${community.name}`)}
+                    >
+                      View
+                    </button>
+                    <button
+                      className="ms-joined-btn ms-joined-btn--leave"
+                      onClick={() => setLeftCommunities(prev => new Set([...prev, community.id]))}
+                    >
+                      Leave
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

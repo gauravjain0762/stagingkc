@@ -43,7 +43,7 @@ const MOCK_COMMUNITIES = [
     description: 'A community for tech enthusiasts and innovators',
     memberCount: 234,
     visibility: 'public',
-    logo: '🚀',
+    cover: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&h=300&fit=crop',
     status: 'active',
     type: 'Community',
   },
@@ -54,7 +54,7 @@ const MOCK_COMMUNITIES = [
     description: 'Designers sharing ideas and collaborating on projects',
     memberCount: 189,
     visibility: 'public',
-    logo: '🎨',
+    cover: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=600&h=300&fit=crop',
     status: 'active',
     type: 'Club',
   },
@@ -65,7 +65,7 @@ const MOCK_COMMUNITIES = [
     description: 'Connecting entrepreneurs and business professionals',
     memberCount: 456,
     visibility: 'public',
-    logo: '💼',
+    cover: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=300&fit=crop',
     status: 'active',
     type: 'Business',
   },
@@ -76,7 +76,7 @@ const MOCK_COMMUNITIES = [
     description: 'A space for writers to share and develop their craft',
     memberCount: 120,
     visibility: 'public',
-    logo: '✍️',
+    cover: 'https://images.unsplash.com/photo-150784272343-583f20270319?w=600&h=300&fit=crop',
     status: 'active',
     type: 'Club',
   },
@@ -87,13 +87,23 @@ const MOCK_COMMUNITIES = [
     description: 'Health and fitness community for all levels',
     memberCount: 567,
     visibility: 'public',
-    logo: '💪',
+    cover: 'https://images.unsplash.com/photo-1517836357463-d25ddfcbf042?w=600&h=300&fit=crop',
     status: 'active',
     type: 'Organization',
   },
 ];
 
-export default function CommunitiesPage({ onBack, onCommunityClick }) {
+export default function CommunitiesPage({
+  onBack,
+  onCommunityClick,
+  onMessagesClick,
+  onEventsClick,
+  onGroupsClick,
+  onCalendarClick,
+  onCoursesClick,
+  onLibraryClick,
+  onMinisitesClick,
+}) {
   const [communities, setCommunities] = useState(MOCK_COMMUNITIES);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('All');
@@ -119,9 +129,20 @@ export default function CommunitiesPage({ onBack, onCommunityClick }) {
     onCommunityClick?.(community);
   };
 
+  function handleNav(id) {
+    if (id === 'home')        onBack?.();
+    if (id === 'courses')     onCoursesClick?.();
+    if (id === 'library')     onLibraryClick?.();
+    if (id === 'events')      onEventsClick?.();
+    if (id === 'friends')     onGroupsClick?.();
+    if (id === 'messages')    onMessagesClick?.();
+    if (id === 'calendar')    onCalendarClick?.();
+    if (id === 'minisites')   onMinisitesClick?.();
+  }
+
   return (
     <div className="communities-page">
-      <AnimatedNav avatarUrl={ALEX_AVATAR} activeId="minisites" onNavigate={onBack} />
+      <AnimatedNav avatarUrl={ALEX_AVATAR} activeId="minisites" onNavigate={handleNav} />
 
       <div className="communities-container" style={{ marginLeft: '72px' }}>
         {/* Header */}
@@ -171,41 +192,44 @@ export default function CommunitiesPage({ onBack, onCommunityClick }) {
 
             return (
               <div key={community.id} className="community-card">
-                {/* Header */}
-                <div className="community-card-header">
-                  <div className="community-logo">{community.logo}</div>
-                  <div className="community-info">
+                {/* Cover Image */}
+                <div className="community-card-cover" style={{ backgroundImage: `url(${community.cover})` }} />
+
+                {/* Content */}
+                <div className="community-card-content">
+                  {/* Info */}
+                  <div className="community-card-info">
                     <h3 className="community-name">{community.name}</h3>
                     <p className="community-members">
                       <UsersIcon /> {community.memberCount.toLocaleString()} members
                     </p>
                   </div>
-                </div>
 
-                {/* Description */}
-                <p className="community-description">{community.description}</p>
+                  {/* Description */}
+                  <p className="community-description">{community.description}</p>
 
-                {/* Footer */}
-                <div className="community-card-footer">
-                  <div className="community-badge">
-                    <GlobalIcon /> Public
+                  {/* Footer */}
+                  <div className="community-card-footer">
+                    <div className="community-badge">
+                      <GlobalIcon /> Public
+                    </div>
+                    {isJoined ? (
+                      <button
+                        className="community-btn community-btn--joined"
+                        onClick={() => handleViewCommunity(community)}
+                      >
+                        <CheckIcon /> Joined
+                      </button>
+                    ) : (
+                      <button
+                        className="community-btn community-btn--join"
+                        onClick={() => handleJoinCommunity(community.id)}
+                        disabled={isLoading}
+                      >
+                        {isLoading ? 'Joining...' : 'Join'}
+                      </button>
+                    )}
                   </div>
-                  {isJoined ? (
-                    <button
-                      className="community-btn community-btn--joined"
-                      onClick={() => handleViewCommunity(community)}
-                    >
-                      <CheckIcon /> Joined
-                    </button>
-                  ) : (
-                    <button
-                      className="community-btn community-btn--join"
-                      onClick={() => handleJoinCommunity(community.id)}
-                      disabled={isLoading}
-                    >
-                      {isLoading ? 'Joining...' : 'Join'}
-                    </button>
-                  )}
                 </div>
               </div>
             );

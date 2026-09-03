@@ -55,6 +55,9 @@ function CheckCircleIcon() {
 function CopyIcon() {
   return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>;
 }
+function ChevronRightIcon() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>;
+}
 
 /* ── Small reusable property-field components ── */
 function TextField({ label, value, onChange, placeholder }) {
@@ -265,6 +268,7 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
   const [activePropTab, setActivePropTab] = useState('content');
   const [device, setDevice] = useState('desktop');
   const [showAddPicker, setShowAddPicker] = useState(false);
+  const [showProperties, setShowProperties] = useState(true);
   const [showFullPreview, setShowFullPreview] = useState(false);
   const [draggingIndex, setDraggingIndex] = useState(null);
   const [savedStatus, setSavedStatus] = useState('all-saved');
@@ -1029,6 +1033,15 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
                 <MobileIcon />
               </button>
             </div>
+            {!showProperties && (
+              <button
+                className="sbp-show-properties-btn"
+                onClick={() => setShowProperties(true)}
+                title="Show properties panel"
+              >
+                <ChevronRightIcon /> Properties
+              </button>
+            )}
           </div>
           <WebsitePreview
             sections={sections}
@@ -1044,9 +1057,18 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
         </div>
 
         {/* Right Sidebar - Properties */}
-        <div className="sbp-sidebar sbp-sidebar--right">
+        <div className={`sbp-sidebar sbp-sidebar--right ${!showProperties ? 'sbp-sidebar--hidden' : ''}`}>
           <div className="sbp-left-section">
-            <h3 className="sbp-sidebar-title">Properties</h3>
+            <div className="sbp-sidebar-header">
+              <h3 className="sbp-sidebar-title">Properties</h3>
+              <button
+                className="sbp-toggle-properties-btn"
+                onClick={() => setShowProperties(!showProperties)}
+                title={showProperties ? 'Hide properties' : 'Show properties'}
+              >
+                <ChevronRightIcon />
+              </button>
+            </div>
 
             {selectedSection ? (
               <div className="sbp-properties-panel">

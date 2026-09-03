@@ -16,8 +16,41 @@ function EventIcon() {
   return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
 }
 
+const DEMO_POSTS = [
+  {
+    _id: 'demo-1',
+    author: { _id: 'user-1', fullName: 'Sarah Anderson', avatar: 'https://picsum.photos/seed/user1/100/100' },
+    content: 'Excited to announce our latest community initiative! Join us as we build something amazing together. Your ideas matter!',
+    images: ['https://picsum.photos/seed/post1/600/400'],
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    likesCount: 156,
+    commentsCount: 24,
+    sharesCount: 12,
+  },
+  {
+    _id: 'demo-2',
+    author: { _id: 'user-2', fullName: 'Mike Johnson', avatar: 'https://picsum.photos/seed/user2/100/100' },
+    content: 'Just wrapped up an amazing workshop. Great insights shared by our community members. Let\'s keep the momentum going!',
+    images: [],
+    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    likesCount: 89,
+    commentsCount: 18,
+    sharesCount: 5,
+  },
+  {
+    _id: 'demo-3',
+    author: { _id: 'user-3', fullName: 'Emily Chen', avatar: 'https://picsum.photos/seed/user3/100/100' },
+    content: 'Love the new features we launched this week! The community feedback has been invaluable. Here\'s what we\'ve accomplished:',
+    images: ['https://picsum.photos/seed/post2/600/400'],
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    likesCount: 234,
+    commentsCount: 52,
+    sharesCount: 28,
+  },
+];
+
 export default function MiniSiteFeed({ siteId, siteName }) {
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState(DEMO_POSTS);
   const [createOpen, setCreateOpen] = useState(false);
   const [createTab, setCreateTab] = useState('photo');
   const [creatorClicked, setCreatorClicked] = useState(false);
@@ -98,7 +131,7 @@ export default function MiniSiteFeed({ siteId, siteName }) {
   const avatarUrl = '';
 
   return (
-    <main className="home-feed">
+    <main className="home-feed minisite-feed-container">
       {/* Post creator */}
       <div className={`post-creator${creatorClicked ? ' post-creator--clicked' : ''}`}>
         <div className="creator-top">
@@ -166,7 +199,7 @@ export default function MiniSiteFeed({ siteId, siteName }) {
 
       <div className="feed-posts" ref={feedRef}>
         {posts.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: '#5c6a8c' }}>
+          <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
             No posts yet.
           </div>
         ) : (

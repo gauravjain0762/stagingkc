@@ -2,15 +2,17 @@
    Add Section picker, Properties panel and the live preview renderer. */
 
 export const SECTION_TYPES = [
-  { type: 'navbar',      label: 'Navbar',       icon: '🧭', description: 'Site logo, navigation links and a call-to-action button' },
-  { type: 'hero',        label: 'Hero',         icon: '🎯', description: 'Big headline, subtext and call-to-action buttons' },
-  { type: 'text',        label: 'Text',         icon: '📝', description: 'Simple heading and paragraph content' },
-  { type: 'grid',        label: 'Features',     icon: '⚙️', description: 'Grid of features or services with icons' },
-  { type: 'gallery',     label: 'Gallery',      icon: '🖼️', description: 'Image grid for portfolio or work samples' },
-  { type: 'form',        label: 'Contact Form', icon: '📧', description: 'Contact form with customizable fields' },
-  { type: 'cta',         label: 'Call to Action', icon: '📣', description: 'Focused banner driving a single action' },
-  { type: 'testimonial', label: 'Testimonials', icon: '💬', description: 'Quotes and reviews from customers' },
-  { type: 'footer',      label: 'Footer',       icon: '🔗', description: 'Closing text, links and copyright' },
+  { type: 'navbar',      label: 'Navbar',       description: 'Site logo, navigation links and a call-to-action button' },
+  { type: 'hero',        label: 'Hero',         description: 'Big headline, subtext and call-to-action buttons' },
+  { type: 'text',        label: 'Text',         description: 'Simple heading and paragraph content' },
+  { type: 'grid',        label: 'Features',     description: 'Grid of features or services with icons' },
+  { type: 'gallery',     label: 'Gallery',      description: 'Image grid for portfolio or work samples' },
+  { type: 'members',     label: 'Members',      description: 'Display community members list' },
+  { type: 'calendar',    label: 'Calendar',     description: 'Events calendar for scheduling' },
+  { type: 'form',        label: 'Contact Form', description: 'Contact form with customizable fields' },
+  { type: 'cta',         label: 'Call to Action', description: 'Focused banner driving a single action' },
+  { type: 'testimonial', label: 'Testimonials', description: 'Quotes and reviews from customers' },
+  { type: 'footer',      label: 'Footer',       description: 'Closing text, links and copyright' },
 ];
 
 export const createId = () =>
@@ -83,14 +85,14 @@ function defaultContent(type) {
       return {
         logoText: 'YourBrand',
         links: [
-          { label: 'Home', url: '#home' },
-          { label: 'About', url: '#about' },
-          { label: 'Services', url: '#services' },
-          { label: 'Contact', url: '#contact' },
+          { label: 'Feed', url: '#feed' },
+          { label: 'Members', url: '#members' },
+          { label: 'Calendar', url: '#calendar' },
+          { label: 'Groups', url: '#groups' },
         ],
         secondaryCtaText: 'Join Community',
         secondaryCtaLink: '#',
-        ctaText: 'Get Started',
+        ctaText: 'Contact',
         ctaLink: '#',
       };
     case 'hero':
@@ -127,6 +129,26 @@ function defaultContent(type) {
           { image: '', caption: 'Project Two' },
           { image: '', caption: 'Project Three' },
           { image: '', caption: 'Project Four' },
+        ],
+      };
+    case 'members':
+      return {
+        headline: 'Members',
+        subheadline: 'Meet our community members',
+        items: [
+          { name: 'Member One', role: 'Founder', avatar: '👤' },
+          { name: 'Member Two', role: 'Contributor', avatar: '👤' },
+          { name: 'Member Three', role: 'Moderator', avatar: '👤' },
+        ],
+      };
+    case 'calendar':
+      return {
+        headline: 'Events',
+        subheadline: 'Upcoming events and meetings',
+        items: [
+          { title: 'Community Meetup', date: '2026-09-15', time: '6:00 PM' },
+          { title: 'Workshop', date: '2026-09-22', time: '10:00 AM' },
+          { title: 'Weekly Call', date: '2026-09-29', time: '3:00 PM' },
         ],
       };
     case 'form':
@@ -196,15 +218,15 @@ export function createStarterSections() {
   const footer = { ...createSection('footer'), name: 'Footer' };
 
   const navbar = { ...createSection('navbar'), name: 'Navbar' };
+  // Navbar links are fixed: Feed, Members, Calendar
+  // Users cannot change these - they can add other sections via "Add Section"
   navbar.content = {
     ...navbar.content,
     links: [
-      { label: 'Home', url: `#${hero.id}` },
-      { label: 'About', url: `#${about.id}` },
-      { label: 'Services', url: `#${services.id}` },
-      { label: 'Contact', url: `#${contact.id}` },
+      { label: 'Feed', url: '#feed' },
+      { label: 'Members', url: '#members' },
+      { label: 'Calendar', url: '#calendar' },
     ],
-    ctaLink: `#${contact.id}`,
   };
 
   footer.content = {
