@@ -830,7 +830,6 @@ export default function MiniSitesPage({
                             <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handleEditSite(site.id); }}><EditIcon /> Edit</button>
                             <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); setOpenMenuId(null); }}><EyeIcon /> Preview</button>
                             <button className="ms-dd-item"><KeyIcon /> Admin login</button>
-                            <button className="ms-dd-item" onClick={(e) => handlePublishSite(site, e)}>{site.status === 'live' ? <><UnpublishIcon /> Unpublish</> : <><PublishIcon /> Publish</>}</button>
                             <button className="ms-dd-item ms-dd-item--danger" onClick={(e) => handleDeleteSite(site, e)}><TrashIcon /> Delete</button>
                           </div>
                         )}
@@ -934,7 +933,6 @@ export default function MiniSitesPage({
                                 <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handleEditSite(site.id); }}><EditIcon /> Edit</button>
                                 <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); setOpenMenuId(null); }}><EyeIcon /> Preview</button>
                                 <button className="ms-dd-item"><KeyIcon /> Admin login</button>
-                                <button className="ms-dd-item" onClick={(e) => handlePublishSite(site, e)}>{site.status === 'live' ? <><UnpublishIcon /> Unpublish</> : <><PublishIcon /> Publish</>}</button>
                                 <button className="ms-dd-item ms-dd-item--danger" onClick={(e) => handleDeleteSite(site, e)}><TrashIcon /> Delete</button>
                               </div>
                             )}
