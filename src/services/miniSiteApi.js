@@ -46,11 +46,12 @@ export async function deleteMiniSite(organizationId, miniSiteId) {
 // ============ PUBLISH/UNPUBLISH ============
 
 // Publish Mini Site
-export async function publishMiniSite(organizationId, miniSiteId, message = '') {
+export async function publishMiniSite(organizationId, miniSiteId, data = {}) {
   const token = getAuthToken();
+  const body = typeof data === 'string' ? { message: data } : (data || {});
   return apiRequest(`/api/organizations/${organizationId}/mini-sites/${miniSiteId}/publish`, {
     method: 'POST',
-    body: { message },
+    body,
     token,
   });
 }

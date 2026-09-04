@@ -492,7 +492,7 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate, or
 
       setSavedStatus('saving');
 
-      const response = await publishMiniSite(organizationId, siteId);
+      const response = await publishMiniSite(organizationId, siteId, { sections });
 
       if (response?.data?.id) {
         setSavedStatus('all-saved');
