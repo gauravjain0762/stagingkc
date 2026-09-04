@@ -727,7 +727,7 @@ export default function MiniSitesPage({
               >
                 <PlusIcon /> Create Organization
               </button>
-            ) : !isOrgLoggedIn ? (
+            ) : !userOrganization ? (
               <button
                 className="ms-create-btn ms-create-btn--primary"
                 onClick={() => setShowOrgLogin(true)}
