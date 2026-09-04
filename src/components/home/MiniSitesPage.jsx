@@ -835,9 +835,6 @@ export default function MiniSitesPage({
                 >
                   <div className="ms-site-thumb">
                     <ImageCarousel images={siteImages(site)} />
-                    <div className={`ms-site-badge ms-site-badge--${site.status}`}>
-                      <><LiveDotIcon /> Live</>
-                    </div>
                     <VisibilityBadge visibility={site.visibility} />
                     <div className="ms-site-actions-overlay">
                       <button className="ms-site-action-btn" title="Preview" onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); }}><EyeIcon /></button>
@@ -881,9 +878,6 @@ export default function MiniSitesPage({
                       ) : (
                         <button className="ms-action-btn ms-action-btn--secondary" onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); }}>Preview</button>
                       )}
-                      <button className={`ms-action-btn ${site.status === 'live' ? 'ms-action-btn--unpublish' : 'ms-action-btn--publish'}`} onClick={(e) => handlePublishSite(site, e)}>
-                        {site.status === 'live' ? 'Unpublish' : 'Publish'}
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -933,9 +927,6 @@ export default function MiniSitesPage({
                   >
                     <div className="ms-site-thumb">
                       <ImageCarousel images={siteImages(site)} />
-                      <div className={`ms-site-badge ms-site-badge--${site.status}`}>
-                        <><LiveDotIcon /> Live</>
-                      </div>
                       <VisibilityBadge visibility={site.visibility} />
                       <div className="ms-site-actions-overlay">
                         <button className="ms-site-action-btn" title="Preview" onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); }}><EyeIcon /></button>
