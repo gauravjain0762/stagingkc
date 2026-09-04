@@ -1,10 +1,40 @@
 import { useState, useRef, useId, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import WebsitePreview from './WebsitePreview';
 import NavbarLogoEditor from './NavbarLogoEditor';
 import FooterSocialEditor from './FooterSocialEditor';
 import { SECTION_TYPES, createSection, createId, createStarterSections, SPACING_PRESETS, BUTTON_SHAPES } from './sectionTemplates';
 import { siteUrl, displayUrl } from './miniSiteUtils';
+import { updateMiniSite, publishMiniSite, unpublishMiniSite, updateSection } from '../../services/miniSiteApi';
+import { showToast } from '../../store/slices/toastSlice';
 import './SiteBuilderPage.css';
+
+function ensureSectionStyles(sections) {
+  return sections.map(section => {
+    if (!section.style || typeof section.style !== 'object') {
+      const template = createSection(section.type);
+      return {
+        ...section,
+        style: template.style,
+      };
+    }
+    const template = createSection(section.type);
+    return {
+      ...section,
+      style: {
+        background: section.style.background ?? template.style.background ?? '#f5f1e8',
+        textColor: section.style.textColor ?? template.style.textColor ?? '#042d5d',
+        paddingTop: section.style.paddingTop != null ? section.style.paddingTop : (template.style.paddingTop ?? 20),
+        paddingBottom: section.style.paddingBottom != null ? section.style.paddingBottom : (template.style.paddingBottom ?? 20),
+        align: section.style.align ?? template.style.align ?? 'center',
+        accentColor: section.style.accentColor ?? template.style.accentColor ?? '#3b82f6',
+        borderRadius: section.style.borderRadius ?? template.style.borderRadius ?? 0,
+        buttonRadius: section.style.buttonRadius ?? template.style.buttonRadius ?? 8,
+        contentWidth: section.style.contentWidth ?? template.style.contentWidth ?? 'boxed',
+      },
+    };
+  });
+}
 
 /* Icons */
 function ArrowLeftIcon() {
@@ -262,8 +292,12 @@ function ItemsEditor({ items = [], onChange, renderItem, newItemFactory, addLabe
   );
 }
 
-export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) {
-  const [sections, setSections] = useState(() => (site?.sections?.length ? site.sections : createStarterSections()));
+export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate, organizationId }) {
+  const dispatch = useDispatch();
+  const [sections, setSections] = useState(() => {
+    const initialSections = site?.sections?.length ? site.sections : createStarterSections();
+    return ensureSectionStyles(initialSections);
+  });
   const [selectedSectionId, setSelectedSectionId] = useState(() => sections[0]?.id ?? null);
   const [activePropTab, setActivePropTab] = useState('content');
   const [device, setDevice] = useState('desktop');
@@ -279,6 +313,24 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
 
   const dragItem = useRef(null);
   const rowRefs = useRef([]);
+
+  // Initialize navbar join link on mount or when organizationId changes
+  useEffect(() => {
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.type === 'navbar' && organizationId && !s.content.secondaryCtaLink?.includes('joinOrganization')) {
+          return {
+            ...s,
+            content: {
+              ...s.content,
+              secondaryCtaLink: `/?action=joinOrganization&orgId=${organizationId}`,
+            },
+          };
+        }
+        return s;
+      })
+    );
+  }, [organizationId]);
 
   const mockSite = site || {
     id: siteId,
@@ -387,92 +439,101 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
   const handleSave = async () => {
     setSavedStatus('saving');
     try {
-      // Demo mode: Save to localStorage instead of API
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      // Only store essential metadata, not large image data
-      const updatedSite = {
-        id: mockSite.id,
-        name: mockSite.name,
-        slug: mockSite.slug,
-        status: mockSite.status,
-        visibility: mockSite.visibility,
-        sections: sections, // Include sections
-        updatedAt: new Date().toISOString(),
-        publishedAt: mockSite.publishedAt,
-        views: mockSite.views || 0,
-      };
-
-      // Save to localStorage
-      try {
-        const sites = JSON.parse(localStorage.getItem('demoSites') || '[]');
-        const siteIndex = sites.findIndex(s => s.id === mockSite.id);
-        if (siteIndex >= 0) {
-          sites[siteIndex] = updatedSite;
-        } else {
-          sites.push(updatedSite);
-        }
-        localStorage.setItem('demoSites', JSON.stringify(sites));
-      } catch (storageErr) {
-        // If storage fails, just show success anyway in demo mode
-        console.warn('Storage quota exceeded, but demo continues');
+      if (!organizationId || !siteId) {
+        throw new Error('Organization or site ID missing');
       }
 
-      setSavedStatus('all-saved');
-      onSiteUpdate?.(mockSite.id, updatedSite);
-      onBack?.();
+      const updateData = {
+        sections: sections,
+      };
+
+      const response = await updateMiniSite(organizationId, siteId, updateData);
+
+      if (response?.data?.id) {
+        setSavedStatus('all-saved');
+        dispatch(showToast({
+          message: 'Site saved successfully!',
+          type: 'success',
+        }));
+        onSiteUpdate?.(siteId, response.data);
+        onBack?.();
+      }
     } catch (err) {
       setSavedStatus('all-saved');
-      alert(err.message || 'Failed to save site');
+      let errorMessage = 'Failed to save site. Please try again.';
+
+      if (err.status === 403) {
+        errorMessage = 'You do not have permission to save this site.';
+      } else if (err.status === 404) {
+        errorMessage = 'Site not found. It may have been deleted.';
+      } else if (err.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      dispatch(showToast({
+        message: '❌ ' + errorMessage,
+        type: 'error',
+      }));
+      console.error('Save failed:', err);
     }
   };
 
   const handlePublish = async () => {
     setIsPublishing(true);
     try {
-      // Demo mode: Publish to localStorage
-      setSavedStatus('saving');
-
-      // Simulate save
-      await new Promise(resolve => setTimeout(resolve, 600));
-
-      // Only store essential metadata, not large image data
-      const updatedSite = {
-        id: mockSite.id,
-        name: mockSite.name,
-        slug: mockSite.slug,
-        status: 'live',
-        visibility: mockSite.visibility,
-        sections: sections, // Include sections so they display on published site
-        publishedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        views: mockSite.views || 0,
-      };
-
-      // Save to localStorage
-      try {
-        const sites = JSON.parse(localStorage.getItem('demoSites') || '[]');
-        const siteIndex = sites.findIndex(s => s.id === mockSite.id);
-        if (siteIndex >= 0) {
-          sites[siteIndex] = updatedSite;
-        } else {
-          sites.push(updatedSite);
-        }
-        localStorage.setItem('demoSites', JSON.stringify(sites));
-      } catch (storageErr) {
-        // If storage fails, just show success anyway in demo mode
-        console.warn('Storage quota exceeded, but demo continues');
+      if (!organizationId) {
+        throw new Error('Organization ID is missing. Please go back and select an organization.');
+      }
+      if (!siteId) {
+        throw new Error('Site ID is missing. Please go back and select a site.');
       }
 
-      // Simulate publish
-      await new Promise(resolve => setTimeout(resolve, 400));
+      setSavedStatus('saving');
 
-      setSavedStatus('all-saved');
-      onSiteUpdate?.(mockSite.id, updatedSite);
-      setPublishedInfo({ name: updatedSite.name, url: siteUrl(updatedSite) });
+      const response = await publishMiniSite(organizationId, siteId);
+
+      if (response?.data?.id) {
+        setSavedStatus('all-saved');
+        dispatch(showToast({
+          message: 'Site published successfully!',
+          type: 'success',
+        }));
+        const updatedSite = { ...mockSite, ...response.data, sections };
+        // Store published site in localStorage so it can be accessed via public URL
+        const publishedSites = JSON.parse(localStorage.getItem('demoSites') || '[]');
+        const siteIndex = publishedSites.findIndex(s => s.id === updatedSite.id);
+        if (siteIndex >= 0) {
+          publishedSites[siteIndex] = updatedSite;
+        } else {
+          publishedSites.push(updatedSite);
+        }
+        localStorage.setItem('demoSites', JSON.stringify(publishedSites));
+        onSiteUpdate?.(siteId, updatedSite);
+        setPublishedInfo({ name: updatedSite.name, url: siteUrl(updatedSite) });
+      }
     } catch (err) {
       setSavedStatus('all-saved');
-      alert(err.message || 'Failed to publish site');
+      let errorMessage = 'Failed to publish site. Please try again.';
+
+      if (err.status === 400) {
+        errorMessage = 'Cannot publish: site must have at least one section.';
+      } else if (err.status === 403) {
+        errorMessage = 'You do not have permission to publish this site.';
+      } else if (err.status === 404) {
+        errorMessage = 'Site not found. It may have been deleted.';
+      } else if (err.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      dispatch(showToast({
+        message: '❌ ' + errorMessage,
+        type: 'error',
+      }));
+      console.error('Publish failed:', err);
     } finally {
       setIsPublishing(false);
     }
@@ -481,36 +542,43 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
   const handleUnpublish = async () => {
     setIsUnpublishing(true);
     try {
-      // Demo mode: Unpublish using localStorage
-      await new Promise(resolve => setTimeout(resolve, 600));
-
-      const updatedSite = {
-        id: mockSite.id,
-        name: mockSite.name,
-        slug: mockSite.slug,
-        status: 'draft',
-        visibility: mockSite.visibility,
-        publishedAt: mockSite.publishedAt,
-        updatedAt: new Date().toISOString(),
-        views: mockSite.views || 0,
-      };
-
-      // Save to localStorage
-      try {
-        const sites = JSON.parse(localStorage.getItem('demoSites') || '[]');
-        const siteIndex = sites.findIndex(s => s.id === mockSite.id);
-        if (siteIndex >= 0) {
-          sites[siteIndex] = updatedSite;
-        }
-        localStorage.setItem('demoSites', JSON.stringify(sites));
-      } catch (storageErr) {
-        // If storage fails, just show success anyway in demo mode
-        console.warn('Storage quota exceeded, but demo continues');
+      if (!organizationId || !siteId) {
+        throw new Error('Organization or site ID missing');
       }
 
-      onSiteUpdate?.(mockSite.id, updatedSite);
+      const response = await unpublishMiniSite(organizationId, siteId);
+
+      if (response?.data?.id) {
+        dispatch(showToast({
+          message: 'Site unpublished successfully!',
+          type: 'success',
+        }));
+        const updatedSite = { ...mockSite, ...response.data, sections };
+        // Remove unpublished site from localStorage
+        const publishedSites = JSON.parse(localStorage.getItem('demoSites') || '[]');
+        const filtered = publishedSites.filter(s => s.id !== updatedSite.id);
+        localStorage.setItem('demoSites', JSON.stringify(filtered));
+        onSiteUpdate?.(siteId, updatedSite);
+        setPublishedInfo(null);
+      }
     } catch (err) {
-      alert(err.message || 'Failed to unpublish site');
+      let errorMessage = 'Failed to unpublish site. Please try again.';
+
+      if (err.status === 403) {
+        errorMessage = 'You do not have permission to unpublish this site.';
+      } else if (err.status === 404) {
+        errorMessage = 'Site not found. It may have been deleted.';
+      } else if (err.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      dispatch(showToast({
+        message: '❌ ' + errorMessage,
+        type: 'error',
+      }));
+      console.error('Unpublish failed:', err);
     } finally {
       setIsUnpublishing(false);
     }
@@ -529,6 +597,55 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate }) 
               logo={c.logo}
               onChange={(logo) => setContent({ logo })}
             />
+
+            {/* Quick Section Toggles */}
+            <div style={{ marginTop: '16px', marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#9ca3af', marginBottom: '8px', textTransform: 'uppercase' }}>Quick Sections</label>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {['Feed', 'Members', 'Groups', 'Calendar'].map(section => {
+                  const existingLinks = c.links || [];
+                  const isActive = existingLinks.some(l => l.url === `#${section.toLowerCase()}`);
+
+                  const toggleSection = () => {
+                    if (isActive) {
+                      // Remove the section
+                      setContent({
+                        links: existingLinks.filter(l => l.url !== `#${section.toLowerCase()}`)
+                      });
+                    } else {
+                      // Add the section
+                      setContent({
+                        links: [
+                          ...existingLinks,
+                          { label: section, url: `#${section.toLowerCase()}` }
+                        ]
+                      });
+                    }
+                  };
+
+                  return (
+                    <button
+                      key={section}
+                      onClick={toggleSection}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '16px',
+                        border: 'none',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        backgroundColor: isActive ? '#3b82f6' : '#e5e7eb',
+                        color: isActive ? '#ffffff' : '#6b7280'
+                      }}
+                    >
+                      {section}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <ItemsEditor
               items={c.links}
               onChange={(links) => setContent({ links })}

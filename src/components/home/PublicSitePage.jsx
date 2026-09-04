@@ -6,6 +6,7 @@ import MiniSiteCalendarPage from './MiniSiteCalendarPage';
 import MiniSiteMembersPage from './MiniSiteMembersPage';
 import Loader from '../Loader';
 import { normalizeSite } from './miniSiteUtils';
+import { apiRequest } from '../../services/api';
 import './PublicSitePage.css';
 
 function siteTokenKey(slug) {
@@ -48,8 +49,8 @@ export default function PublicSitePage({ slug }) {
         // Get all sites from localStorage
         const sites = JSON.parse(localStorage.getItem('demoSites') || '[]');
 
-        // Find site by slug
-        const foundSite = sites.find(s => s.slug === slug && s.status === 'live');
+        // Find site by slug (check for both 'live' and 'published' status)
+        const foundSite = sites.find(s => s.slug === slug && (s.status === 'live' || s.status === 'published'));
 
         if (!foundSite) {
           setStatus('notfound');

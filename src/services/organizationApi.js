@@ -1,7 +1,7 @@
 import { apiRequest } from './api';
 import store from '../store';
 
-const getAuthToken = () => store.getState().auth.user?.token;
+const getAuthToken = () => store.getState().auth.token;
 
 // Create Organization
 export async function createOrganization(data) {

@@ -39,6 +39,7 @@ function AlertTriangleIcon() { return <svg width="20" height="20" viewBox="0 0 2
 function InboxIcon() { return <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>; }
 function LockIcon()  { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>; }
 function KeyIcon()   { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0L19 4m-3.5 3.5L18 10"/></svg>; }
+function BackArrowIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>; }
 
 const VISIBILITY_META = {
   public:   { Icon: GlobeIcon, label: 'Public' },
@@ -67,8 +68,6 @@ function siteImages(site) {
 
 const TABS = [
   { id: 'my-sites',      label: 'My Sites' },
-  { id: 'joined',        label: 'Joined Communities' },
-  { id: 'templates',     label: 'Templates' },
 ];
 
 const JOINED_COMMUNITIES_DEMO = [
@@ -275,12 +274,12 @@ export default function MiniSitesPage({
   const [allSitesSearchTerm, setAllSitesSearchTerm] = useState(''); // debounced
 
   const fetchSites = useCallback(async (pageToLoad = 1, append = false) => {
-    if (!authToken) return;
+    if (!authToken || !userOrganization?.id) return;
     setLoading(true);
     setLoadError('');
     try {
-      const params = new URLSearchParams({ status: 'all', sort: '-updatedAt', page: String(pageToLoad), limit: '50' });
-      const res = await apiRequest(`/api/mini-sites?${params}`, { token: authToken });
+      const params = new URLSearchParams({ page: String(pageToLoad), limit: '50' });
+      const res = await apiRequest(`/api/organizations/${userOrganization.id}/mini-sites?${params}`, { token: authToken });
       const list = (res?.data ?? []).map(normalizeSite);
       setSites(prev => (append ? [...prev, ...list] : list));
       setTotalPages(res?.pagination?.totalPages ?? 1);
@@ -290,7 +289,7 @@ export default function MiniSitesPage({
     } finally {
       setLoading(false);
     }
-  }, [authToken]);
+  }, [authToken, userOrganization?.id]);
 
   useEffect(() => { fetchSites(1, false); }, [fetchSites]);
 
@@ -444,7 +443,8 @@ export default function MiniSitesPage({
     // The site is created empty on the backend either way — a template just
     // seeds the builder's local (unsaved) starting sections, same as the
     // generic starter template does. Nothing is persisted until Save/Publish.
-    const seeded = pendingTemplate ? { ...newSite, sections: pendingTemplate.tpl.buildSections(pendingTemplate.theme) } : newSite;
+    const siteData = pendingTemplate ? { ...newSite, sections: pendingTemplate.tpl.buildSections(pendingTemplate.theme) } : newSite;
+    const seeded = normalizeSite(siteData);
     setPendingTemplate(null);
     setSites(prev => [seeded, ...prev]);
     setShowCreateSite(false);
@@ -465,7 +465,7 @@ export default function MiniSitesPage({
     setOpenMenuId(null);
     setLoadingEditId(siteId);
     try {
-      const res = await apiRequest(`/api/mini-sites/${siteId}`, { token: authToken });
+      const res = await apiRequest(`/api/organizations/${userOrganization.id}/mini-sites/${siteId}`, { token: authToken });
       setCurrentBuilder(normalizeSite(res?.data));
     } catch (err) {
       alert(err.message || 'Failed to open site editor');
@@ -476,11 +476,12 @@ export default function MiniSitesPage({
 
   const handlePreviewSite = (site) => {
     if (!site.slug) return;
-    // A draft has no public page yet (the /public/:slug endpoint 404s for
-    // anything unpublished) — send them to the builder's own live preview
+    // A draft has no public page yet — send them to the builder's own live preview
     // instead of a dead link.
-    if (site.status !== 'live') { handleEditSite(site.id); return; }
-    window.open(siteUrl(site), '_blank', 'noopener,noreferrer');
+    if (site.status !== 'published' && site.status !== 'live') { handleEditSite(site.id); return; }
+    // Serve published site from the frontend using ?site= parameter format
+    const previewUrl = `${window.location.origin}${window.location.pathname}?site=${encodeURIComponent(site.slug)}`;
+    window.open(previewUrl, '_blank', 'noopener,noreferrer');
   };
 
   const handleManageSite = (site) => {
@@ -519,11 +520,28 @@ export default function MiniSitesPage({
     setDeleteTarget(null);
     setBusyId(site.id);
     try {
-      await apiRequest(`/api/mini-sites/${site.id}`, { method: 'DELETE', token: authToken });
+      await apiRequest(`/api/organizations/${userOrganization.id}/mini-sites/${site.id}`, { method: 'DELETE', token: authToken });
       setSites(prev => prev.filter(s => s.id !== site.id));
       setAllSites(prev => prev.filter(s => s.id !== site.id));
+      dispatch(showToast({
+        message: '✅ Mini site deleted successfully',
+        type: 'success',
+      }));
     } catch (err) {
-      alert(err.message || 'Failed to delete site');
+      let errorMessage = 'Failed to delete mini site. Please try again.';
+      if (err.status === 403) {
+        errorMessage = 'You do not have permission to delete this site.';
+      } else if (err.status === 404) {
+        errorMessage = 'Mini site not found.';
+      } else if (err.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      dispatch(showToast({
+        message: '❌ ' + errorMessage,
+        type: 'error',
+      }));
     } finally {
       setBusyId(null);
     }
@@ -541,6 +559,19 @@ export default function MiniSitesPage({
     { Icon: LinkIcon,     label: 'DRAFT SITES', value: String(draftSites.length), color: '#f59e0b' },
   ];
 
+  // Show organization registration form (priority over landing page)
+  if (showOrgForm) {
+    return (
+      <div className="ms-page">
+        <AnimatedNav activeId="minisites" avatarUrl={avatarUrl} onNavigate={handleNav} />
+        <OrganizationRegistrationForm
+          onClose={() => setShowOrgForm(false)}
+          onSubmit={handleOrganizationSubmit}
+        />
+      </div>
+    );
+  }
+
   // Show landing page
   if (showLanding) {
     return (
@@ -550,6 +581,8 @@ export default function MiniSitesPage({
           onCreateOrganization={() => setShowOrgForm(true)}
           onSelectOrganization={(org) => {
             setSelectedOrg(org);
+            setUserOrganization(org);
+            localStorage.setItem('userOrganization', JSON.stringify(org));
             setShowLanding(false);
           }}
         />
@@ -578,19 +611,6 @@ export default function MiniSitesPage({
     );
   }
 
-  // Show organization registration form
-  if (showOrgForm) {
-    return (
-      <div className="ms-page">
-        <AnimatedNav activeId="minisites" avatarUrl={avatarUrl} onNavigate={handleNav} />
-        <OrganizationRegistrationForm
-          onClose={() => setShowOrgForm(false)}
-          onSubmit={handleOrganizationSubmit}
-        />
-      </div>
-    );
-  }
-
   // Show organization login form
   if (showOrgLogin) {
     return (
@@ -608,6 +628,7 @@ export default function MiniSitesPage({
   if (showCreateSite) {
     return (
       <CreateNewSitePage
+        organizationId={userOrganization?.id}
         onCancel={() => { setShowCreateSite(false); setPendingTemplate(null); }}
         onSiteCreated={handleSiteCreated}
         initialName={pendingTemplate ? `My ${pendingTemplate.tpl.name}` : ''}
@@ -622,6 +643,7 @@ export default function MiniSitesPage({
       <SiteBuilderPage
         siteId={currentBuilder.id}
         site={currentBuilder}
+        organizationId={userOrganization?.id}
         onBack={handleBackFromBuilder}
         onSiteUpdate={handleSiteUpdate}
       />
@@ -671,13 +693,24 @@ export default function MiniSitesPage({
 
         {/* Header */}
         <div className="ms-header">
-          <div>
-            <h1 className="ms-title">Mini Sites</h1>
-            <p className="ms-subtitle">
-              {userOrganization
-                ? `Manage mini sites for ${userOrganization.name}`
-                : 'Build and manage your personal web pages'}
-            </p>
+          <div className="ms-header-left">
+            {userOrganization && (
+              <button className="ms-back-btn" onClick={() => {
+                setUserOrganization(null);
+                localStorage.removeItem('userOrganization');
+                setShowLanding(true);
+              }} title="Back to organizations">
+                <BackArrowIcon />
+              </button>
+            )}
+            <div>
+              <h1 className="ms-title">Mini Sites</h1>
+              <p className="ms-subtitle">
+                {userOrganization
+                  ? `Manage mini sites for ${userOrganization.name}`
+                  : 'Build and manage your personal web pages'}
+              </p>
+            </div>
           </div>
           <div className="ms-header-buttons">
             {!authToken ? (
@@ -688,6 +721,8 @@ export default function MiniSitesPage({
               <button
                 className="ms-create-btn ms-create-btn--primary"
                 onClick={() => setShowOrgForm(true)}
+                type="button"
+                style={{ cursor: 'pointer' }}
               >
                 <PlusIcon /> Create Organization
               </button>
@@ -844,7 +879,7 @@ export default function MiniSitesPage({
                       {displayUrl(siteUrl(site))}
                     </button>
                     <div className="ms-site-meta">
-                      <span className="ms-site-views"><EyeIcon /> {site.views.toLocaleString()}</span>
+                      <span className="ms-site-views"><EyeIcon /> {(site.views || 0).toLocaleString()}</span>
                       <span className="ms-site-edited">Edited {timeAgo(site.updatedAt) || 'just now'}</span>
                     </div>
                     <div className="ms-site-actions">

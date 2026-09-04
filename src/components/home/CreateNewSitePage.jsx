@@ -1,6 +1,10 @@
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { publicSiteUrl, displayUrl } from './miniSiteUtils';
 import ImageCropper from './ImageCropper';
+import { createMiniSite } from '../../services/miniSiteApi';
+import { createStarterSections } from './sectionTemplates';
+import { showToast } from '../../store/slices/toastSlice';
 import './CreateNewSitePage.css';
 
 function fileToDataUrl(file) {
@@ -43,7 +47,8 @@ function slugify(name) {
     .replace(/-+/g, '-');
 }
 
-export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName = '', templateName = '' }) {
+export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName = '', templateName = '', organizationId = '' }) {
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     siteName: initialName,
     description: '',
@@ -184,7 +189,7 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission — demo mode, no API
+  // Handle form submission — call API
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -192,29 +197,75 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
       return;
     }
 
+    if (!organizationId) {
+      dispatch(showToast({
+        message: 'Organization ID is required',
+        type: 'error',
+      }));
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      // Create a mock site object (demo mode — no API)
-      const newSite = {
-        id: 'site-' + Date.now(),
+      // Create starter sections with customized navbar and hero
+      const starterSections = createStarterSections();
+      starterSections.forEach(section => {
+        if (section.type === 'navbar') {
+          section.content.logoText = formData.siteName;
+          section.content.secondaryCtaLink = `/?action=joinOrganization&orgId=${organizationId}`;
+        } else if (section.type === 'hero') {
+          section.content.headline = 'Welcome to ' + formData.siteName;
+          section.content.subheadline = formData.description || 'Your awesome website';
+        }
+      });
+
+      // Remove IDs from sections — backend generates them
+      const sectionsForApi = starterSections.map(({ id, ...section }) => section);
+
+      const apiPayload = {
         name: formData.siteName,
-        description: formData.description,
         slug: formData.slug,
+        type: 'website',
+        description: formData.description,
         visibility: formData.visibility,
-        logo: formData.logoPreview || null,
-        coverImage: formData.coverImagePreviews[0] || null,
-        coverImages: formData.coverImagePreviews.length > 0 ? formData.coverImagePreviews : [],
-        status: 'draft',
-        views: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        publishedAt: null,
-        sections: [],
+        sections: sectionsForApi,
       };
 
-      onSiteCreated?.(newSite);
+      const response = await createMiniSite(organizationId, apiPayload);
+
+      if (response?.data?.id) {
+        dispatch(showToast({
+          message: 'Mini site created successfully!',
+          type: 'success',
+        }));
+
+        onSiteCreated?.(response.data);
+      }
     } catch (err) {
-      setErrors(prev => ({ ...prev, submit: err.message || 'Failed to create site' }));
+      console.error('Mini site creation failed:', err);
+
+      let errorMessage = 'Failed to create mini site. Please try again.';
+
+      // Handle different error types
+      if (err.status === 400) {
+        errorMessage = err.data?.errors?.name || err.data?.message || err.message || 'Invalid site data';
+      } else if (err.status === 409) {
+        errorMessage = err.data?.message || err.message || 'Site name already exists. Please choose a different name.';
+      } else if (err.status === 401) {
+        errorMessage = 'You must be logged in to create a mini site.';
+      } else if (err.status === 403) {
+        errorMessage = 'You do not have permission to create a mini site for this organization.';
+      } else if (err.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      dispatch(showToast({
+        message: '❌ ' + errorMessage,
+        type: 'error',
+      }));
+      setErrors(prev => ({ ...prev, submit: errorMessage }));
     } finally {
       setIsSubmitting(false);
     }

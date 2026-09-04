@@ -1,3 +1,29 @@
+// Map section type to display name and icon
+const SECTION_DISPLAY_NAMES = {
+  navbar: { name: 'Navbar', icon: '≡' },
+  hero: { name: 'Hero', icon: '⬆' },
+  text: { name: 'Text', icon: '📝' },
+  gallery: { name: 'Gallery', icon: '🖼' },
+  grid: { name: 'Grid', icon: '⊞' },
+  form: { name: 'Form', icon: '📋' },
+  cta: { name: 'CTA', icon: '👆' },
+  testimonial: { name: 'Testimonials', icon: '💬' },
+  footer: { name: 'Footer', icon: '⬇' },
+  feed: { name: 'Feed', icon: '📰' },
+  members: { name: 'Members', icon: '👥' },
+  calendar: { name: 'Calendar', icon: '📅' },
+  groups: { name: 'Groups', icon: '👫' },
+};
+
+function enrichSection(section) {
+  const displayInfo = SECTION_DISPLAY_NAMES[section.type] || { name: section.type, icon: '□' };
+  return {
+    ...section,
+    name: section.name || displayInfo.name,
+    icon: section.icon || displayInfo.icon,
+  };
+}
+
 // Mini Sites API returns Mongo-style `_id` — normalized to `id` here so every
 // component (dashboard, create form, builder, public preview) can consume a
 // single consistent shape, same defensive pattern as normalizeAttendee etc.
@@ -22,14 +48,14 @@ export function normalizeSite(raw) {
     logo: raw.logo ?? '',
     coverImages: Array.isArray(raw.coverImages) ? raw.coverImages : [],
     contactInfo: raw.contactInfo ?? {},
-    sections: Array.isArray(raw.sections) ? raw.sections : [],
+    sections: Array.isArray(raw.sections) ? raw.sections.map(s => enrichSection(s)) : [],
     sectionsCount: raw.sectionsCount ?? (Array.isArray(raw.sections) ? raw.sections.length : 0),
     views: raw.views ?? 0,
     reported: raw.reported ?? false,
     createdAt: raw.createdAt ?? null,
     updatedAt: raw.updatedAt ?? null,
     publishedAt: raw.publishedAt ?? null,
-    publishedUrl: raw.publishedUrl ?? '',
+    publishedUrl: raw.publishedUrl ?? raw.url ?? '',
   };
 }
 
@@ -59,12 +85,11 @@ export function publicSiteUrl(slug) {
   return `${window.location.origin}${window.location.pathname}?site=${encodeURIComponent(slug)}`;
 }
 
-// The real, clickable URL for a site — prefers the backend's own
-// `publishedUrl` (now that it correctly returns this deployment's real
-// domain) and only falls back to computing it locally for a site that
-// hasn't been published yet and so has no publishedUrl from the API.
+// The real, clickable URL for a site
+// Since minisites.app domain doesn't actually exist, serve all sites
+// (draft and published) from the frontend using local preview format
 export function siteUrl(site) {
-  return site?.publishedUrl || publicSiteUrl(site?.slug ?? '');
+  return publicSiteUrl(site?.slug ?? '');
 }
 
 // Strips the protocol for compact display on cards, e.g.

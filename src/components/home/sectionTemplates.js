@@ -22,17 +22,17 @@ export const createId = () =>
 
 export function defaultStyle() {
   return {
-    background: '#ffffff',
+    background: '#f5f1e8',
     backgroundImage: '',
     overlayOpacity: 0.4,
-    textColor: '#1f2937',
+    textColor: '#042d5d',
     accentColor: '#3b82f6',
-    paddingTop: 60,
-    paddingBottom: 60,
+    paddingTop: 20,
+    paddingBottom: 20,
     align: 'center',
     borderRadius: 0,
     buttonRadius: 8,
-    contentWidth: 'full',
+    contentWidth: 'boxed',
   };
 }
 
@@ -52,29 +52,52 @@ export const SPACING_PRESETS = [
 function defaultStyleForType(type) {
   const style = defaultStyle();
   if (type === 'navbar') {
-    style.paddingTop = 18;
-    style.paddingBottom = 18;
-    style.align = 'left';
+    style.background = '#f5f1e8';
+    style.textColor = '#042d5d';
+    style.align = 'center';
   }
   if (type === 'hero') {
-    style.background = '#4f5ede';
-    style.textColor = '#ffffff';
-    style.accentColor = '#f59e0b';
-    style.align = 'left';
-    style.paddingTop = 90;
-    style.paddingBottom = 90;
+    style.background = '#f5f1e8';
+    style.textColor = '#042d5d';
+    style.accentColor = '#3b82f6';
+    style.align = 'center';
+  }
+  if (type === 'text') {
+    style.background = '#f5f1e8';
+    style.textColor = '#042d5d';
+    style.align = 'center';
+  }
+  if (type === 'gallery') {
+    style.background = '#f5f1e8';
+    style.textColor = '#042d5d';
+  }
+  if (type === 'grid') {
+    style.background = '#f5f1e8';
+    style.textColor = '#042d5d';
+  }
+  if (type === 'form') {
+    style.background = '#f5f1e8';
+    style.textColor = '#042d5d';
   }
   if (type === 'cta') {
-    style.background = '#111827';
-    style.textColor = '#ffffff';
-    style.paddingTop = 80;
-    style.paddingBottom = 80;
+    style.background = '#f5f1e8';
+    style.textColor = '#042d5d';
+  }
+  if (type === 'testimonial') {
+    style.background = '#f5f1e8';
+    style.textColor = '#042d5d';
+  }
+  if (type === 'members') {
+    style.background = '#f5f1e8';
+    style.textColor = '#042d5d';
+  }
+  if (type === 'calendar') {
+    style.background = '#f5f1e8';
+    style.textColor = '#042d5d';
   }
   if (type === 'footer') {
-    style.background = '#1f2937';
-    style.textColor = '#ffffff';
-    style.paddingTop = 40;
-    style.paddingBottom = 40;
+    style.background = '#f5f1e8';
+    style.textColor = '#042d5d';
   }
   return style;
 }
@@ -83,7 +106,7 @@ function defaultContent(type) {
   switch (type) {
     case 'navbar':
       return {
-        logoText: 'YourBrand',
+        logoText: 'Logo',
         links: [
           { label: 'Feed', url: '#feed' },
           { label: 'Members', url: '#members' },

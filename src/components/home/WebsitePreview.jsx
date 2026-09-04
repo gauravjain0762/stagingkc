@@ -18,6 +18,16 @@ function handleNavLinkClick(e, url, interactive, siteId) {
 
   e.preventDefault();
 
+  // Handle join organization link
+  if (url.includes('action=joinOrganization')) {
+    const params = new URLSearchParams(url.split('?')[1]);
+    const orgId = params.get('orgId');
+    if (orgId) {
+      window.location.href = `/?action=joinOrganization&orgId=${orgId}`;
+    }
+    return;
+  }
+
   // Handle special mini site links
   if (url === '#feed') {
     window.location.hash = 'feed';
@@ -82,23 +92,9 @@ function SectionContent({ section, interactive, siteId, contactEmail }) {
             <div className="wp-navbar-logo">{c.logoText}</div>
           </div>
           <nav className="wp-navbar-links">
-            {(() => {
-              // Ensure mandatory links are always present
-              const mandatoryLinks = [
-                { label: 'Feed', url: '#feed' },
-                { label: 'Members', url: '#members' },
-                { label: 'Calendar', url: '#calendar' },
-                { label: 'Groups', url: '#groups' },
-              ];
-              const existingUrls = new Set((c.links || []).map(l => l.url));
-              const allLinks = [
-                ...(c.links || []),
-                ...mandatoryLinks.filter(ml => !existingUrls.has(ml.url))
-              ];
-              return allLinks.map((l, i) => (
-                <a key={i} href={l.url} onClick={(e) => handleNavLinkClick(e, l.url, interactive, siteId)}>{l.label}</a>
-              ));
-            })()}
+            {(c.links || []).map((l, i) => (
+              <a key={i} href={l.url} onClick={(e) => handleNavLinkClick(e, l.url, interactive, siteId)}>{l.label}</a>
+            ))}
           </nav>
           <div className="wp-navbar-actions">
             {c.secondaryCtaText && (
@@ -339,6 +335,8 @@ export default function WebsitePreview({
               color: style.textColor,
               paddingTop: style.paddingTop != null ? `${style.paddingTop}px` : undefined,
               paddingBottom: style.paddingBottom != null ? `${style.paddingBottom}px` : undefined,
+              paddingLeft: section.type === 'navbar' && style.paddingTop != null ? `${style.paddingTop}px` : undefined,
+              paddingRight: section.type === 'navbar' && style.paddingTop != null ? `${style.paddingTop}px` : undefined,
               textAlign: style.align,
               borderRadius: style.borderRadius ? `${style.borderRadius}px` : undefined,
               overflow: style.borderRadius ? 'hidden' : undefined,

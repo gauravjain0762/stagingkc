@@ -22,6 +22,35 @@
   margin-bottom: 28px;
 }
 
+.ms-header-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.ms-back-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  border: 1px solid #1a2940;
+  background: #0d1520;
+  color: #64b5f6;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  margin-top: 2px;
+  padding: 0;
+}
+
+.ms-back-btn:hover {
+  background: #1a2940;
+  border-color: #2d3f5b;
+  color: #90caf9;
+}
+
 .ms-title {
   font-size: 22px;
   font-weight: 700;

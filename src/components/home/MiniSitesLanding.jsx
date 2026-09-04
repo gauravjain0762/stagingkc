@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { getOrganizations } from '../../services/organizationApi';
 import './MiniSitesLanding.css';
 
 function SearchIcon() {
@@ -9,9 +11,66 @@ function PlusIcon() {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
 }
 
+function StatusBadge({ status, rejectionReason }) {
+  const getStatusConfig = () => {
+    switch(status) {
+      case 'pending':
+        return { emoji: '⏳', text: 'Awaiting admin approval', bgColor: '#fbbf24', textColor: '#000' };
+      case 'approved':
+        return { emoji: '✅', text: 'Active', bgColor: '#10b981', textColor: '#fff' };
+      case 'rejected':
+        return { emoji: '❌', text: `Rejected: ${rejectionReason || 'No reason provided'}`, bgColor: '#ef4444', textColor: '#fff' };
+      default:
+        return { emoji: '❓', text: 'Unknown', bgColor: '#6b7280', textColor: '#fff' };
+    }
+  };
+
+  const config = getStatusConfig();
+
+  return (
+    <div style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '6px',
+      padding: '6px 12px',
+      borderRadius: '6px',
+      backgroundColor: config.bgColor,
+      color: config.textColor,
+      fontSize: '12px',
+      fontWeight: '600',
+      marginBottom: '8px'
+    }}>
+      <span>{config.emoji}</span>
+      <span>{config.text}</span>
+    </div>
+  );
+}
+
 export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganization }) {
+  const authToken = useSelector(s => s.auth?.token);
   const [activeTab, setActiveTab] = useState('suggested');
   const [searchTerm, setSearchTerm] = useState('');
+  const [createdOrgs, setCreatedOrgs] = useState([]);
+  const [loadingOrgs, setLoadingOrgs] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === 'mycreated' && authToken && createdOrgs.length === 0) {
+      fetchUserOrganizations();
+    }
+  }, [activeTab, authToken, createdOrgs.length]);
+
+  const fetchUserOrganizations = async () => {
+    setLoadingOrgs(true);
+    try {
+      const response = await getOrganizations({ limit: 50 });
+      setCreatedOrgs(response?.data || []);
+    } catch (err) {
+      console.error('Failed to fetch organizations:', err);
+      setCreatedOrgs([]);
+    } finally {
+      setLoadingOrgs(false);
+    }
+  };
 
   const DEMO_SUGGESTED = [
     {
@@ -38,17 +97,6 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
       memberCount: 234,
       logo: '🚀',
       joinedDate: '2026-08-15',
-    },
-  ];
-
-  const DEMO_CREATED = [
-    {
-      id: 'created-1',
-      name: 'My Developer Community',
-      description: 'My community for developers',
-      memberCount: 12,
-      logo: '💻',
-      createdDate: '2026-08-01',
     },
   ];
 
@@ -119,25 +167,60 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
       case 'mycreated':
         return (
           <div className="msl-content">
-            <div className="msl-cards-grid">
-              {DEMO_CREATED.map(org => (
-                <div key={org.id} className="msl-org-card" onClick={() => onSelectOrganization?.(org)}>
-                  <div className="msl-card-cover">
-                    <span className="msl-card-cover-text">Social Platform</span>
-                  </div>
-                  <div className="msl-card-content">
-                    <div className="msl-org-header">
-                      <div className="msl-org-info">
-                        <h3 className="msl-org-name">{org.name}</h3>
-                        <p className="msl-org-members">{org.memberCount.toLocaleString()} members</p>
-                      </div>
+            {loadingOrgs ? (
+              <div className="msl-empty-state">
+                Loading organizations...
+              </div>
+            ) : createdOrgs.length === 0 ? (
+              <div className="msl-empty-state">
+                <p>No organizations created yet</p>
+                <button
+                  className="msl-create-org-btn"
+                  onClick={onCreateOrganization}
+                >
+                  + Create Your First Organization
+                </button>
+              </div>
+            ) : (
+              <div className="msl-cards-grid">
+                {createdOrgs.map(org => (
+                  <div
+                    key={org.id}
+                    className={`msl-org-card ${org.status !== 'approved' ? 'msl-org-card--disabled' : ''}`}
+                    onClick={() => org.status === 'approved' && onSelectOrganization?.(org)}
+                  >
+                    <div className="msl-card-cover" style={{
+                      backgroundImage: org.coverImage ? `url(${org.coverImage})` : 'none',
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center'
+                    }}>
+                      {!org.coverImage && <span className="msl-card-cover-text">Social Platform</span>}
                     </div>
-                    <p className="msl-org-description">{org.description}</p>
-                    <button className="msl-manage-btn">Manage</button>
+                    <div className="msl-card-content">
+                      <div className="msl-org-header">
+                        <div className="msl-org-info">
+                          <h3 className="msl-org-name">{org.name}</h3>
+                          <p className="msl-org-members">{org.memberCount || 0} members</p>
+                        </div>
+                      </div>
+                      <p className="msl-org-description">{org.shortDescription || org.description || ''}</p>
+                      <button
+                        className={`msl-manage-btn ${org.status !== 'approved' ? 'msl-manage-btn--disabled' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (org.status === 'approved') {
+                            onSelectOrganization?.(org);
+                          }
+                        }}
+                        disabled={org.status !== 'approved'}
+                      >
+                        {org.status === 'pending' ? 'Pending Admin Approval' : org.status === 'rejected' ? 'Rejected' : 'Manage'}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         );
 
@@ -153,9 +236,11 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
           <h1 className="msl-title">Mini Sites</h1>
           <p className="msl-subtitle">Discover and manage your communities</p>
         </div>
-        <button className="msl-create-org-btn" onClick={onCreateOrganization}>
-          <PlusIcon /> Create Organization
-        </button>
+        {createdOrgs.length === 0 && (
+          <button className="msl-create-org-btn" onClick={onCreateOrganization}>
+            <PlusIcon /> Create Organization
+          </button>
+        )}
       </div>
 
       <div className="msl-tabs">

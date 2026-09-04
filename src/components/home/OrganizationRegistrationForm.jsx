@@ -209,20 +209,30 @@ function OrganizationRegistrationForm({ onClose, onSubmit }) {
       const response = await createOrganization(orgPayload);
 
       if (response?.data?.id) {
-        // Save to localStorage as backup
         const orgData = {
           id: response.data.id,
           name: response.data.name,
           type: response.data.type,
           slug: response.data.slug,
+          status: response.data.status,
           createdAt: response.data.createdAt,
         };
-        localStorage.setItem('userOrganization', JSON.stringify(orgData));
 
-        dispatch(showToast({
-          message: 'Organization created successfully!',
-          type: 'success',
-        }));
+        // Check if status is pending (needs admin approval)
+        if (response.data.status === 'pending') {
+          dispatch(showToast({
+            message: '✋ Organization submitted! Waiting for admin approval. We\'ll notify you once it\'s approved.',
+            type: 'info',
+          }));
+        } else if (response.data.status === 'approved') {
+          // Save to localStorage only if approved
+          localStorage.setItem('userOrganization', JSON.stringify(orgData));
+
+          dispatch(showToast({
+            message: '✅ Organization approved and ready to use!',
+            type: 'success',
+          }));
+        }
 
         if (onSubmit) {
           onSubmit(response.data);
@@ -231,12 +241,28 @@ function OrganizationRegistrationForm({ onClose, onSubmit }) {
         // Close form after short delay
         setTimeout(() => {
           onClose();
-        }, 500);
+        }, 1000);
       }
     } catch (error) {
       console.error('Organization creation failed:', error);
+
+      let errorMessage = 'Failed to create organization. Please try again.';
+
+      // Handle different error types
+      if (error.status === 400) {
+        errorMessage = error.data?.errors?.name || error.message || 'Invalid organization data';
+      } else if (error.status === 409) {
+        errorMessage = 'Organization name already exists. Please choose a different name.';
+      } else if (error.status === 401) {
+        errorMessage = 'You must be logged in to create an organization.';
+      } else if (error.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       dispatch(showToast({
-        message: error.message || 'Failed to create organization. Please try again.',
+        message: '❌ ' + errorMessage,
         type: 'error',
       }));
     } finally {
