@@ -236,7 +236,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
           <h1 className="msl-title">Mini Sites</h1>
           <p className="msl-subtitle">Discover and manage your communities</p>
         </div>
-        {createdOrgs.length === 0 && (
+        {activeTab === 'mycreated' && createdOrgs.length === 0 && (
           <button className="msl-create-org-btn" onClick={onCreateOrganization}>
             <PlusIcon /> Create Organization
           </button>

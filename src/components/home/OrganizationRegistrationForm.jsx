@@ -196,14 +196,31 @@ function OrganizationRegistrationForm({ onClose, onSubmit }) {
 
     setLoading(true);
     try {
-      // Prepare organization data for API
+      // Convert File to base64
+      const fileToBase64 = (file) => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = (error) => reject(error);
+        });
+      };
+
+      // Prepare organization data as JSON with base64 images
       const orgPayload = {
         name: formData.orgName,
         type: formData.orgType,
         shortDescription: formData.shortDesc,
         fullDescription: formData.fullDesc,
-        // Images will be uploaded separately if needed
       };
+
+      // Add images as base64 if they exist
+      if (formData.logo) {
+        orgPayload.logo = await fileToBase64(formData.logo);
+      }
+      if (formData.coverImage) {
+        orgPayload.coverImage = await fileToBase64(formData.coverImage);
+      }
 
       // Call API to create organization
       const response = await createOrganization(orgPayload);
