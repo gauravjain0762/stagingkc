@@ -1034,11 +1034,6 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate, or
             Preview
           </button>
 
-          <button className="sbp-btn sbp-btn--save" onClick={handleSave} disabled={savedStatus === 'saving'} title={mockSite.status === 'live' ? 'Saves and updates the live site immediately' : 'Saves your progress without publishing'}>
-            <SaveIcon />
-            {savedStatus === 'saving' ? 'Saving...' : (mockSite.status === 'live' ? 'Save & Update Live Site' : 'Save Draft')}
-          </button>
-
           {mockSite.status === 'live' ? (
             <button className="sbp-btn sbp-btn--publish" onClick={handleUnpublish} disabled={isUnpublishing}>
               <PublishIcon />

@@ -232,9 +232,12 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: auto;
+}
+
+.wp-preview-container--interactive {
   align-items: center;
   background: #e9edf3;
-  overflow: auto;
 }
 
 .wp-canvas {

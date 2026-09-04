@@ -319,7 +319,7 @@ export default function WebsitePreview({
   );
 
   return (
-    <div className="wp-preview-container">
+    <div className={`wp-preview-container ${interactive ? 'wp-preview-container--interactive' : ''}`}>
       <div className="wp-canvas" style={{ width: DEVICE_WIDTH[device] || '100%' }}>
         {/* Website Sections Preview */}
         <div className="wp-content">
