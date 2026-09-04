@@ -32,7 +32,6 @@ function DotsIcon()   { return <svg width="15" height="15" viewBox="0 0 24 24" f
 function FlagIcon()   { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>; }
 function UsersIcon()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
 function LiveDotIcon() { return <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><circle cx="4" cy="4" r="4"/></svg>; }
-function DraftIcon()  { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>; }
 function PublishIcon()   { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>; }
 function UnpublishIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>; }
 function AlertTriangleIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>; }
@@ -550,14 +549,12 @@ export default function MiniSitesPage({
 
   const filteredSites = filterStatus === 'all' ? sites : sites.filter(s => s.status === filterStatus);
   const liveSites = sites.filter(s => s.status === 'live');
-  const draftSites = sites.filter(s => s.status === 'draft');
   const totalViews = sites.reduce((sum, s) => sum + (s.views || 0), 0);
 
   const STAT_CARDS = [
     { Icon: GlobeIcon,    label: 'TOTAL SITES', value: String(sites.length), color: '#3b82f6' },
     { Icon: EyeIcon,      label: 'TOTAL VIEWS', value: totalViews.toLocaleString(), color: '#10b981' },
     { Icon: BarChartIcon, label: 'LIVE SITES',  value: String(liveSites.length), color: '#8b5cf6' },
-    { Icon: LinkIcon,     label: 'DRAFT SITES', value: String(draftSites.length), color: '#f59e0b' },
   ];
 
   // Show organization registration form (priority over landing page)
@@ -811,12 +808,6 @@ export default function MiniSitesPage({
             >
               <LiveDotIcon /> Live ({liveSites.length})
             </button>
-            <button
-              className={`ms-filter-btn${filterStatus === 'draft' ? ' ms-filter-btn--active' : ''}`}
-              onClick={() => setFilterStatus('draft')}
-            >
-              <DraftIcon /> Draft ({draftSites.length})
-            </button>
           </div>
         )}
 
@@ -845,7 +836,7 @@ export default function MiniSitesPage({
                   <div className="ms-site-thumb">
                     <ImageCarousel images={siteImages(site)} />
                     <div className={`ms-site-badge ms-site-badge--${site.status}`}>
-                      {site.status === 'live' ? <><LiveDotIcon /> Live</> : <><DraftIcon /> Draft</>}
+                      <><LiveDotIcon /> Live</>
                     </div>
                     <VisibilityBadge visibility={site.visibility} />
                     <div className="ms-site-actions-overlay">
@@ -943,7 +934,7 @@ export default function MiniSitesPage({
                     <div className="ms-site-thumb">
                       <ImageCarousel images={siteImages(site)} />
                       <div className={`ms-site-badge ms-site-badge--${site.status}`}>
-                        {site.status === 'live' ? <><LiveDotIcon /> Live</> : <><DraftIcon /> Draft</>}
+                        <><LiveDotIcon /> Live</>
                       </div>
                       <VisibilityBadge visibility={site.visibility} />
                       <div className="ms-site-actions-overlay">
