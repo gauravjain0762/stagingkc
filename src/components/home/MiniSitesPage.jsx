@@ -402,12 +402,13 @@ export default function MiniSitesPage({
     if (savedOrg) {
       try {
         setUserOrganization(JSON.parse(savedOrg));
+        setIsOrgLoggedIn(true); // User has selected an organization
       } catch (err) {
         console.error('Failed to load organization:', err);
       }
     }
 
-    // Check for login session
+    // Check for login session (legacy, but keep for backward compatibility)
     const loginSession = localStorage.getItem('orgLoginSession');
     if (loginSession) {
       try {
