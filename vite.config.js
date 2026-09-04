@@ -12,6 +12,13 @@ export default defineConfig({
     // LAN IP, e.g. http://192.168.x.x:5173 — shown in the "Network:" line
     // when the dev server starts.
     host: true,
+    proxy: {
+      '/api': {
+        target: 'https://kick-analyst-backend-production.jay886631.workers.dev',
+        changeOrigin: true,
+        rewrite: (path) => path,
+      },
+    },
   },
   test: {
     environment: 'jsdom',

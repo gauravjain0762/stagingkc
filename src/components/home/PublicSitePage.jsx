@@ -6,7 +6,6 @@ import MiniSiteCalendarPage from './MiniSiteCalendarPage';
 import MiniSiteMembersPage from './MiniSiteMembersPage';
 import Loader from '../Loader';
 import { normalizeSite } from './miniSiteUtils';
-import { apiRequest } from '../../services/api';
 import './PublicSitePage.css';
 
 function siteTokenKey(slug) {
@@ -40,22 +39,49 @@ export default function PublicSitePage({ slug }) {
 
     async function load() {
       setStatus('loading');
-      // Demo mode: Load from localStorage instead of API
-      await new Promise(resolve => setTimeout(resolve, 300));
+      console.log('🔄 Loading public site with slug:', slug);
 
       if (cancelled) return;
 
       try {
-        // Get all sites from localStorage
-        const sites = JSON.parse(localStorage.getItem('demoSites') || '[]');
+        // Fetch published site from backend API (no auth required)
+        console.log('📡 Calling API: /api/mini-sites/public/' + slug);
+        const response = await fetch(`/api/mini-sites/public/${slug}`);
 
-        // Find site by slug (check for both 'live' and 'published' status)
-        const foundSite = sites.find(s => s.slug === slug && (s.status === 'live' || s.status === 'published'));
+        console.log('✅ Response status:', response.status);
 
-        if (!foundSite) {
+        if (cancelled) return;
+
+        if (!response.ok) {
+          console.warn('⚠️ API returned status:', response.status);
+          if (response.status === 404) {
+            setStatus('notfound');
+          } else {
+            setStatus('error');
+          }
+          return;
+        }
+
+        const text = await response.text();
+        console.log('📄 Response text (first 200 chars):', text.slice(0, 200));
+
+        let jsonData;
+        try {
+          jsonData = JSON.parse(text);
+          console.log('✅ API Response:', jsonData);
+        } catch (parseErr) {
+          console.error('❌ Response is not JSON, it\'s HTML/text:', text.slice(0, 500));
+          setStatus('error');
+          return;
+        }
+
+        if (!jsonData?.data) {
+          console.warn('⚠️ No data in response');
           setStatus('notfound');
           return;
         }
+
+        const foundSite = jsonData.data;
 
         console.log('📦 Site data loaded:', foundSite);
         console.log('📋 Sections:', foundSite?.sections);
@@ -66,22 +92,26 @@ export default function PublicSitePage({ slug }) {
 
         // Check visibility
         if (foundSite.visibility === 'private') {
+          console.warn('⚠️ Site is private');
           setStatus('forbidden');
           return;
         }
 
         if (foundSite.visibility === 'members') {
-          setStatus('needs-password'); // Show password as placeholder for members-only
+          console.warn('⚠️ Site is members-only');
+          setStatus('needs-password');
           return;
         }
 
         // Public site
+        console.log('✅ Site is public, setting ready status');
         setSite(normalizeSite(foundSite));
         setStatus('ready');
       } catch (err) {
         if (cancelled) return;
-        console.error('Failed to load site:', err);
-        setStatus('notfound');
+        console.error('❌ Failed to load site:', err);
+        console.error('Error details:', err.message);
+        setStatus('error');
       }
     }
 

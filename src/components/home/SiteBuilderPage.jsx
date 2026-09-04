@@ -501,15 +501,6 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate, or
           type: 'success',
         }));
         const updatedSite = { ...mockSite, ...response.data, sections };
-        // Store published site in localStorage so it can be accessed via public URL
-        const publishedSites = JSON.parse(localStorage.getItem('demoSites') || '[]');
-        const siteIndex = publishedSites.findIndex(s => s.id === updatedSite.id);
-        if (siteIndex >= 0) {
-          publishedSites[siteIndex] = updatedSite;
-        } else {
-          publishedSites.push(updatedSite);
-        }
-        localStorage.setItem('demoSites', JSON.stringify(publishedSites));
         onSiteUpdate?.(siteId, updatedSite);
         setPublishedInfo({ name: updatedSite.name, url: siteUrl(updatedSite) });
       }
@@ -554,10 +545,6 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate, or
           type: 'success',
         }));
         const updatedSite = { ...mockSite, ...response.data, sections };
-        // Remove unpublished site from localStorage
-        const publishedSites = JSON.parse(localStorage.getItem('demoSites') || '[]');
-        const filtered = publishedSites.filter(s => s.id !== updatedSite.id);
-        localStorage.setItem('demoSites', JSON.stringify(filtered));
         onSiteUpdate?.(siteId, updatedSite);
         setPublishedInfo(null);
       }

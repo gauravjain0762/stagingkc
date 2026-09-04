@@ -658,10 +658,10 @@
 }
 
 .wp-form .wp-btn {
-  align-self: flex-start;
   padding: 10px 24px;
   font-size: 14px;
   margin-top: 8px;
+  align-self: center;
 }
 
 /* Default Section */
