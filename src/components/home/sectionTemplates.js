@@ -32,7 +32,7 @@ export function defaultStyle() {
     align: 'center',
     borderRadius: 0,
     buttonRadius: 8,
-    contentWidth: 'boxed',
+    contentWidth: 'full',
   };
 }
 
