@@ -112,27 +112,29 @@ function SectionContent({ section, interactive, siteId, contactEmail }) {
       );
 
     case 'hero':
+      const heroContent = c.content || c;
+      const heroImage = heroContent.image || c.image;
       return (
         <div className="wp-hero">
           <div className="wp-hero-content">
-            <h1>{c.headline}</h1>
-            <p>{c.subheadline}</p>
+            <h1>{heroContent.headline}</h1>
+            <p>{heroContent.subheadline}</p>
             <div className="wp-hero-buttons">
-              {c.primaryButtonText && (
-                <a href={c.primaryButtonLink || '#'} className="wp-btn wp-btn-primary" onClick={(e) => handleNavLinkClick(e, c.primaryButtonLink, interactive, siteId)}>
-                  {c.primaryButtonText}
+              {heroContent.primaryButtonText && (
+                <a href={heroContent.primaryButtonLink || '#'} className="wp-btn wp-btn-primary" onClick={(e) => handleNavLinkClick(e, heroContent.primaryButtonLink, interactive, siteId)}>
+                  {heroContent.primaryButtonText}
                 </a>
               )}
-              {c.secondaryButtonText && (
-                <a href={c.secondaryButtonLink || '#'} className="wp-btn wp-btn-secondary" onClick={(e) => handleNavLinkClick(e, c.secondaryButtonLink, interactive, siteId)}>
-                  {c.secondaryButtonText}
+              {heroContent.secondaryButtonText && (
+                <a href={heroContent.secondaryButtonLink || '#'} className="wp-btn wp-btn-secondary" onClick={(e) => handleNavLinkClick(e, heroContent.secondaryButtonLink, interactive, siteId)}>
+                  {heroContent.secondaryButtonText}
                 </a>
               )}
             </div>
           </div>
           <div className="wp-hero-image">
-            {c.image ? (
-              <img src={c.image} alt={c.headline} className="wp-hero-img" />
+            {heroImage ? (
+              <img src={heroImage} alt={heroContent.headline} className="wp-hero-img" />
             ) : (
               <div className="wp-placeholder-img"></div>
             )}
