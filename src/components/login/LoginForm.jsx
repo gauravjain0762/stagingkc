@@ -191,7 +191,7 @@ export default function LoginForm() {
                 placeholder="name@company.com"
                 value={form.email}
                 onChange={handleChange}
-                autoComplete="email"
+                autoComplete="off"
                 disabled={!isIdle}
                 required
               />
@@ -207,7 +207,7 @@ export default function LoginForm() {
                   placeholder="Enter your password"
                   value={form.password}
                   onChange={handleChange}
-                  autoComplete="current-password"
+                  autoComplete="off"
                   disabled={!isIdle}
                   required
                 />

@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import ImageCropper from './ImageCropper';
 import { PhoneInput } from './CountryPicker';
+import { createOrganization } from '../../services/organizationApi';
+import { showToast } from '../../store/slices/toastSlice';
 import './OrganizationRegistrationForm.css';
 
 function EyeIcon() {
@@ -12,7 +15,9 @@ function EyeOffIcon() {
 }
 
 function OrganizationRegistrationForm({ onClose, onSubmit }) {
+  const dispatch = useDispatch();
   const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     // Organization Information
     orgName: '',
@@ -186,28 +191,56 @@ function OrganizationRegistrationForm({ onClose, onSubmit }) {
     setErrors({});
   };
 
-  const handleSubmit = () => {
-    if (validatePage2()) {
-      // Save to localStorage
-      const orgData = {
-        id: 'org_' + Date.now(),
+  const handleSubmit = async () => {
+    if (!validatePage2()) return;
+
+    setLoading(true);
+    try {
+      // Prepare organization data for API
+      const orgPayload = {
         name: formData.orgName,
         type: formData.orgType,
-        email: formData.email,
-        phone: formData.phone,
-        country: formData.country,
-        state: formData.state,
-        city: formData.city,
-        logo: logoPreview,
-        coverImage: coverPreview,
-        createdAt: new Date().toISOString(),
+        shortDescription: formData.shortDesc,
+        fullDescription: formData.fullDesc,
+        // Images will be uploaded separately if needed
       };
-      localStorage.setItem('userOrganization', JSON.stringify(orgData));
 
-      if (onSubmit) {
-        onSubmit(formData);
+      // Call API to create organization
+      const response = await createOrganization(orgPayload);
+
+      if (response?.data?.id) {
+        // Save to localStorage as backup
+        const orgData = {
+          id: response.data.id,
+          name: response.data.name,
+          type: response.data.type,
+          slug: response.data.slug,
+          createdAt: response.data.createdAt,
+        };
+        localStorage.setItem('userOrganization', JSON.stringify(orgData));
+
+        dispatch(showToast({
+          message: 'Organization created successfully!',
+          type: 'success',
+        }));
+
+        if (onSubmit) {
+          onSubmit(response.data);
+        }
+
+        // Close form after short delay
+        setTimeout(() => {
+          onClose();
+        }, 500);
       }
-      console.log('Organization saved:', orgData);
+    } catch (error) {
+      console.error('Organization creation failed:', error);
+      dispatch(showToast({
+        message: error.message || 'Failed to create organization. Please try again.',
+        type: 'error',
+      }));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -567,8 +600,12 @@ function OrganizationRegistrationForm({ onClose, onSubmit }) {
             </button>
           )}
           {page === 2 && (
-            <button className="org-reg-btn org-reg-btn-primary" onClick={handleSubmit}>
-              Create Organization
+            <button
+              className="org-reg-btn org-reg-btn-primary"
+              onClick={handleSubmit}
+              disabled={loading}
+            >
+              {loading ? 'Creating Organization...' : 'Create Organization'}
             </button>
           )}
         </div>
