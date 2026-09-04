@@ -856,7 +856,7 @@ export default function MiniSitesPage({
                           <div className="ms-site-dropdown">
                             <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handleEditSite(site.id); }}><EditIcon /> Edit</button>
                             <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); setOpenMenuId(null); }}><EyeIcon /> Preview</button>
-                            <button className="ms-dd-item"><KeyIcon /> Admin login</button>
+                            <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); window.open('https://mentor-kink.vercel.app/', '_blank'); }}><KeyIcon /> Admin login</button>
                             <button className="ms-dd-item ms-dd-item--danger" onClick={(e) => handleDeleteSite(site, e)}><TrashIcon /> Delete</button>
                           </div>
                         )}
@@ -959,7 +959,7 @@ export default function MiniSitesPage({
                               <div className="ms-site-dropdown">
                                 <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handleEditSite(site.id); }}><EditIcon /> Edit</button>
                                 <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); setOpenMenuId(null); }}><EyeIcon /> Preview</button>
-                                <button className="ms-dd-item"><KeyIcon /> Admin login</button>
+                                <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); window.open('https://mentor-kink.vercel.app/', '_blank'); }}><KeyIcon /> Admin login</button>
                                 <button className="ms-dd-item ms-dd-item--danger" onClick={(e) => handleDeleteSite(site, e)}><TrashIcon /> Delete</button>
                               </div>
                             )}
