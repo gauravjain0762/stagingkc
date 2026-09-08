@@ -127,7 +127,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                     <div className="msl-org-header">
                       <div className="msl-org-info">
                         <h3 className="msl-org-name">{org.name}</h3>
-                        <p className="msl-org-members">{org.memberCount.toLocaleString()} members</p>
+                        <span className="msl-org-badge">Organization</span>
                       </div>
                     </div>
                     <p className="msl-org-description">{org.description}</p>
@@ -152,7 +152,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                     <div className="msl-org-header">
                       <div className="msl-org-info">
                         <h3 className="msl-org-name">{org.name}</h3>
-                        <p className="msl-org-members">{org.memberCount.toLocaleString()} members</p>
+                        <span className="msl-org-badge">Organization</span>
                       </div>
                     </div>
                     <p className="msl-org-description">{org.description}</p>
@@ -194,7 +194,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                       <div className="msl-org-header">
                         <div className="msl-org-info">
                           <h3 className="msl-org-name">{org.name}</h3>
-                          <p className="msl-org-members">{org.memberCount || 0} members</p>
+                          <span className="msl-org-badge">Organization</span>
                         </div>
                       </div>
                       <p className="msl-org-description">{org.shortDescription || org.description || ''}</p>
