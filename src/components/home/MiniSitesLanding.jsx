@@ -50,14 +50,54 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
   const authToken = useSelector(s => s.auth?.token);
   const [activeTab, setActiveTab] = useState('suggested');
   const [searchTerm, setSearchTerm] = useState('');
+  const [suggestedOrgs, setSuggestedOrgs] = useState([]);
+  const [joinedOrgs, setJoinedOrgs] = useState([]);
   const [createdOrgs, setCreatedOrgs] = useState([]);
   const [loadingOrgs, setLoadingOrgs] = useState(false);
 
   useEffect(() => {
-    if (activeTab === 'mycreated' && authToken && createdOrgs.length === 0) {
+    if (!authToken) return;
+
+    if (activeTab === 'suggested' && suggestedOrgs.length === 0) {
+      fetchSuggestedOrganizations();
+    } else if (activeTab === 'joined' && joinedOrgs.length === 0) {
+      fetchJoinedOrganizations();
+    } else if (activeTab === 'mycreated' && createdOrgs.length === 0) {
       fetchUserOrganizations();
     }
-  }, [activeTab, authToken, createdOrgs.length]);
+  }, [activeTab, authToken]);
+
+  const fetchSuggestedOrganizations = async () => {
+    setLoadingOrgs(true);
+    try {
+      const response = await fetch(`/api/organizations/suggested?limit=50`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const data = await response.json();
+      setSuggestedOrgs(data?.data || []);
+    } catch (err) {
+      console.error('Failed to fetch suggested organizations:', err);
+      setSuggestedOrgs([]);
+    } finally {
+      setLoadingOrgs(false);
+    }
+  };
+
+  const fetchJoinedOrganizations = async () => {
+    setLoadingOrgs(true);
+    try {
+      const response = await fetch(`/api/organizations/joined?limit=50`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const data = await response.json();
+      setJoinedOrgs(data?.data || []);
+    } catch (err) {
+      console.error('Failed to fetch joined organizations:', err);
+      setJoinedOrgs([]);
+    } finally {
+      setLoadingOrgs(false);
+    }
+  };
 
   const fetchUserOrganizations = async () => {
     setLoadingOrgs(true);
@@ -72,33 +112,22 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
     }
   };
 
-  const DEMO_SUGGESTED = [
-    {
-      id: 'sugg-1',
-      name: 'Tech Innovators Community',
-      description: 'Connect with tech enthusiasts and innovators',
-      memberCount: 234,
-      logo: '🚀',
-    },
-    {
-      id: 'sugg-2',
-      name: 'Design Collective',
-      description: 'Designers sharing ideas and collaborating',
-      memberCount: 189,
-      logo: '🎨',
-    },
-  ];
-
-  const DEMO_JOINED = [
-    {
-      id: 'joined-1',
-      name: 'Tech Innovators',
-      description: 'A community for tech enthusiasts',
-      memberCount: 234,
-      logo: '🚀',
-      joinedDate: '2026-08-15',
-    },
-  ];
+  const handleJoinOrganization = async (orgId) => {
+    try {
+      const response = await fetch(`/api/organizations/${orgId}/join`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${authToken}` },
+        body: JSON.stringify({})
+      });
+      const data = await response.json();
+      if (data.success) {
+        setSuggestedOrgs(suggestedOrgs.filter(o => o.id !== orgId));
+        setJoinedOrgs([...joinedOrgs, suggestedOrgs.find(o => o.id === orgId)]);
+      }
+    } catch (err) {
+      console.error('Failed to join organization:', err);
+    }
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -117,50 +146,64 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                 />
               </div>
             </div>
-            <div className="msl-cards-grid">
-              {DEMO_SUGGESTED.map(org => (
-                <div key={org.id} className="msl-org-card">
-                  <div className="msl-card-cover">
-                    <span className="msl-card-cover-text">Social Platform</span>
-                  </div>
-                  <div className="msl-card-content">
-                    <div className="msl-org-header">
-                      <div className="msl-org-info">
-                        <h3 className="msl-org-name">{org.name}</h3>
-                        <p className="msl-org-members">{org.memberCount.toLocaleString()} members</p>
-                      </div>
+            {loadingOrgs ? (
+              <div className="msl-empty-state">Loading organizations...</div>
+            ) : suggestedOrgs.length === 0 ? (
+              <div className="msl-empty-state">No organizations available to join</div>
+            ) : (
+              <div className="msl-cards-grid">
+                {suggestedOrgs.map(org => (
+                  <div key={org.id} className="msl-org-card">
+                    <div className="msl-card-cover">
+                      <span className="msl-card-cover-text">Social Platform</span>
                     </div>
-                    <p className="msl-org-description">{org.description}</p>
-                    <button className="msl-join-btn">Join</button>
+                    <div className="msl-card-content">
+                      <div className="msl-org-header">
+                        <div className="msl-org-info">
+                          <h3 className="msl-org-name">{org.name}</h3>
+                          <p className="msl-org-members">{org.memberCount || 0} members</p>
+                        </div>
+                      </div>
+                      <p className="msl-org-description">{org.shortDescription}</p>
+                      <button className="msl-join-btn" onClick={() => handleJoinOrganization(org.id)}>Join</button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         );
 
       case 'joined':
         return (
           <div className="msl-content">
-            <div className="msl-cards-grid">
-              {DEMO_JOINED.map(org => (
-                <div key={org.id} className="msl-org-card" onClick={() => onSelectOrganization?.(org)}>
-                  <div className="msl-card-cover">
-                    <span className="msl-card-cover-text">Social Platform</span>
-                  </div>
-                  <div className="msl-card-content">
-                    <div className="msl-org-header">
-                      <div className="msl-org-info">
-                        <h3 className="msl-org-name">{org.name}</h3>
-                        <p className="msl-org-members">{org.memberCount.toLocaleString()} members</p>
-                      </div>
+            {loadingOrgs ? (
+              <div className="msl-empty-state">Loading organizations...</div>
+            ) : joinedOrgs.length === 0 ? (
+              <div className="msl-empty-state">
+                <p>You haven't joined any organizations yet</p>
+              </div>
+            ) : (
+              <div className="msl-cards-grid">
+                {joinedOrgs.map(org => (
+                  <div key={org.id} className="msl-org-card" onClick={() => onSelectOrganization?.(org)}>
+                    <div className="msl-card-cover">
+                      <span className="msl-card-cover-text">Social Platform</span>
                     </div>
-                    <p className="msl-org-description">{org.description}</p>
-                    <button className="msl-view-btn">View</button>
+                    <div className="msl-card-content">
+                      <div className="msl-org-header">
+                        <div className="msl-org-info">
+                          <h3 className="msl-org-name">{org.name}</h3>
+                          <p className="msl-org-members">{org.memberCount || 0} members</p>
+                        </div>
+                      </div>
+                      <p className="msl-org-description">{org.shortDescription}</p>
+                      <button className="msl-view-btn">View</button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         );
 
