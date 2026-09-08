@@ -49,26 +49,39 @@ export default function HomePage() {
     if (action === 'joinOrganization' && orgId && token) {
       const joinOrg = async () => {
         try {
-          const response = await apiRequest(`/api/organizations/${orgId}/join`, {
+          const data = await apiRequest(`/api/organizations/${orgId}/join`, {
             method: 'POST',
             token,
             body: {}
           });
 
-          if (response?.success) {
+          console.log('Join org response:', data);
+
+          if (data?.success === false && data?.message?.includes('Already a member')) {
+            dispatch(showToast({
+              message: `ℹ️ ${data.message}`,
+              type: 'info'
+            }));
+            // Still redirect to mini-sites page
+            setSection('mini-sites');
+            window.history.replaceState({}, document.title, window.location.pathname);
+          } else if (data?.success === true) {
             dispatch(showToast({
               message: '✅ Successfully joined organization!',
               type: 'success'
             }));
-            // Redirect to mini-sites page with the organization selected
             setSection('mini-sites');
-            // Clear the URL params
             window.history.replaceState({}, document.title, window.location.pathname);
+          } else if (data?.success === false) {
+            dispatch(showToast({
+              message: `❌ ${data?.message || 'Failed to join organization'}`,
+              type: 'error'
+            }));
           }
         } catch (error) {
           console.error('Failed to join organization:', error);
           dispatch(showToast({
-            message: '❌ Failed to join organization',
+            message: `❌ ${error?.message || 'Failed to join organization'}`,
             type: 'error'
           }));
         }
