@@ -1044,7 +1044,7 @@ export default function MiniSitesPage({
           </div>
         )}
 
-        {/* Joined Communities Tab */}
+        {/* Joined Organizations Tab */}
         {activeTab === 'joined' && (
           <>
             {/* Filter Pills */}

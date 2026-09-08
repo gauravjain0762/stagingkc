@@ -248,13 +248,13 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
           className={`msl-tab${activeTab === 'suggested' ? ' msl-tab--active' : ''}`}
           onClick={() => setActiveTab('suggested')}
         >
-          Suggested Communities
+          Suggested Organizations
         </button>
         <button
           className={`msl-tab${activeTab === 'joined' ? ' msl-tab--active' : ''}`}
           onClick={() => setActiveTab('joined')}
         >
-          Joined Communities
+          Joined Organizations
         </button>
         <button
           className={`msl-tab${activeTab === 'mycreated' ? ' msl-tab--active' : ''}`}
