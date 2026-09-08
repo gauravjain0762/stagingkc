@@ -426,7 +426,7 @@ export default function PostCard({ post, onUserClick, groupId }) {
     // If post has images array (mini-site posts), convert to media format
     if (post.images && Array.isArray(post.images) && post.images.length > 0) {
       return post.images
-        .filter(url => typeof url === 'string' && url.startsWith('http'))
+        .filter(url => typeof url === 'string' && url.length > 0)
         .map(url => ({ url, type: 'image' }));
     }
 

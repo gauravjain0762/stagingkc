@@ -95,7 +95,6 @@ export default function MiniSiteFeed({ siteId, siteName }) {
         setPosts(postsList);
         setIsMember(true);
         setCanPost(true);
-        console.log('Loaded', postsList.length, 'posts from mini-site feed');
       } else if (data?.posts) {
         // Handle direct posts response
         setPosts(data.posts);
