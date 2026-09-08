@@ -190,7 +190,33 @@ export default function MiniSiteFeed({ siteId, siteName }) {
           type: 'success'
         }));
         // Refresh posts to ensure we have the latest
-        setTimeout(() => loadPosts(), 500);
+        setTimeout(async () => {
+          try {
+            console.log('Fetching posts to refresh feed...');
+            // Try mini-site endpoint first
+            let data = await apiRequest(`/api/mini-sites/${siteId}/feed?page=1&limit=10`, {
+              token
+            }).catch(() => null);
+
+            // Fallback to general posts endpoint
+            if (!data) {
+              data = await apiRequest(`/api/posts?limit=10&page=1`, {
+                token
+              });
+            }
+
+            if (data?.data) {
+              const postsList = Array.isArray(data.data) ? data.data : data.data?.posts || [];
+              setPosts(postsList);
+              console.log('Feed refreshed with', postsList.length, 'posts');
+            } else if (data?.posts) {
+              setPosts(data.posts);
+              console.log('Feed refreshed with', data.posts.length, 'posts');
+            }
+          } catch (err) {
+            console.error('Failed to refresh posts:', err);
+          }
+        }, 500);
       } else if (response?.data) {
         setPosts([response.data, ...posts]);
         setCreateOpen(false);
@@ -198,6 +224,26 @@ export default function MiniSiteFeed({ siteId, siteName }) {
           message: '✅ Post created successfully!',
           type: 'success'
         }));
+        // Refresh posts for this case too
+        setTimeout(async () => {
+          try {
+            console.log('Fetching posts to refresh feed...');
+            let data = await apiRequest(`/api/posts?limit=10&page=1`, {
+              token
+            }).catch(() => null);
+
+            if (data?.data) {
+              const postsList = Array.isArray(data.data) ? data.data : data.data?.posts || [];
+              setPosts(postsList);
+              console.log('Feed refreshed with', postsList.length, 'posts');
+            } else if (data?.posts) {
+              setPosts(data.posts);
+              console.log('Feed refreshed with', data.posts.length, 'posts');
+            }
+          } catch (err) {
+            console.error('Failed to refresh posts:', err);
+          }
+        }, 500);
       }
     } catch (err) {
       console.error('Failed to create post:', err);
