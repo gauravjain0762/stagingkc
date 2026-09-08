@@ -16,10 +16,12 @@ import MiniSitesPage from './MiniSitesPage';
 import PlanManagementPage from '../plans/PlanManagementPage';
 import PostDetailModal from './PostDetailModal';
 import { initSocket } from '../../services/socket';
+import { apiRequest } from '../../services/api';
 import store from '../../store';
 import { fetchMe } from '../../store/slices/authSlice';
 import { consumeJustSelectedPlan } from '../../store/slices/plansSlice';
 import { clearPendingNavigation } from '../../store/slices/uiSlice';
+import { showToast } from '../../store/slices/toastSlice';
 import { readSharedPostId, syncSharedPostId } from '../../utils/permalink';
 import { readInitialSection, readInitialViewId, readInitialTab, readInitialDate, readInitialCreate, syncPageUrl } from '../../utils/pageUrl';
 import './HomePage.css';
@@ -37,6 +39,43 @@ export default function HomePage() {
       dispatch(fetchMe());
     }
   }, [token]);
+
+  /* Handle join organization action from published mini site */
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    const orgId = params.get('orgId');
+
+    if (action === 'joinOrganization' && orgId && token) {
+      const joinOrg = async () => {
+        try {
+          const response = await apiRequest(`/api/organizations/${orgId}/join`, {
+            method: 'POST',
+            token,
+            body: {}
+          });
+
+          if (response?.success) {
+            dispatch(showToast({
+              message: '✅ Successfully joined organization!',
+              type: 'success'
+            }));
+            // Redirect to mini-sites page with the organization selected
+            setSection('mini-sites');
+            // Clear the URL params
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } catch (error) {
+          console.error('Failed to join organization:', error);
+          dispatch(showToast({
+            message: '❌ Failed to join organization',
+            type: 'error'
+          }));
+        }
+      };
+      joinOrg();
+    }
+  }, [token, dispatch]);
 
   // Seeded from /?section=&id=&tab=&date=&create= so a refresh lands back
   // where you were, instead of always resetting to the feed.
