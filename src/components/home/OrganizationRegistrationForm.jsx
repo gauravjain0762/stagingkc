@@ -212,6 +212,11 @@ function OrganizationRegistrationForm({ onClose, onSubmit }) {
         type: formData.orgType,
         shortDescription: formData.shortDesc,
         fullDescription: formData.fullDesc,
+        adminFirstName: formData.adminFirstName,
+        adminLastName: formData.adminLastName,
+        adminEmail: formData.adminEmail,
+        adminPhone: formData.adminPhone,
+        password: formData.password,
       };
 
       // Add images as base64 if they exist
