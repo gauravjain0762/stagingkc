@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import SkeletonImg from '../SkeletonImg';
 import PostCard from './PostCard';
 import CreatePostModal from './CreatePostModal';
+import { apiRequest } from '../../services/api';
+import { showToast } from '../../store/slices/toastSlice';
 import './MiniSiteFeed.css';
 
 function PhotosIcon() {
@@ -50,35 +53,58 @@ const DEMO_POSTS = [
 ];
 
 export default function MiniSiteFeed({ siteId, siteName }) {
-  const [posts, setPosts] = useState(DEMO_POSTS);
+  const dispatch = useDispatch();
+  const { token } = useSelector(s => s.auth);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isMember, setIsMember] = useState(false);
+  const [canPost, setCanPost] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [createTab, setCreateTab] = useState('photo');
   const [creatorClicked, setCreatorClicked] = useState(false);
   const clickTimer = useRef(null);
   const feedRef = useRef(null);
 
-  // Load posts from localStorage on mount
+  // Load posts from API on mount
   useEffect(() => {
-    loadPosts();
-  }, [siteId]);
+    if (siteId && token) {
+      loadPosts();
+    }
+  }, [siteId, token]);
 
-  const loadPosts = () => {
+  const loadPosts = async () => {
+    setLoading(true);
     try {
-      const stored = localStorage.getItem(`minisite-feed-${siteId}`);
-      if (stored) {
-        setPosts(JSON.parse(stored));
+      const data = await apiRequest(`/api/mini-sites/${siteId}/feed?page=1&limit=10`, {
+        token
+      });
+
+      if (data?.success === false && data?.message?.includes('not a member')) {
+        // User can view but not post
+        setIsMember(false);
+        setCanPost(false);
+        dispatch(showToast({
+          message: 'ℹ️ You can view posts but need to join to post',
+          type: 'info'
+        }));
+      } else if (data?.data) {
+        setPosts(data.data);
+        setIsMember(true);
+        setCanPost(true);
       }
     } catch (err) {
       console.error('Failed to load posts:', err);
-    }
-  };
-
-  const savePosts = (newPosts) => {
-    try {
-      localStorage.setItem(`minisite-feed-${siteId}`, JSON.stringify(newPosts));
-      setPosts(newPosts);
-    } catch (err) {
-      console.error('Failed to save posts:', err);
+      if (err?.message?.includes('403') || err?.message?.includes('not a member')) {
+        setIsMember(false);
+        setCanPost(false);
+      } else {
+        dispatch(showToast({
+          message: '❌ Failed to load posts',
+          type: 'error'
+        }));
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -95,35 +121,55 @@ export default function MiniSiteFeed({ siteId, siteName }) {
   };
 
   // Handle post creation - intercept from CreatePostModal
-  const handlePostCreate = (postData) => {
+  const handlePostCreate = async (postData) => {
+    if (!canPost) {
+      dispatch(showToast({
+        message: '❌ You must join this organization to post',
+        type: 'error'
+      }));
+      return;
+    }
+
     try {
       // Extract data from the post creation modal
       const caption = postData?.caption || postData?.content || '';
       const images = postData?.images || [];
 
-      const newPost = {
-        _id: `post-${Date.now()}`,
-        author: {
-          _id: 'demo-user',
-          fullName: 'You',
-          avatar: '',
-        },
-        content: caption,
-        images: images.map(img => typeof img === 'string' ? img : img.src),
-        createdAt: new Date().toISOString(),
-        likes: [],
-        likesCount: 0,
-        commentsCount: 0,
-        comments: [],
-        shares: [],
-        sharesCount: 0,
-      };
+      // Create FormData for multipart upload
+      const formData = new FormData();
+      formData.append('content', caption);
+      formData.append('visibility', 'public');
 
-      const updatedPosts = [newPost, ...posts];
-      savePosts(updatedPosts);
-      setCreateOpen(false);
+      // Add image files
+      images.forEach((img, idx) => {
+        if (img.file) {
+          formData.append('images', img.file);
+        } else if (img instanceof File) {
+          formData.append('images', img);
+        }
+      });
+
+      const response = await apiRequest(`/api/mini-sites/${siteId}/feed`, {
+        method: 'POST',
+        token,
+        body: formData,
+        isFormData: true
+      });
+
+      if (response?.data) {
+        setPosts([response.data, ...posts]);
+        setCreateOpen(false);
+        dispatch(showToast({
+          message: '✅ Post created successfully!',
+          type: 'success'
+        }));
+      }
     } catch (err) {
       console.error('Failed to create post:', err);
+      dispatch(showToast({
+        message: `❌ ${err?.message || 'Failed to create post'}`,
+        type: 'error'
+      }));
     }
   };
 
@@ -132,8 +178,8 @@ export default function MiniSiteFeed({ siteId, siteName }) {
 
   return (
     <main className="home-feed minisite-feed-container">
-      {/* Post creator */}
-      <div className={`post-creator${creatorClicked ? ' post-creator--clicked' : ''}`}>
+      {/* Post creator - Only visible to members */}
+      {canPost && <div className={`post-creator${creatorClicked ? ' post-creator--clicked' : ''}`}>
         <div className="creator-top">
           <div
             className="creator-avatar"
@@ -187,7 +233,22 @@ export default function MiniSiteFeed({ siteId, siteName }) {
             Post
           </button>
         </div>
-      </div>
+      </div>}
+
+      {/* View-only notice for non-members */}
+      {!canPost && (
+        <div style={{
+          textAlign: 'center',
+          padding: '16px',
+          backgroundColor: '#dbeafe',
+          borderRadius: '8px',
+          marginBottom: '16px'
+        }}>
+          <p style={{ margin: '0', color: '#1e40af', fontSize: '14px', fontWeight: '500' }}>
+            📖 You can view posts but need to join this organization to post
+          </p>
+        </div>
+      )}
 
       {createOpen && (
         <CreatePostModal
@@ -198,13 +259,17 @@ export default function MiniSiteFeed({ siteId, siteName }) {
       )}
 
       <div className="feed-posts" ref={feedRef}>
-        {posts.length === 0 ? (
+        {loading ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-            No posts yet.
+            Loading posts...
+          </div>
+        ) : posts.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+            No posts yet. {canPost && 'Be the first to post!'}
           </div>
         ) : (
           posts.map((post) => (
-            <PostCard key={post._id} post={post} />
+            <PostCard key={post._id} post={post} canLike={canPost} />
           ))
         )}
       </div>
