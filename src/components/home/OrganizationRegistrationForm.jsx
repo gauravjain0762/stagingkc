@@ -644,7 +644,7 @@ function OrganizationRegistrationForm({ onClose, onSubmit }) {
           )}
           {page === 1 && (
             <button className="org-reg-btn org-reg-btn-primary" onClick={handleNext}>
-              Next →
+              Next
             </button>
           )}
           {page === 2 && (

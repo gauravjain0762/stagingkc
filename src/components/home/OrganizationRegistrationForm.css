@@ -373,14 +373,15 @@
 }
 
 .org-reg-btn-primary {
-  background: linear-gradient(135deg, #64c8ff, #4a90e2);
+  background: #3b82f6;
   color: #fff;
   flex: 1;
 }
 
 .org-reg-btn-primary:hover {
+  background: #2563eb;
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(100, 200, 255, 0.3);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
 }
 
 .org-reg-btn-primary:active {
