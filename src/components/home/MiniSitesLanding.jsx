@@ -197,7 +197,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
             ) : (
               <div className="msl-cards-grid">
                 {joinedOrgs.map(org => (
-                  <div key={org.id} className="msl-org-card" onClick={() => onSelectOrganization?.(org)}>
+                  <div key={org.id} className="msl-org-card">
                     <div className="msl-card-cover">
                       <span className="msl-card-cover-text">Social Platform</span>
                     </div>
@@ -209,7 +209,15 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                         </div>
                       </div>
                       <p className="msl-org-description">{org.shortDescription}</p>
-                      <button className="msl-view-btn">View</button>
+                      <button
+                        className="msl-view-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectOrganization?.(org);
+                        }}
+                      >
+                        View
+                      </button>
                     </div>
                   </div>
                 ))}

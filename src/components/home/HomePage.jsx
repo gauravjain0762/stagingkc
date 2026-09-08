@@ -47,6 +47,9 @@ export default function HomePage() {
     const orgId = params.get('orgId');
 
     if (action === 'joinOrganization' && orgId && token) {
+      // Clear URL params FIRST so this only runs once, even on page reload
+      window.history.replaceState({}, document.title, window.location.pathname);
+
       const joinOrg = async () => {
         try {
           const data = await apiRequest(`/api/organizations/${orgId}/join`, {
@@ -64,14 +67,12 @@ export default function HomePage() {
             }));
             // Still redirect to mini-sites page
             setSection('mini-sites');
-            window.history.replaceState({}, document.title, window.location.pathname);
           } else if (data?.success === true) {
             dispatch(showToast({
               message: '✅ Successfully joined organization!',
               type: 'success'
             }));
             setSection('mini-sites');
-            window.history.replaceState({}, document.title, window.location.pathname);
           } else if (data?.success === false) {
             dispatch(showToast({
               message: `❌ ${data?.message || 'Failed to join organization'}`,
