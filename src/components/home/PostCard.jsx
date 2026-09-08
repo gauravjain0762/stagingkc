@@ -417,16 +417,19 @@ export default function PostCard({ post, onUserClick, groupId }) {
 
   // Handle both general posts (post.media) and mini-site posts (post.images)
   const mediaItems  = (() => {
-    // If post has media array (general posts), use it
-    if (post.media && Array.isArray(post.media)) {
-      return post.media.filter(m => m?.url?.startsWith?.('http'));
+    // If post has media array with items (general posts), use it
+    const mediaArray = post.media?.filter(m => m?.url?.startsWith?.('http')) ?? [];
+    if (mediaArray.length > 0) {
+      return mediaArray;
     }
+
     // If post has images array (mini-site posts), convert to media format
-    if (post.images && Array.isArray(post.images)) {
+    if (post.images && Array.isArray(post.images) && post.images.length > 0) {
       return post.images
         .filter(url => typeof url === 'string' && url.startsWith('http'))
         .map(url => ({ url, type: 'image' }));
     }
+
     return [];
   })();
   const [slideIndex, setSlideIndex] = useState(0);
