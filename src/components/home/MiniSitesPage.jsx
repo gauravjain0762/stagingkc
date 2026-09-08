@@ -365,11 +365,6 @@ export default function MiniSitesPage({
       alert('📋 Please create an organization first before creating mini sites');
       return;
     }
-    // Check if logged into organization
-    if (!isOrgLoggedIn) {
-      alert('🔒 Please log in to your organization first');
-      return;
-    }
     setPendingTemplate(null);
     setShowCreateSite(true);
   };
