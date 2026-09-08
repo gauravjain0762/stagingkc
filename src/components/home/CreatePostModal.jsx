@@ -108,7 +108,7 @@ const TABS = [
   { id: 'event', label: 'Event', icon: <EventTabIcon /> },
 ];
 
-export default function CreatePostModal({ onClose, initialTab = 'photo', onNavigateToEvents, onCreateEvent, groupId, editingPost }) {
+export default function CreatePostModal({ onClose, initialTab = 'photo', onNavigateToEvents, onCreateEvent, groupId, editingPost, onPostCreate }) {
   const dispatch = useDispatch();
   const { user: authUser, token } = useSelector(s => s.auth);
   const { profile } = useSelector(s => s.profile);
@@ -470,18 +470,35 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
     setError('');
     const mediaFiles = tab === 'photo' ? images.map(i => i.file) : (mediaFile ? [mediaFile] : []);
     const { text: trimmedCaption, mentions: finalMentions } = trimWithMentions(caption, mentions);
-    const thunk = groupId
-      ? createGroupPost({ groupId, caption: trimmedCaption, media: mediaFiles })
-      : createPost({ caption: trimmedCaption, mediaFile, mediaFiles, visibility, mentions: finalMentions });
-    const result = await dispatch(thunk);
-    if (!result.error) {
-      const post = result.payload?.post ?? result.payload;
-      if (groupId && post?.status === 'pending') {
-        dispatch(showToast({ message: 'Post submitted — waiting for admin approval.', type: 'success' }));
+
+    // If onPostCreate callback is provided (from MiniSiteFeed), use it for mini-site posts
+    if (onPostCreate && typeof onPostCreate === 'function') {
+      try {
+        await onPostCreate({
+          caption: trimmedCaption,
+          content: trimmedCaption,
+          images: images,
+          visibility: visibility,
+          mentions: finalMentions
+        });
+      } catch (err) {
+        setError(err?.message || 'Failed to create post.');
       }
-      onClose();
     } else {
-      setError(result.payload || 'Failed to create post. Please try again.');
+      // Use Redux thunk for general posts or group posts
+      const thunk = groupId
+        ? createGroupPost({ groupId, caption: trimmedCaption, media: mediaFiles })
+        : createPost({ caption: trimmedCaption, mediaFile, mediaFiles, visibility, mentions: finalMentions });
+      const result = await dispatch(thunk);
+      if (!result.error) {
+        const post = result.payload?.post ?? result.payload;
+        if (groupId && post?.status === 'pending') {
+          dispatch(showToast({ message: 'Post submitted — waiting for admin approval.', type: 'success' }));
+        }
+        onClose();
+      } else {
+        setError(result.payload || 'Failed to create post. Please try again.');
+      }
     }
   }
 
