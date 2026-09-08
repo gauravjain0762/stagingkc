@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { getOrganizations } from '../../services/organizationApi';
 import { apiRequest } from '../../services/api';
 import { showToast } from '../../store/slices/toastSlice';
+import { publicSiteUrl } from './miniSiteUtils';
 import './MiniSitesLanding.css';
 
 function SearchIcon() {
@@ -140,6 +141,35 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
     }
   };
 
+  const handleViewOrganization = async (org) => {
+    try {
+      // Fetch organization's mini sites
+      const data = await apiRequest(`/api/organizations/${org.id}/mini-sites?status=live`, {
+        token: authToken
+      });
+
+      const sites = data?.data || [];
+      if (sites.length === 0) {
+        dispatch(showToast({
+          message: 'ℹ️ This organization has no published mini sites yet',
+          type: 'info'
+        }));
+        return;
+      }
+
+      // Navigate to the first published mini site
+      const publishedSite = sites[0];
+      const siteUrl = publicSiteUrl(publishedSite.slug);
+      window.location.href = siteUrl;
+    } catch (err) {
+      console.error('Failed to view organization:', err);
+      dispatch(showToast({
+        message: '❌ Failed to load organization mini site',
+        type: 'error'
+      }));
+    }
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'suggested':
@@ -213,7 +243,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                         className="msl-view-btn"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onSelectOrganization?.(org);
+                          handleViewOrganization(org);
                         }}
                       >
                         View
