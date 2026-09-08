@@ -389,7 +389,7 @@ function OrganizationRegistrationForm({ onClose, onSubmit }) {
                         id="logo-input"
                       />
                       <label htmlFor="logo-input" className="org-reg-file-label">
-                        <span>📷 Choose Logo</span>
+                        <span>Choose Logo</span>
                       </label>
                     </div>
                     {logoPreview && (
@@ -409,7 +409,7 @@ function OrganizationRegistrationForm({ onClose, onSubmit }) {
                         id="cover-input"
                       />
                       <label htmlFor="cover-input" className="org-reg-file-label">
-                        <span>🖼️ Choose Banner</span>
+                        <span>Choose Banner</span>
                       </label>
                     </div>
                     {coverPreview && (
