@@ -260,9 +260,13 @@ function OrganizationRegistrationForm({ onClose, onSubmit }) {
           onSubmit(response.data);
         }
 
-        // Close form after short delay
+        // Close form after short delay, then reload page
         setTimeout(() => {
           onClose();
+          // Reload page after form closes to show updated organization
+          setTimeout(() => {
+            window.location.reload();
+          }, 300);
         }, 1000);
       }
     } catch (error) {
