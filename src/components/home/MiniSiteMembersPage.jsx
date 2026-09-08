@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { apiRequest } from '../../services/api';
+import { showToast } from '../../store/slices/toastSlice';
 import './MiniSiteMembersPage.css';
 
 function SearchIcon() {
@@ -14,12 +17,70 @@ const DEMO_MEMBERS = [
   { _id: '6', fullName: 'James Wilson', avatar: 'https://picsum.photos/seed/user6/100/100', location: 'Boston, MA' },
 ];
 
-export default function MiniSiteMembersPage({ siteName, onBack }) {
+export default function MiniSiteMembersPage({ siteId, siteName, onBack }) {
+  const dispatch = useDispatch();
+  const { token } = useSelector(s => s.auth);
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredMembers = DEMO_MEMBERS.filter(member =>
-    member.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    member.location.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    if (siteId && token) {
+      fetchMembers();
+    }
+  }, [siteId, token]);
+
+  const fetchMembers = async () => {
+    setLoading(true);
+    try {
+      // Try mini-site members endpoint first
+      let data = await apiRequest(`/api/mini-sites/${siteId}/members?limit=50`, {
+        token
+      }).catch(() => null);
+
+      // Fallback to general users/connections endpoint if mini-site endpoint doesn't exist
+      if (!data) {
+        data = await apiRequest(`/api/users/me/connections?limit=50`, {
+          token
+        });
+      }
+
+      if (data?.success === false && data?.message?.includes('not a member')) {
+        dispatch(showToast({
+          message: 'ℹ️ You must join to view members',
+          type: 'info'
+        }));
+        setMembers([]);
+      } else if (data?.data) {
+        const membersList = Array.isArray(data.data) ? data.data : data.data?.members || [];
+        setMembers(membersList);
+      } else if (data?.members) {
+        setMembers(data.members);
+      } else if (data?.connections) {
+        setMembers(data.connections);
+      }
+    } catch (err) {
+      console.error('Failed to load members:', err);
+      if (err?.message?.includes('403')) {
+        dispatch(showToast({
+          message: 'ℹ️ You must join to view members',
+          type: 'info'
+        }));
+      } else {
+        dispatch(showToast({
+          message: '❌ Failed to load members',
+          type: 'error'
+        }));
+      }
+      setMembers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredMembers = members.filter(member =>
+    (member.fullName || member.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (member.location || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -48,21 +109,28 @@ export default function MiniSiteMembersPage({ siteName, onBack }) {
       </div>
 
       <div className="msg-members-list">
-        {filteredMembers.length === 0 ? (
+        {loading ? (
           <div className="msg-members-empty">
-            <p>No members found</p>
+            <p>Loading members...</p>
+          </div>
+        ) : filteredMembers.length === 0 ? (
+          <div className="msg-members-empty">
+            <p>{members.length === 0 ? 'No members yet' : 'No members found'}</p>
           </div>
         ) : (
           filteredMembers.map(member => (
-            <div key={member._id} className="msg-member-card">
+            <div key={member._id || member.userId || member.id} className="msg-member-card">
               <img
                 src={member.avatar}
-                alt={member.fullName}
+                alt={member.fullName || member.name}
                 className="msg-member-avatar"
+                onError={(e) => {
+                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.fullName || member.name)}&background=random`;
+                }}
               />
               <div className="msg-member-info">
-                <h3 className="msg-member-name">{member.fullName}</h3>
-                <p className="msg-member-location">{member.location}</p>
+                <h3 className="msg-member-name">{member.fullName || member.name}</h3>
+                <p className="msg-member-location">{member.location || member.email || 'Member'}</p>
               </div>
             </div>
           ))
