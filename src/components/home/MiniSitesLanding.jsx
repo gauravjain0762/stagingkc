@@ -174,12 +174,6 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
             ) : createdOrgs.length === 0 ? (
               <div className="msl-empty-state">
                 <p>No organizations created yet</p>
-                <button
-                  className="msl-create-org-btn"
-                  onClick={onCreateOrganization}
-                >
-                  + Create Your First Organization
-                </button>
               </div>
             ) : (
               <div className="msl-cards-grid">
