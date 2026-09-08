@@ -75,12 +75,19 @@ export default function MiniSiteFeed({ siteId, siteName }) {
   const loadPosts = async () => {
     setLoading(true);
     try {
-      const data = await apiRequest(`/api/mini-sites/${siteId}/feed?page=1&limit=10`, {
+      // Try mini-site specific feed endpoint first
+      let data = await apiRequest(`/api/mini-sites/${siteId}/feed?page=1&limit=10`, {
         token
-      });
+      }).catch(() => null);
+
+      // Fallback to general posts endpoint if mini-site endpoint not available
+      if (!data) {
+        data = await apiRequest(`/api/posts?limit=10&page=1`, {
+          token
+        });
+      }
 
       if (data?.success === false && data?.message?.includes('not a member')) {
-        // User can view but not post
         setIsMember(false);
         setCanPost(false);
         dispatch(showToast({
@@ -88,7 +95,14 @@ export default function MiniSiteFeed({ siteId, siteName }) {
           type: 'info'
         }));
       } else if (data?.data) {
-        setPosts(data.data);
+        // Handle both array and paginated response
+        const postsList = Array.isArray(data.data) ? data.data : data.data?.posts || [];
+        setPosts(postsList);
+        setIsMember(true);
+        setCanPost(true);
+      } else if (data?.posts) {
+        // Handle direct posts response
+        setPosts(data.posts);
         setIsMember(true);
         setCanPost(true);
       }
@@ -149,14 +163,35 @@ export default function MiniSiteFeed({ siteId, siteName }) {
         }
       });
 
-      const response = await apiRequest(`/api/mini-sites/${siteId}/feed`, {
+      // Try mini-site specific endpoint first
+      let response = await apiRequest(`/api/mini-sites/${siteId}/feed`, {
         method: 'POST',
         token,
         body: formData,
         isFormData: true
-      });
+      }).catch(() => null);
 
-      if (response?.data) {
+      // Fallback to general posts endpoint
+      if (!response) {
+        response = await apiRequest(`/api/posts`, {
+          method: 'POST',
+          token,
+          body: formData,
+          isFormData: true
+        });
+      }
+
+      if (response?.post) {
+        // Add new post to the feed
+        setPosts([response.post, ...posts]);
+        setCreateOpen(false);
+        dispatch(showToast({
+          message: '✅ Post created successfully!',
+          type: 'success'
+        }));
+        // Refresh posts to ensure we have the latest
+        setTimeout(() => loadPosts(), 500);
+      } else if (response?.data) {
         setPosts([response.data, ...posts]);
         setCreateOpen(false);
         dispatch(showToast({
