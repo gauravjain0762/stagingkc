@@ -304,6 +304,7 @@ export default function PublicSitePage({ slug }) {
           {renderNavbarOnly()}
           <div className="pub-site-view-inline">
             <MiniSiteMembersPage
+              siteId={site.id}
               siteName={site.name}
               onBack={() => setShowMembers(false)}
             />
