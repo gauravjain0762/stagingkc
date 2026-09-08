@@ -110,7 +110,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                 <SearchIcon />
                 <input
                   type="text"
-                  placeholder="Search communities..."
+                  placeholder="Search organizations..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="msl-search-input"
