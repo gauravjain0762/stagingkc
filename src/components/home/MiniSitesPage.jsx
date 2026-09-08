@@ -747,8 +747,13 @@ export default function MiniSitesPage({
                 <img src={userOrganization.logo} alt="Logo" className="ms-org-logo" />
               )}
               <div className="ms-org-info">
-                <h2 className="ms-org-name">{userOrganization.name}</h2>
-                <p className="ms-org-type">{userOrganization.type.charAt(0).toUpperCase() + userOrganization.type.slice(1)}</p>
+                <div className="ms-org-header">
+                  <h2 className="ms-org-name">{userOrganization.name}</h2>
+                  <span className="ms-org-badge">{userOrganization.type.charAt(0).toUpperCase() + userOrganization.type.slice(1)}</span>
+                </div>
+                {userOrganization.shortDescription && (
+                  <p className="ms-org-description">{userOrganization.shortDescription}</p>
+                )}
               </div>
             </div>
           </div>

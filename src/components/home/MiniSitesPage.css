@@ -171,12 +171,39 @@
   gap: 4px;
 }
 
+.ms-org-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .ms-org-name {
   margin: 0;
   font-size: 18px;
   font-weight: 700;
   color: #e2e8f0;
   letter-spacing: -0.3px;
+}
+
+.ms-org-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 12px;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.ms-org-description {
+  margin: 8px 0 0 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
 }
 
 .ms-org-type {
