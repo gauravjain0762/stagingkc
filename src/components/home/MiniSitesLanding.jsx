@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { getOrganizations } from '../../services/organizationApi';
+import { apiRequest } from '../../services/api';
+import { showToast } from '../../store/slices/toastSlice';
 import './MiniSitesLanding.css';
 
 function SearchIcon() {
@@ -47,6 +49,7 @@ function StatusBadge({ status, rejectionReason }) {
 }
 
 export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganization }) {
+  const dispatch = useDispatch();
   const authToken = useSelector(s => s.auth?.token);
   const [activeTab, setActiveTab] = useState('suggested');
   const [searchTerm, setSearchTerm] = useState('');
@@ -70,10 +73,9 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
   const fetchSuggestedOrganizations = async () => {
     setLoadingOrgs(true);
     try {
-      const response = await fetch(`/api/organizations/suggested?limit=50`, {
-        headers: { 'Authorization': `Bearer ${authToken}` }
+      const data = await apiRequest('/api/organizations/suggested?limit=50', {
+        token: authToken
       });
-      const data = await response.json();
       setSuggestedOrgs(data?.data || []);
     } catch (err) {
       console.error('Failed to fetch suggested organizations:', err);
@@ -86,10 +88,9 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
   const fetchJoinedOrganizations = async () => {
     setLoadingOrgs(true);
     try {
-      const response = await fetch(`/api/organizations/joined?limit=50`, {
-        headers: { 'Authorization': `Bearer ${authToken}` }
+      const data = await apiRequest('/api/organizations/joined?limit=50', {
+        token: authToken
       });
-      const data = await response.json();
       setJoinedOrgs(data?.data || []);
     } catch (err) {
       console.error('Failed to fetch joined organizations:', err);
@@ -114,18 +115,28 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
 
   const handleJoinOrganization = async (orgId) => {
     try {
-      const response = await fetch(`/api/organizations/${orgId}/join`, {
+      const data = await apiRequest(`/api/organizations/${orgId}/join`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${authToken}` },
-        body: JSON.stringify({})
+        token: authToken,
+        body: {}
       });
-      const data = await response.json();
       if (data.success) {
+        const joinedOrg = suggestedOrgs.find(o => o.id === orgId);
         setSuggestedOrgs(suggestedOrgs.filter(o => o.id !== orgId));
-        setJoinedOrgs([...joinedOrgs, suggestedOrgs.find(o => o.id === orgId)]);
+        if (joinedOrg) {
+          setJoinedOrgs([...joinedOrgs, joinedOrg]);
+        }
+        dispatch(showToast({
+          message: '✅ Successfully joined organization!',
+          type: 'success'
+        }));
       }
     } catch (err) {
       console.error('Failed to join organization:', err);
+      dispatch(showToast({
+        message: '❌ Failed to join organization',
+        type: 'error'
+      }));
     }
   };
 
