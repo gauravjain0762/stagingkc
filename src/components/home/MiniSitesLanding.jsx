@@ -88,6 +88,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestedOrgs, setSuggestedOrgs] = useState([]);
   const [joinedOrgs, setJoinedOrgs] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
   const [createdOrgs, setCreatedOrgs] = useState([]);
   const [loadingOrgs, setLoadingOrgs] = useState(false);
   const [selectedOrgDetail, setSelectedOrgDetail] = useState(null);
@@ -99,6 +100,8 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
       fetchSuggestedOrganizations();
     } else if (activeTab === 'joined' && joinedOrgs.length === 0) {
       fetchJoinedOrganizations();
+    } else if (activeTab === 'pending' && pendingRequests.length === 0) {
+      fetchPendingRequests();
     } else if (activeTab === 'mycreated' && createdOrgs.length === 0) {
       fetchUserOrganizations();
     }
@@ -129,6 +132,21 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
     } catch (err) {
       console.error('Failed to fetch joined organizations:', err);
       setJoinedOrgs([]);
+    } finally {
+      setLoadingOrgs(false);
+    }
+  };
+
+  const fetchPendingRequests = async () => {
+    setLoadingOrgs(true);
+    try {
+      const data = await apiRequest('/api/organizations/pending-requests?limit=50', {
+        token: authToken
+      });
+      setPendingRequests(data?.data || []);
+    } catch (err) {
+      console.error('Failed to fetch pending requests:', err);
+      setPendingRequests([]);
     } finally {
       setLoadingOrgs(false);
     }
@@ -177,12 +195,19 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
       });
 
       if (data.success) {
-        const joinedOrg = suggestedOrgs.find(o => o.id === org.id);
+        const foundOrg = suggestedOrgs.find(o => o.id === org.id);
         setSuggestedOrgs(suggestedOrgs.filter(o => o.id !== org.id));
-        if (joinedOrg && org.visibility === 'public') {
-          // Only add to joined list if public (instant join)
-          setJoinedOrgs([...joinedOrgs, joinedOrg]);
+
+        if (foundOrg) {
+          if (org.visibility === 'public') {
+            // Public org: add to joined list immediately
+            setJoinedOrgs([...joinedOrgs, foundOrg]);
+          } else if (org.visibility === 'private') {
+            // Private org: add to pending requests (waiting for admin approval)
+            setPendingRequests([...pendingRequests, foundOrg]);
+          }
         }
+
         dispatch(showToast({
           message: successMessage,
           type: 'success'
@@ -338,6 +363,60 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
           </div>
         );
 
+      case 'pending':
+        return (
+          <div className="msl-content">
+            {loadingOrgs ? (
+              <div className="msl-empty-state">Loading pending requests...</div>
+            ) : pendingRequests.length === 0 ? (
+              <div className="msl-empty-state">
+                <p>You have no pending join requests</p>
+              </div>
+            ) : (
+              <div className="msl-cards-grid">
+                {pendingRequests.map(org => (
+                  <div key={org.id} className="msl-org-card">
+                    <div className="msl-card-cover">
+                      <span className="msl-card-cover-text">Social Platform</span>
+                    </div>
+                    <div className="msl-card-content">
+                      <div className="msl-org-header">
+                        <div className="msl-org-info">
+                          <h3 className="msl-org-name">{org.name}</h3>
+                          <p className="msl-org-members">{org.memberCount || 0} members</p>
+                        </div>
+                        <div className="msl-pending-badge">⏳ Pending</div>
+                      </div>
+                      <p className="msl-org-description">{org.shortDescription}</p>
+                      <div className="msl-card-actions">
+                        <button
+                          className="msl-detail-btn"
+                          onClick={() => setSelectedOrgDetail(org)}
+                        >
+                          View Detail
+                        </button>
+                        <button
+                          className="msl-cancel-btn"
+                          onClick={() => {
+                            setPendingRequests(pendingRequests.filter(o => o.id !== org.id));
+                            setSuggestedOrgs([...suggestedOrgs, org]);
+                            dispatch(showToast({
+                              message: 'Join request cancelled',
+                              type: 'info'
+                            }));
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+
       case 'mycreated':
         return (
           <div className="msl-content">
@@ -423,6 +502,12 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
           onClick={() => setActiveTab('joined')}
         >
           Joined Organizations
+        </button>
+        <button
+          className={`msl-tab${activeTab === 'pending' ? ' msl-tab--active' : ''}`}
+          onClick={() => setActiveTab('pending')}
+        >
+          Pending Requests {pendingRequests.length > 0 && `(${pendingRequests.length})`}
         </button>
         <button
           className={`msl-tab${activeTab === 'mycreated' ? ' msl-tab--active' : ''}`}
