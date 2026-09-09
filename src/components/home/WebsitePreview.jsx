@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { IconPhoto, IconImagePlus } from '@tabler/icons-react';
+import { IconPhoto, IconUpload } from '@tabler/icons-react';
 import ContactFormSection from './ContactFormSection';
 
 const DEVICE_WIDTH = {
@@ -138,7 +138,7 @@ function SectionContent({ section, interactive, siteId, contactEmail }) {
               <img src={heroImage} alt={heroContent.headline} className="wp-hero-img" />
             ) : (
               <div className="wp-placeholder-img">
-                <IconImagePlus size={48} stroke={1.5} />
+                <IconUpload size={48} stroke={1.5} />
                 <span className="wp-placeholder-img-text">Add Photo</span>
               </div>
             )}
