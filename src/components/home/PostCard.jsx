@@ -644,9 +644,29 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
   // a manual refresh, same reasoning as the chat window's syncMessages poll.
   useEffect(() => {
     if (isStatic || !showComments || !post.commentsLoaded) return;
-    const id = setInterval(() => dispatch(syncPostComments(post._id)), 6000);
+
+    const id = setInterval(() => {
+      // For mini-site posts, sync via mini-site API
+      if (siteId) {
+        miniSiteAPI(`/${post._id}/comments`)
+          .then(data => {
+            if (data?.data && onPostUpdate) {
+              onPostUpdate({
+                ...post,
+                comments: data.data,
+                commentsCount: data.data.length,
+                commentsLoaded: true
+              });
+            }
+          })
+          .catch(err => console.error('❌ Mini-site comment sync failed:', err));
+      } else {
+        // For general/group posts, use Redux sync
+        dispatch(syncPostComments(post._id));
+      }
+    }, 6000);
     return () => clearInterval(id);
-  }, [isStatic, showComments, post.commentsLoaded, post._id, dispatch]);
+  }, [isStatic, showComments, post.commentsLoaded, post._id, dispatch, siteId, onPostUpdate]);
 
   useEffect(() => {
     if (!lightboxOpen) return;
