@@ -592,12 +592,29 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
   // fetch the actual thread the first time this post's comments are opened.
   useEffect(() => {
     if (isStatic || !showComments || post.commentsLoaded) return;
-    if (groupId) {
+    if (siteId) {
+      // Mini-site post: fetch from mini-site API
+      miniSiteAPI(`/${post._id}/comments`)
+        .then(data => {
+          if (data?.data) {
+            // Update post with fresh comments
+            if (onPostUpdate) {
+              onPostUpdate({
+                ...post,
+                comments: data.data,
+                commentsCount: data.data.length,
+                commentsLoaded: true
+              });
+            }
+          }
+        })
+        .catch(err => console.error('Failed to fetch comments:', err));
+    } else if (groupId) {
       dispatch(fetchGroupComments({ groupId, postId: post._id, page: 1, limit: 50 }));
     } else {
       dispatch(fetchPostComments(post._id));
     }
-  }, [showComments, post.commentsLoaded, isStatic, post._id, dispatch, groupId]);
+  }, [showComments, post.commentsLoaded, isStatic, post._id, dispatch, groupId, siteId, onPostUpdate]);
 
   // Subscribe to real-time updates (comments, reactions) for this post
   useEffect(() => {
