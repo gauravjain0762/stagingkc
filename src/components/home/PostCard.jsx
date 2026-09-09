@@ -614,7 +614,7 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
     } else {
       dispatch(fetchPostComments(post._id));
     }
-  }, [showComments, post.commentsLoaded, isStatic, post._id, dispatch, groupId, siteId, onPostUpdate]);
+  }, [showComments, post.commentsLoaded, isStatic, post._id, dispatch, groupId, siteId]);
 
   // Subscribe to real-time updates (comments, reactions) for this post
   useEffect(() => {
