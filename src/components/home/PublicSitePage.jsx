@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import WebsitePreview from './WebsitePreview';
 import MiniSiteFeed from './MiniSiteFeed';
+import MiniSiteFooter from './MiniSiteFooter';
 import MiniSiteGroupsPage from './MiniSiteGroupsPage';
 import MiniSiteCalendarPage from './MiniSiteCalendarPage';
 import MiniSiteMembersPage from './MiniSiteMembersPage';
@@ -290,6 +291,8 @@ export default function PublicSitePage({ slug }) {
     )
   );
 
+  const footerSection = site?.sections?.find(s => s.type === 'footer');
+
   return (
     <div className="pub-site-page">
       {showFeed ? (
@@ -298,6 +301,7 @@ export default function PublicSitePage({ slug }) {
           <div className="pub-site-feed-inline">
             <MiniSiteFeed siteId={site.id} siteName={site.name} />
           </div>
+          <MiniSiteFooter section={footerSection} />
         </>
       ) : showMembers ? (
         <>
@@ -309,16 +313,19 @@ export default function PublicSitePage({ slug }) {
               onBack={() => setShowMembers(false)}
             />
           </div>
+          <MiniSiteFooter section={footerSection} />
         </>
       ) : showCalendar ? (
         <>
           {renderNavbarOnly()}
           <MiniSiteCalendarPage siteName={site.name} />
+          <MiniSiteFooter section={footerSection} />
         </>
       ) : showGroups ? (
         <>
           {renderNavbarOnly()}
           <MiniSiteGroupsPage siteName={site.name} />
+          <MiniSiteFooter section={footerSection} />
         </>
       ) : (
         <WebsitePreview
