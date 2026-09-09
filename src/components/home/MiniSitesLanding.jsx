@@ -49,6 +49,38 @@ function StatusBadge({ status, rejectionReason }) {
   );
 }
 
+function OrganizationDetailModal({ org, onClose }) {
+  if (!org) return null;
+
+  return (
+    <div className="msl-modal-overlay" onClick={onClose}>
+      <div className="msl-modal-content" onClick={(e) => e.stopPropagation()}>
+        <button className="msl-modal-close" onClick={onClose}>✕</button>
+
+        <div className="msl-modal-header">
+          <h2 className="msl-modal-title">{org.name}</h2>
+        </div>
+
+        <div className="msl-modal-body">
+          {org.shortDescription && (
+            <div className="msl-modal-section">
+              <h3 className="msl-modal-section-title">Overview</h3>
+              <p className="msl-modal-text">{org.shortDescription}</p>
+            </div>
+          )}
+
+          {org.description && (
+            <div className="msl-modal-section">
+              <h3 className="msl-modal-section-title">Details</h3>
+              <p className="msl-modal-text">{org.description}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganization }) {
   const dispatch = useDispatch();
   const authToken = useSelector(s => s.auth?.token);
@@ -58,6 +90,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
   const [joinedOrgs, setJoinedOrgs] = useState([]);
   const [createdOrgs, setCreatedOrgs] = useState([]);
   const [loadingOrgs, setLoadingOrgs] = useState(false);
+  const [selectedOrgDetail, setSelectedOrgDetail] = useState(null);
 
   useEffect(() => {
     if (!authToken) return;
@@ -114,28 +147,52 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
     }
   };
 
-  const handleJoinOrganization = async (orgId) => {
+  const handleJoinOrganization = async (org) => {
     try {
-      const data = await apiRequest(`/api/organizations/${orgId}/join`, {
+      let endpoint;
+      let successMessage;
+
+      // Check visibility type
+      if (org.visibility === 'private') {
+        // For private orgs, send join request
+        endpoint = `/api/organizations/${org.id}/join-request`;
+        successMessage = '📬 Join request sent! Waiting for admin approval.';
+      } else if (org.visibility === 'invite-only') {
+        // For invite-only orgs, show message
+        dispatch(showToast({
+          message: '🔗 This organization requires an invite link to join',
+          type: 'info'
+        }));
+        return;
+      } else {
+        // For public orgs, direct join
+        endpoint = `/api/organizations/${org.id}/join`;
+        successMessage = '✅ Successfully joined organization!';
+      }
+
+      const data = await apiRequest(endpoint, {
         method: 'POST',
         token: authToken,
         body: {}
       });
+
       if (data.success) {
-        const joinedOrg = suggestedOrgs.find(o => o.id === orgId);
-        setSuggestedOrgs(suggestedOrgs.filter(o => o.id !== orgId));
-        if (joinedOrg) {
+        const joinedOrg = suggestedOrgs.find(o => o.id === org.id);
+        setSuggestedOrgs(suggestedOrgs.filter(o => o.id !== org.id));
+        if (joinedOrg && org.visibility === 'public') {
+          // Only add to joined list if public (instant join)
           setJoinedOrgs([...joinedOrgs, joinedOrg]);
         }
         dispatch(showToast({
-          message: '✅ Successfully joined organization!',
+          message: successMessage,
           type: 'success'
         }));
       }
     } catch (err) {
       console.error('Failed to join organization:', err);
+      const errorMsg = err.data?.message || 'Failed to join organization';
       dispatch(showToast({
-        message: '❌ Failed to join organization',
+        message: '❌ ' + errorMsg,
         type: 'error'
       }));
     }
@@ -206,7 +263,21 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                         </div>
                       </div>
                       <p className="msl-org-description">{org.shortDescription}</p>
-                      <button className="msl-join-btn" onClick={() => handleJoinOrganization(org.id)}>Join</button>
+                      <div className="msl-card-actions">
+                        <button
+                          className="msl-detail-btn"
+                          onClick={() => setSelectedOrgDetail(org)}
+                        >
+                          View Detail
+                        </button>
+                        <button
+                          className="msl-join-btn"
+                          onClick={() => handleJoinOrganization(org)}
+                          title={org.visibility === 'public' ? 'Join instantly' : org.visibility === 'private' ? 'Send join request' : 'Requires invite link'}
+                        >
+                          {org.visibility === 'public' ? 'Join' : org.visibility === 'private' ? 'Request Join' : 'Invite Only'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -239,15 +310,23 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                         </div>
                       </div>
                       <p className="msl-org-description">{org.shortDescription}</p>
-                      <button
-                        className="msl-view-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleViewOrganization(org);
-                        }}
-                      >
-                        View
-                      </button>
+                      <div className="msl-card-actions">
+                        <button
+                          className="msl-detail-btn"
+                          onClick={() => setSelectedOrgDetail(org)}
+                        >
+                          View Detail
+                        </button>
+                        <button
+                          className="msl-view-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewOrganization(org);
+                          }}
+                        >
+                          View
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -322,7 +401,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
           <h1 className="msl-title">Mini Sites</h1>
           <p className="msl-subtitle">Discover and manage your communities</p>
         </div>
-        {activeTab === 'mycreated' && createdOrgs.length === 0 && (
+        {activeTab === 'mycreated' && (
           <button className="msl-create-org-btn" onClick={onCreateOrganization}>
             <PlusIcon /> Create Organization
           </button>
@@ -351,6 +430,13 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
       </div>
 
       {renderContent()}
+
+      {selectedOrgDetail && (
+        <OrganizationDetailModal
+          org={selectedOrgDetail}
+          onClose={() => setSelectedOrgDetail(null)}
+        />
+      )}
     </div>
   );
 }
