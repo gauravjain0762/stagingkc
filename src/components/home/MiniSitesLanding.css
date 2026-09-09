@@ -402,6 +402,7 @@
 
 .msl-detail-btn {
   flex: 1;
+  min-width: 0;
   padding: 10px 12px;
   border: 1px solid rgba(100, 200, 255, 0.3);
   border-radius: 6px;
@@ -412,9 +413,6 @@
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: inherit;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
   line-height: 1.2;
 }
 
@@ -424,8 +422,10 @@
 }
 
 .msl-join-btn,
-.msl-view-btn {
+.msl-view-btn,
+.msl-cancel-btn {
   flex: 1;
+  min-width: 0;
 }
 
 /* Modal */
