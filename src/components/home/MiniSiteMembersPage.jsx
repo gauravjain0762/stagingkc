@@ -8,6 +8,10 @@ function SearchIcon() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
 }
 
+function PinIcon() {
+  return <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display:'inline', verticalAlign:'middle', marginRight: '4px' }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
+}
+
 const DEMO_MEMBERS = [
   { _id: '1', fullName: 'Sarah Anderson', avatar: 'https://picsum.photos/seed/user1/100/100', location: 'San Francisco, CA' },
   { _id: '2', fullName: 'Mike Johnson', avatar: 'https://picsum.photos/seed/user2/100/100', location: 'New York, NY' },
@@ -130,7 +134,7 @@ export default function MiniSiteMembersPage({ siteId, siteName, onBack }) {
               />
               <div className="msg-member-info">
                 <h3 className="msg-member-name">{member.fullName || member.name}</h3>
-                <p className="msg-member-location">{member.location || member.email || 'Member'}</p>
+                <p className="msg-member-location">{member.location ? <><PinIcon />{member.location}</> : (member.email || 'Member')}</p>
               </div>
             </div>
           ))
