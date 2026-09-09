@@ -809,7 +809,7 @@ video.post-image {
    small connector so the branch is visible, not just inferable from order. */
 .pc-comment--nested {
   padding-left: 10px;
-  border-left: 2px solid #1a1f35;
+  border-left: 2px solid #e5e7eb;
 }
 
 /* Avatar circle */
