@@ -967,12 +967,31 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
   function openDeleteConfirm() { setMenuOpen(false); setDeleteConfirmOpen(true); }
 
   async function handleDeleteConfirm() {
-    const result = await dispatch(deletePost(post._id));
-    if (deletePost.fulfilled.match(result)) {
-      setDeleteConfirmOpen(false);
-      dispatch(showToast({ message: 'Post deleted', type: 'success' }));
+    if (siteId) {
+      // Mini-site post delete
+      try {
+        await miniSiteAPI(`/${post._id}`, {
+          method: 'DELETE'
+        });
+        setDeleteConfirmOpen(false);
+        dispatch(showToast({ message: 'Post deleted', type: 'success' }));
+        // Trigger parent refresh or removal
+        if (onPostUpdate) {
+          onPostUpdate({ ...post, deleted: true });
+        }
+      } catch (err) {
+        console.error('Failed to delete post:', err);
+        dispatch(showToast({ message: 'Failed to delete post', type: 'error' }));
+      }
     } else {
-      dispatch(showToast({ message: result.payload ?? 'Failed to delete post', type: 'error' }));
+      // General post delete
+      const result = await dispatch(deletePost(post._id));
+      if (deletePost.fulfilled.match(result)) {
+        setDeleteConfirmOpen(false);
+        dispatch(showToast({ message: 'Post deleted', type: 'success' }));
+      } else {
+        dispatch(showToast({ message: result.payload ?? 'Failed to delete post', type: 'error' }));
+      }
     }
   }
 
