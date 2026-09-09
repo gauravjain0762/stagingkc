@@ -595,17 +595,21 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
 
     // For mini-site posts, ONLY use mini-site API - never general posts API
     if (siteId) {
-      console.log(`📍 Mini-site comment fetch: post=${post._id}, siteId=${siteId}`);
+      console.log(`📍 Mini-site comment fetch: post=${post._id}, siteId=${siteId}, onPostUpdate=${!!onPostUpdate}`);
       miniSiteAPI(`/${post._id}/comments`)
         .then(data => {
+          console.log(`✅ Mini-site comments received: ${data?.data?.length || 0} comments`);
           if (data?.data) {
             if (onPostUpdate) {
+              console.log(`✅ Calling onPostUpdate callback with commentsLoaded=true`);
               onPostUpdate({
                 ...post,
                 comments: data.data,
                 commentsCount: data.data.length,
                 commentsLoaded: true
               });
+            } else {
+              console.warn(`⚠️ onPostUpdate callback not provided!`);
             }
           }
         })
