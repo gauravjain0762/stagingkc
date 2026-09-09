@@ -1,8 +1,6 @@
 /* Mini-site Feed Container */
 .minisite-feed-container {
   width: 100%;
-  max-width: 650px;
-  margin: 0 auto;
   padding: 24px 16px;
   background: #fafbfc !important;
 }
