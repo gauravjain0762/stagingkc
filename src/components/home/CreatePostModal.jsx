@@ -664,7 +664,7 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
           )}
 
           {/* Media upload / preview */}
-          {!isEditMode && (tab === 'photo' ? (
+          {tab === 'photo' ? (
             images.length > 0 ? (
               <div className="cp-photo-grid">
                 {images.map(img => (
