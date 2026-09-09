@@ -330,7 +330,6 @@ export default function PublicSitePage({ slug }) {
           contactEmail={site?.contactInfo?.email}
         />
       )}
-      <div className="pub-site-footer">Made with Kink Catalyst Mini Sites</div>
     </div>
   );
 }
