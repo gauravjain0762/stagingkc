@@ -920,11 +920,28 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
   // modal entirely and submits a fixed reason straight away.
   async function handleFlagInappropriate() {
     setMenuOpen(false);
-    const result = await dispatch(reportPost({ postId: post._id, reason: 'Misinformation' }));
-    if (reportPost.fulfilled.match(result)) {
-      dispatch(showToast({ message: 'Post reported', type: 'success' }));
+
+    if (siteId) {
+      // Mini-site post report
+      miniSiteAPI(`/${post._id}/report`, {
+        method: 'POST',
+        body: { reason: 'Inappropriate' }
+      })
+        .then(() => {
+          dispatch(showToast({ message: 'Post reported', type: 'success' }));
+        })
+        .catch(err => {
+          console.error('Failed to report post:', err);
+          dispatch(showToast({ message: 'Failed to report post', type: 'error' }));
+        });
     } else {
-      dispatch(showToast({ message: result.payload ?? 'Failed to report post', type: 'error' }));
+      // General post report
+      const result = await dispatch(reportPost({ postId: post._id, reason: 'Misinformation' }));
+      if (reportPost.fulfilled.match(result)) {
+        dispatch(showToast({ message: 'Post reported', type: 'success' }));
+      } else {
+        dispatch(showToast({ message: result.payload ?? 'Failed to report post', type: 'error' }));
+      }
     }
   }
 
