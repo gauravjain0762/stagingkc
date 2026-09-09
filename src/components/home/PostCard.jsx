@@ -191,7 +191,7 @@ function normalizeComment(c) {
   };
 }
 
-export default function PostCard({ post, onUserClick, groupId, siteId, canLike }) {
+export default function PostCard({ post, onUserClick, groupId, siteId, canLike, onPostUpdate }) {
   const dispatch = useDispatch();
   const { user, token } = useSelector(s => s.auth);
   const { likingIds, commentingId, commentsLoadingIds, deletingId, sharingId, deletingCommentId } = useSelector(s => s.posts);
@@ -658,6 +658,15 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike }
       })
         .then(data => {
           console.log('✅ Mini-site like success:', data);
+          // Callback to update post in parent
+          if (onPostUpdate) {
+            onPostUpdate({
+              ...post,
+              likesCount: data.data?.likesCount ?? data.likesCount,
+              myReaction: data.data?.myReaction ?? data.myReaction,
+              recentReactors: data.data?.recentReactors ?? data.recentReactors
+            });
+          }
         })
         .catch(err => {
           console.error('❌ Mini-site like failed:', err);
@@ -809,7 +818,15 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike }
             miniSiteAPI(`/${post._id}/comments`)
               .then(data => {
                 if (data?.comments) {
-                  // Update local state with fresh comments
+                  // Update post with fresh comments
+                  if (onPostUpdate) {
+                    onPostUpdate({
+                      ...post,
+                      comments: data.comments,
+                      commentsCount: data.comments.length,
+                      commentsLoaded: true
+                    });
+                  }
                 }
               });
           })

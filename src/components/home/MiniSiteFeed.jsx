@@ -247,6 +247,13 @@ export default function MiniSiteFeed({ siteId, siteName }) {
   const displayName = 'You';
   const avatarUrl = '';
 
+  // Handle post updates (likes, comments, etc)
+  const handlePostUpdate = (updatedPost) => {
+    setPosts(prevPosts =>
+      prevPosts.map(p => p._id === updatedPost._id ? updatedPost : p)
+    );
+  };
+
   return (
     <main className="home-feed minisite-feed-container">
       {/* Post creator - Only visible to members */}
@@ -340,7 +347,7 @@ export default function MiniSiteFeed({ siteId, siteName }) {
           </div>
         ) : (
           posts.map((post) => (
-            <PostCard key={post._id} post={post} siteId={siteId} canLike={canPost} />
+            <PostCard key={post._id} post={post} siteId={siteId} canLike={canPost} onPostUpdate={handlePostUpdate} />
           ))
         )}
       </div>
