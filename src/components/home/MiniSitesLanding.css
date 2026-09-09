@@ -181,6 +181,7 @@
   flex-direction: column;
   transition: all 0.3s ease;
   cursor: pointer;
+  min-height: 380px;
 }
 
 .msl-org-card:hover {
@@ -239,8 +240,9 @@
 
 .msl-org-header {
   display: flex;
-  gap: 0;
+  gap: 12px;
   align-items: flex-start;
+  justify-content: space-between;
 }
 
 .msl-org-logo {
@@ -264,9 +266,44 @@
   color: rgba(255, 255, 255, 0.6);
 }
 
+.msl-visibility-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.msl-visibility-public {
+  background: rgba(34, 197, 94, 0.15);
+  color: #86efac;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.msl-visibility-private {
+  background: rgba(168, 85, 247, 0.15);
+  color: #d8b4fe;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.msl-visibility-invite-only {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
 .msl-org-description {
   margin: 0;
   font-size: 13px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
   color: rgba(255, 255, 255, 0.7);
   line-height: 1.5;
 }
@@ -323,6 +360,141 @@
   border-color: rgba(107, 114, 128, 0.3);
 }
 
+/* Card Actions */
+.msl-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.msl-detail-btn {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid rgba(100, 200, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(100, 200, 255, 0.1);
+  color: #64c8ff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  line-height: 1.2;
+}
+
+.msl-detail-btn:hover {
+  background: rgba(100, 200, 255, 0.2);
+  border-color: rgba(100, 200, 255, 0.5);
+}
+
+.msl-join-btn,
+.msl-view-btn {
+  flex: 1;
+}
+
+/* Modal */
+.msl-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  backdrop-filter: blur(2px);
+}
+
+.msl-modal-content {
+  background: #0d1526;
+  border: 1px solid #1a2540;
+  border-radius: 14px;
+  padding: 32px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.msl-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(100, 200, 255, 0.1);
+  color: #64c8ff;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.msl-modal-close:hover {
+  background: rgba(100, 200, 255, 0.2);
+}
+
+.msl-modal-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(100, 200, 255, 0.1);
+}
+
+.msl-modal-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.msl-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.msl-modal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.msl-modal-section-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #93c5fd;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.msl-modal-text {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+}
+
+.msl-modal-meta {
+  margin: 0;
+  font-size: 14px;
+  color: #93c5fd;
+  font-weight: 600;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .mini-sites-landing {
@@ -350,5 +522,14 @@
 
   .msl-tabs {
     flex-wrap: wrap;
+  }
+
+  .msl-card-actions {
+    flex-direction: column;
+  }
+
+  .msl-modal-content {
+    max-width: 90vw;
+    padding: 24px;
   }
 }

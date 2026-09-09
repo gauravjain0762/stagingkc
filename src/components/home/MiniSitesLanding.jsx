@@ -261,6 +261,9 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                           <h3 className="msl-org-name">{org.name}</h3>
                           <p className="msl-org-members">{org.memberCount || 0} members</p>
                         </div>
+                        <div className={`msl-visibility-badge msl-visibility-${org.visibility || 'public'}`}>
+                          {org.visibility === 'private' ? '🔒 Private' : org.visibility === 'invite-only' ? '🔗 Invite' : '🌐 Public'}
+                        </div>
                       </div>
                       <p className="msl-org-description">{org.shortDescription}</p>
                       <div className="msl-card-actions">
