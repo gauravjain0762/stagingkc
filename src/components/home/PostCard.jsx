@@ -463,6 +463,19 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
           setReplyDropdown(null);
           setReplyingTo(null);
           dispatch(showToast({ message: 'Reply posted!', type: 'success' }));
+          // Fetch fresh comments to show the new reply
+          miniSiteAPI(`/${post._id}/comments`)
+            .then(data => {
+              if (data?.data && onPostUpdate) {
+                onPostUpdate({
+                  ...post,
+                  comments: data.data,
+                  commentsCount: data.data.length,
+                  commentsLoaded: true
+                });
+              }
+            })
+            .catch(err => console.error('Failed to fetch updated comments:', err));
         })
         .catch(err => {
           console.error('Failed to post reply:', err);
