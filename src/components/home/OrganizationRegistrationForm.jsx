@@ -33,6 +33,8 @@ function OrganizationRegistrationForm({ onClose, onSubmit }) {
     state: '',
     city: '',
     address: '',
+    // Visibility Settings
+    visibility: 'public', // public, private, invite-only
     // Admin Information
     adminFirstName: '',
     adminLastName: '',
@@ -212,6 +214,7 @@ function OrganizationRegistrationForm({ onClose, onSubmit }) {
         type: formData.orgType,
         shortDescription: formData.shortDesc,
         fullDescription: formData.fullDesc,
+        visibility: formData.visibility,
         adminFirstName: formData.adminFirstName,
         adminLastName: formData.adminLastName,
         adminEmail: formData.adminEmail,
@@ -230,23 +233,26 @@ function OrganizationRegistrationForm({ onClose, onSubmit }) {
       // Call API to create organization
       const response = await createOrganization(orgPayload);
 
-      if (response?.data?.id) {
+      // Handle nested response structure: response.data.data.organization
+      const organizationData = response?.data?.data?.organization || response?.data?.organization || response?.data;
+
+      if (organizationData?.id) {
         const orgData = {
-          id: response.data.id,
-          name: response.data.name,
-          type: response.data.type,
-          slug: response.data.slug,
-          status: response.data.status,
-          createdAt: response.data.createdAt,
+          id: organizationData.id,
+          name: organizationData.name,
+          type: organizationData.type,
+          slug: organizationData.slug,
+          status: organizationData.status,
+          createdAt: organizationData.createdAt,
         };
 
         // Check if status is pending (needs admin approval)
-        if (response.data.status === 'pending') {
+        if (organizationData.status === 'pending') {
           dispatch(showToast({
             message: '✋ Organization submitted! Waiting for admin approval. We\'ll notify you once it\'s approved.',
             type: 'info',
           }));
-        } else if (response.data.status === 'approved') {
+        } else if (organizationData.status === 'approved') {
           // Save to localStorage only if approved
           localStorage.setItem('userOrganization', JSON.stringify(orgData));
 
@@ -257,7 +263,7 @@ function OrganizationRegistrationForm({ onClose, onSubmit }) {
         }
 
         if (onSubmit) {
-          onSubmit(response.data);
+          onSubmit(organizationData);
         }
 
         // Close form after short delay, then reload page
@@ -379,6 +385,68 @@ function OrganizationRegistrationForm({ onClose, onSubmit }) {
                     onChange={handleInputChange}
                     rows="4"
                   />
+                </div>
+
+                {/* Visibility/Access Control */}
+                <div className="org-reg-section">
+                  <h3>B. Access Control</h3>
+                  <p className="org-reg-section-desc">Choose who can join your organization</p>
+
+                  <div className="org-reg-visibility-options">
+                    {/* Public */}
+                    <div
+                      className={`org-reg-visibility-card ${formData.visibility === 'public' ? 'active' : ''}`}
+                      onClick={() => setFormData({...formData, visibility: 'public'})}
+                    >
+                      <div className="org-reg-visibility-header">
+                        <input
+                          type="radio"
+                          name="visibility"
+                          value="public"
+                          checked={formData.visibility === 'public'}
+                          onChange={() => setFormData({...formData, visibility: 'public'})}
+                        />
+                        <label>Public</label>
+                      </div>
+                      <p className="org-reg-visibility-desc">Anyone can join directly</p>
+                    </div>
+
+                    {/* Private */}
+                    <div
+                      className={`org-reg-visibility-card ${formData.visibility === 'private' ? 'active' : ''}`}
+                      onClick={() => setFormData({...formData, visibility: 'private'})}
+                    >
+                      <div className="org-reg-visibility-header">
+                        <input
+                          type="radio"
+                          name="visibility"
+                          value="private"
+                          checked={formData.visibility === 'private'}
+                          onChange={() => setFormData({...formData, visibility: 'private'})}
+                        />
+                        <label>Private</label>
+                      </div>
+                      <p className="org-reg-visibility-desc">Users send join requests to admin</p>
+                    </div>
+
+                    {/* Invite Only */}
+                    <div
+                      className={`org-reg-visibility-card ${formData.visibility === 'invite-only' ? 'active' : ''}`}
+                      onClick={() => setFormData({...formData, visibility: 'invite-only'})}
+                    >
+                      <div className="org-reg-visibility-header">
+                        <input
+                          type="radio"
+                          name="visibility"
+                          value="invite-only"
+                          checked={formData.visibility === 'invite-only'}
+                          onChange={() => setFormData({...formData, visibility: 'invite-only'})}
+                        />
+                        <label>Invite Only</label>
+                      </div>
+                      <p className="org-reg-visibility-desc">Only with special invite link (1-time use per link)</p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* File Uploads */}

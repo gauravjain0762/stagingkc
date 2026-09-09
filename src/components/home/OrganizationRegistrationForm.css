@@ -399,6 +399,68 @@
   border-color: rgba(100, 200, 255, 0.5);
 }
 
+/* Visibility Options */
+.org-reg-section-desc {
+  margin: 8px 0 12px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.org-reg-visibility-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.org-reg-visibility-card {
+  padding: 16px;
+  border: 2px solid rgba(100, 200, 255, 0.2);
+  border-radius: 10px;
+  background: rgba(15, 20, 25, 0.5);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.org-reg-visibility-card:hover {
+  border-color: rgba(100, 200, 255, 0.4);
+  background: rgba(15, 20, 25, 0.8);
+}
+
+.org-reg-visibility-card.active {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+}
+
+.org-reg-visibility-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.org-reg-visibility-header input[type="radio"] {
+  cursor: pointer;
+  margin: 0;
+}
+
+.org-reg-visibility-header label {
+  margin: 0;
+  font-weight: 600;
+  color: #e0e6f8;
+  cursor: pointer;
+  user-select: none;
+}
+
+.org-reg-visibility-desc {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.4;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   .org-registration-modal {
