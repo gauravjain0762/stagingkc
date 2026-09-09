@@ -595,7 +595,7 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
 
     // For mini-site posts, ONLY use mini-site API - never general posts API
     if (siteId) {
-      console.log(`📍 Mini-site comment fetch for post ${post._id}`);
+      console.log(`📍 Mini-site comment fetch: post=${post._id}, siteId=${siteId}`);
       miniSiteAPI(`/${post._id}/comments`)
         .then(data => {
           if (data?.data) {
@@ -615,13 +615,13 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
 
     // For group posts
     if (groupId) {
-      console.log(`👥 Group comment fetch for post ${post._id}`);
+      console.log(`👥 Group comment fetch: post=${post._id}, groupId=${groupId}`);
       dispatch(fetchGroupComments({ groupId, postId: post._id, page: 1, limit: 50 }));
       return;
     }
 
-    // For general posts only
-    console.log(`🌐 General post comment fetch for post ${post._id}`);
+    // For general posts only (should NOT happen in mini-site context!)
+    console.warn(`🌐 GENERAL posts API: post=${post._id}, NO siteId (${siteId}) or groupId (${groupId})`);
     dispatch(fetchPostComments(post._id));
   }, [showComments, post.commentsLoaded, isStatic, post._id, dispatch, groupId, siteId]);
 
