@@ -122,22 +122,34 @@ export default function MiniSiteMembersPage({ siteId, siteName, onBack }) {
             <p>{members.length === 0 ? 'No members yet' : 'No members found'}</p>
           </div>
         ) : (
-          filteredMembers.map(member => (
-            <div key={member._id || member.userId || member.id} className="msg-member-card">
-              <img
-                src={member.avatar}
-                alt={member.fullName || member.name}
-                className="msg-member-avatar"
-                onError={(e) => {
-                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.fullName || member.name)}&background=random`;
-                }}
-              />
-              <div className="msg-member-info">
-                <h3 className="msg-member-name">{member.fullName || member.name}</h3>
-                <p className="msg-member-location">{member.location ? <><PinIcon />{member.location}</> : (member.email || 'Member')}</p>
+          filteredMembers.map(member => {
+            const hasAvatar = member.avatar && member.avatar.startsWith('http');
+            return (
+              <div key={member._id || member.userId || member.id} className="msg-member-card">
+                {hasAvatar ? (
+                  <img
+                    src={member.avatar}
+                    alt={member.fullName || member.name}
+                    className="msg-member-avatar"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextElementSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div
+                  className="msg-member-avatar msg-member-avatar-fallback"
+                  style={{ display: hasAvatar ? 'none' : 'flex' }}
+                >
+                  KA
+                </div>
+                <div className="msg-member-info">
+                  <h3 className="msg-member-name">{member.fullName || member.name}</h3>
+                  <p className="msg-member-location">{member.location ? <><PinIcon />{member.location}</> : (member.email || 'Member')}</p>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
