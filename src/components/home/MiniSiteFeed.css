@@ -132,6 +132,12 @@
   background: rgba(13, 148, 136, 0.08) !important;
 }
 
+.minisite-feed-container .post-action-sep {
+  width: 1px;
+  background: linear-gradient(180deg, transparent 0%, #0d9488 50%, transparent 100%) !important;
+  margin: 0 !important;
+}
+
 /* Post Creator Styling */
 .minisite-feed-container .post-creator {
   background: #ffffff !important;
