@@ -717,7 +717,7 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
             )
           ) : (
             <div className="cp-event-placeholder">Event creation coming soon.</div>
-          ))}
+          )}
           <input
             ref={fileInputRef}
             type="file"
