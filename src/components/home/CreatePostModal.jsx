@@ -108,7 +108,7 @@ const TABS = [
   { id: 'event', label: 'Event', icon: <EventTabIcon /> },
 ];
 
-export default function CreatePostModal({ onClose, initialTab = 'photo', onNavigateToEvents, onCreateEvent, groupId, editingPost, onPostCreate }) {
+export default function CreatePostModal({ onClose, initialTab = 'photo', onNavigateToEvents, onCreateEvent, groupId, siteId, editingPost, onPostCreate, onPostEdit }) {
   const dispatch = useDispatch();
   const { user: authUser, token } = useSelector(s => s.auth);
   const { profile } = useSelector(s => s.profile);
@@ -437,12 +437,31 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
     }
     setError('');
     const { text: trimmedCaption, mentions: finalMentions } = trimWithMentions(caption, mentions);
-    const result = await dispatch(editPost({ postId: editingPost._id, caption: trimmedCaption, visibility, mentions: finalMentions }));
-    if (editPost.fulfilled.match(result)) {
-      dispatch(showToast({ message: 'Post updated', type: 'success' }));
-      onClose();
+
+    if (siteId && onPostEdit) {
+      // Mini-site post edit
+      try {
+        await onPostEdit({
+          postId: editingPost._id,
+          content: trimmedCaption,
+          visibility,
+          mentions: finalMentions
+        });
+        dispatch(showToast({ message: 'Post updated', type: 'success' }));
+        onClose();
+      } catch (err) {
+        console.error('Failed to update post:', err);
+        setError('Failed to update post. Please try again.');
+      }
     } else {
-      setError(result.payload || 'Failed to update post. Please try again.');
+      // General post edit via Redux
+      const result = await dispatch(editPost({ postId: editingPost._id, caption: trimmedCaption, visibility, mentions: finalMentions }));
+      if (editPost.fulfilled.match(result)) {
+        dispatch(showToast({ message: 'Post updated', type: 'success' }));
+        onClose();
+      } else {
+        setError(result.payload || 'Failed to update post. Please try again.');
+      }
     }
   }
 

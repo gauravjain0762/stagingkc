@@ -947,6 +947,23 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
 
   function openEdit() { setMenuOpen(false); setEditOpen(true); }
 
+  async function handlePostEdit(updates) {
+    // Mini-site post edit via API
+    const { postId, content, visibility, mentions } = updates;
+    try {
+      const response = await miniSiteAPI(`/${postId}`, {
+        method: 'PUT',
+        body: { content, visibility, mentions }
+      });
+      if (response?.data && onPostUpdate) {
+        onPostUpdate(response.data);
+      }
+    } catch (err) {
+      console.error('Failed to edit post:', err);
+      throw err;
+    }
+  }
+
   function openDeleteConfirm() { setMenuOpen(false); setDeleteConfirmOpen(true); }
 
   async function handleDeleteConfirm() {
@@ -1496,7 +1513,14 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
         <ReactionsModal postId={post._id} onClose={() => setReactionsModalOpen(false)} onUserClick={onUserClick} />
       )}
 
-      {editOpen && <CreatePostModal editingPost={post} onClose={() => setEditOpen(false)} />}
+      {editOpen && (
+        <CreatePostModal
+          editingPost={post}
+          siteId={siteId}
+          onClose={() => setEditOpen(false)}
+          onPostEdit={handlePostEdit}
+        />
+      )}
 
       {commentDeleteTarget && (
         <div className="dpm-overlay" onClick={closeDeleteCommentConfirm}>
