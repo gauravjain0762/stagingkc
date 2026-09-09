@@ -592,8 +592,10 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
   // fetch the actual thread the first time this post's comments are opened.
   useEffect(() => {
     if (isStatic || !showComments || post.commentsLoaded) return;
+
     // For mini-site posts, ONLY use mini-site API - never general posts API
     if (siteId) {
+      console.log(`📍 Mini-site comment fetch for post ${post._id}`);
       miniSiteAPI(`/${post._id}/comments`)
         .then(data => {
           if (data?.data) {
@@ -607,15 +609,19 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
             }
           }
         })
-        .catch(err => console.error('Failed to fetch comments:', err));
+        .catch(err => console.error('❌ Mini-site comment fetch failed:', err));
       return; // Important: return here to prevent calling general API
     }
+
     // For group posts
     if (groupId) {
+      console.log(`👥 Group comment fetch for post ${post._id}`);
       dispatch(fetchGroupComments({ groupId, postId: post._id, page: 1, limit: 50 }));
       return;
     }
+
     // For general posts only
+    console.log(`🌐 General post comment fetch for post ${post._id}`);
     dispatch(fetchPostComments(post._id));
   }, [showComments, post.commentsLoaded, isStatic, post._id, dispatch, groupId, siteId]);
 
