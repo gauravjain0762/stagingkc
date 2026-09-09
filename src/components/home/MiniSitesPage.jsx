@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { showToast } from '../../store/slices/toastSlice';
 import AnimatedNav from './AnimatedNav';
 import CreateNewSitePage from './CreateNewSitePage';
 import SiteBuilderPage from './SiteBuilderPage';
@@ -224,10 +225,139 @@ function TemplatePreview({ tpl, theme }) {
   );
 }
 
+function EditOrganizationModal({ org, onClose, onSave, loading }) {
+  const [formData, setFormData] = useState({
+    shortDescription: org?.shortDescription || '',
+    description: org?.description || '',
+    logo: org?.logo || '',
+    coverImage: org?.coverImage || '',
+  });
+  const [logoFile, setLogoFile] = useState(null);
+  const [coverFile, setCoverFile] = useState(null);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleLogoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setFormData(prev => ({ ...prev, logo: event.target.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCoverChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCoverFile(file);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setFormData(prev => ({ ...prev, coverImage: event.target.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave({
+      shortDescription: formData.shortDescription,
+      description: formData.description,
+      logoFile,
+      coverFile,
+      logo: formData.logo,
+      coverImage: formData.coverImage,
+    });
+  };
+
+  return (
+    <div className="ms-modal-overlay" onClick={onClose}>
+      <div className="ms-modal-content" onClick={(e) => e.stopPropagation()}>
+        <button className="ms-modal-close" onClick={onClose}>✕</button>
+
+        <div className="ms-modal-header">
+          <h2 className="ms-modal-title">Edit Organization</h2>
+        </div>
+
+        <form onSubmit={handleSubmit} className="ms-edit-form">
+          <div className="ms-form-group">
+            <label className="ms-form-label">Short Description *</label>
+            <input
+              type="text"
+              name="shortDescription"
+              value={formData.shortDescription}
+              onChange={handleInputChange}
+              placeholder="Brief description of your organization"
+              maxLength="100"
+              required
+              className="ms-form-input"
+            />
+            <small className="ms-form-hint">{formData.shortDescription.length}/100</small>
+          </div>
+
+          <div className="ms-form-group">
+            <label className="ms-form-label">Full Description (Optional)</label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              placeholder="Detailed description of your organization"
+              maxLength="500"
+              rows="4"
+              className="ms-form-textarea"
+            />
+            <small className="ms-form-hint">{formData.description.length}/500</small>
+          </div>
+
+          <div className="ms-form-group">
+            <label className="ms-form-label">Organization Logo (Optional)</label>
+            <div className="ms-file-input-wrapper">
+              {formData.logo && <img src={formData.logo} alt="Logo preview" className="ms-logo-preview" />}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoChange}
+                className="ms-file-input"
+              />
+              <span className="ms-file-input-label">Choose logo image</span>
+            </div>
+          </div>
+
+          <div className="ms-form-group">
+            <label className="ms-form-label">Cover/Banner Image (Optional)</label>
+            <div className="ms-file-input-wrapper">
+              {formData.coverImage && <img src={formData.coverImage} alt="Cover preview" className="ms-cover-preview" />}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleCoverChange}
+                className="ms-file-input"
+              />
+              <span className="ms-file-input-label">Choose cover image</span>
+            </div>
+          </div>
+
+          <div className="ms-form-actions">
+            <button type="button" className="ms-btn-cancel" onClick={onClose}>Cancel</button>
+            <button type="submit" className="ms-btn-save" disabled={loading}>{loading ? 'Saving...' : 'Save Changes'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function MiniSitesPage({
   onBack, onMessagesClick, onEventsClick, onGroupsClick,
   onCalendarClick, onCoursesClick, onLibraryClick, onMinisitesClick,
 }) {
+  const dispatch = useDispatch();
   const avatarUrl = useSelector(s => s.auth?.user?.avatar) || ALEX_AVATAR;
   const authToken = useSelector(s => s.auth?.token);
   const currentUserId = useSelector(s => s.auth?.user?._id ?? s.auth?.user?.id);
@@ -271,6 +401,8 @@ export default function MiniSitesPage({
   const [deleteTarget,      setDeleteTarget]      = useState(null);
   const [allSitesSearch,    setAllSitesSearch]    = useState('');
   const [allSitesSearchTerm, setAllSitesSearchTerm] = useState(''); // debounced
+  const [editingOrg,        setEditingOrg]        = useState(null);
+  const [editingOrgLoading, setEditingOrgLoading] = useState(false);
 
   const fetchSites = useCallback(async (pageToLoad = 1, append = false) => {
     if (!authToken || !userOrganization?.id) return;
@@ -542,6 +674,103 @@ export default function MiniSitesPage({
     }
   };
 
+  const handleOpenAdminPortal = () => {
+    const params = new URLSearchParams({
+      orgId: userOrganization?.id || '',
+      orgName: userOrganization?.name || '',
+      orgLogo: userOrganization?.logo || '',
+      adminEmail: userOrganization?.adminEmail || '',
+      adminPassword: userOrganization?.adminPassword || '',
+    });
+    window.open(`https://mentor-kink.vercel.app/?${params.toString()}`, '_blank');
+  };
+
+  const handleSaveOrganization = async (formData) => {
+    if (!userOrganization?.id || !authToken) return;
+
+    setEditingOrgLoading(true);
+    try {
+      const updateData = {
+        shortDescription: formData.shortDescription,
+        description: formData.description,
+      };
+
+      // Upload logo if provided
+      if (formData.logoFile) {
+        const logoFormData = new FormData();
+        logoFormData.append('file', formData.logoFile);
+
+        try {
+          const logoRes = await fetch(
+            `/api/organizations/${userOrganization.id}/logo`,
+            {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${authToken}` },
+              body: logoFormData,
+            }
+          );
+          const logoData = await logoRes.json();
+          if (logoData.success && logoData.url) {
+            updateData.logo = logoData.url;
+          }
+        } catch (logoErr) {
+          console.warn('Failed to upload logo:', logoErr);
+        }
+      }
+
+      // Upload cover image if provided
+      if (formData.coverFile) {
+        const coverFormData = new FormData();
+        coverFormData.append('file', formData.coverFile);
+
+        try {
+          const coverRes = await fetch(
+            `/api/organizations/${userOrganization.id}/cover-image`,
+            {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${authToken}` },
+              body: coverFormData,
+            }
+          );
+          const coverData = await coverRes.json();
+          if (coverData.success && coverData.url) {
+            updateData.coverImage = coverData.url;
+          }
+        } catch (coverErr) {
+          console.warn('Failed to upload cover image:', coverErr);
+        }
+      }
+
+      // Update organization details
+      const res = await apiRequest(`/api/organizations/${userOrganization.id}`, {
+        method: 'PUT',
+        token: authToken,
+        body: updateData,
+      });
+
+      if (res.success) {
+        setUserOrganization(prev => ({
+          ...prev,
+          ...updateData,
+          ...(res.data || {}),
+        }));
+        setEditingOrg(null);
+        dispatch(showToast({
+          message: '✅ Organization updated successfully',
+          type: 'success',
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to save organization:', err);
+      dispatch(showToast({
+        message: '❌ ' + (err.message || 'Failed to update organization'),
+        type: 'error',
+      }));
+    } finally {
+      setEditingOrgLoading(false);
+    }
+  };
+
   const filteredSites = filterStatus === 'all' ? sites : sites.filter(s => s.status === filterStatus);
   const liveSites = sites.filter(s => s.status === 'live');
   const totalViews = sites.reduce((sum, s) => sum + (s.views || 0), 0);
@@ -744,6 +973,13 @@ export default function MiniSitesPage({
                 )}
               </div>
             </div>
+            <button
+              className="ms-org-edit-btn"
+              onClick={() => setEditingOrg(userOrganization)}
+              title="Edit organization details"
+            >
+              <EditIcon />
+            </button>
           </div>
         )}
 
@@ -846,7 +1082,7 @@ export default function MiniSitesPage({
                           <div className="ms-site-dropdown">
                             <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handleEditSite(site.id); }}><EditIcon /> Edit</button>
                             <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); setOpenMenuId(null); }}><EyeIcon /> Preview</button>
-                            <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); window.open('https://mentor-kink.vercel.app/', '_blank'); }}><KeyIcon /> Admin login</button>
+                            <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handleOpenAdminPortal(); }}><KeyIcon /> Admin login</button>
                             <button className="ms-dd-item ms-dd-item--danger" onClick={(e) => handleDeleteSite(site, e)}><TrashIcon /> Delete</button>
                           </div>
                         )}
@@ -943,7 +1179,7 @@ export default function MiniSitesPage({
                               <div className="ms-site-dropdown">
                                 <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handleEditSite(site.id); }}><EditIcon /> Edit</button>
                                 <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handlePreviewSite(site); setOpenMenuId(null); }}><EyeIcon /> Preview</button>
-                                <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); window.open('https://mentor-kink.vercel.app/', '_blank'); }}><KeyIcon /> Admin login</button>
+                                <button className="ms-dd-item" onClick={(e) => { e.stopPropagation(); handleOpenAdminPortal(); }}><KeyIcon /> Admin login</button>
                                 <button className="ms-dd-item ms-dd-item--danger" onClick={(e) => handleDeleteSite(site, e)}><TrashIcon /> Delete</button>
                               </div>
                             )}
@@ -1131,6 +1367,15 @@ export default function MiniSitesPage({
         site={deleteTarget}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={confirmDeleteSite}
+      />
+    )}
+
+    {editingOrg && (
+      <EditOrganizationModal
+        org={editingOrg}
+        onClose={() => setEditingOrg(null)}
+        onSave={handleSaveOrganization}
+        loading={editingOrgLoading}
       />
     )}
     </>
