@@ -413,14 +413,37 @@
 .wp-placeholder-img {
   width: 100%;
   height: 300px;
-  background: linear-gradient(135deg, rgba(200, 210, 220, 0.6) 0%, rgba(210, 220, 230, 0.4) 100%);
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
   border-radius: 12px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 80px;
-  border: 2px dashed rgba(100, 150, 200, 0.4);
-  color: rgba(100, 150, 200, 0.3);
+  gap: 16px;
+  border: 2px dashed #d1d5db;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.wp-placeholder-img:hover {
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border-color: #0d9488;
+  color: #0d9488;
+}
+
+.wp-placeholder-img::before {
+  content: '📷';
+  font-size: 48px;
+  opacity: 0.5;
+}
+
+.wp-placeholder-img::after {
+  content: 'Add Photo';
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 .wp-btn {
@@ -544,12 +567,35 @@
   width: 100%;
   height: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 48px;
-  background: linear-gradient(135deg, rgba(200, 210, 220, 0.6) 0%, rgba(210, 220, 230, 0.4) 100%);
-  color: rgba(100, 150, 200, 0.3);
-  border: 2px dashed rgba(100, 150, 200, 0.3);
+  gap: 12px;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  color: #9ca3af;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 150px;
+}
+
+.wp-gallery-placeholder:hover {
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border-color: #0d9488;
+  color: #0d9488;
+}
+
+.wp-gallery-placeholder::before {
+  content: '📷';
+  font-size: 36px;
+  opacity: 0.5;
+}
+
+.wp-gallery-placeholder::after {
+  content: 'Add Photo';
+  font-size: 12px;
+  font-weight: 600;
 }
 
 /* Grid Section */
