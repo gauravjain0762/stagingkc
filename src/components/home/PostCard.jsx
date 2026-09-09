@@ -1480,13 +1480,14 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
         />
       )}
 
-      {reportOpen && <ReportModal postId={post._id} onClose={() => setReportOpen(false)} />}
+      {reportOpen && <ReportModal postId={post._id} siteId={siteId} onClose={() => setReportOpen(false)} />}
 
       {commentReportTarget && (
         <ReportModal
           postId={post._id}
           commentId={commentReportTarget.parentId ?? commentReportTarget.commentId}
           replyId={commentReportTarget.parentId ? commentReportTarget.commentId : undefined}
+          siteId={siteId}
           onClose={() => setCommentReportTarget(null)}
         />
       )}

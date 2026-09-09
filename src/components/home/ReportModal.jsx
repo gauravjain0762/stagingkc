@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchReportReasons, reportPost, reportUser, reportComment, reportReply } from '../../store/slices/postsSlice';
+import { apiRequest } from '../../services/api';
 
 // commentId + replyId both set → reporting a reply (commentId is its parent).
 // commentId set, replyId not → reporting a top-level comment.
 // Neither set → reporting the post itself (falls back to reportPost/reportUser).
-export default function ReportModal({ postId, userId, commentId, replyId, onClose }) {
+// siteId set → use mini-site API instead of general posts API.
+export default function ReportModal({ postId, userId, commentId, replyId, siteId, onClose }) {
   const dispatch = useDispatch();
+  const { token } = useSelector(s => s.auth);
   const { reportReasons, reasonsLoading, reportSubmitting } = useSelector(s => s.posts);
   const [selected, setSelected] = useState('');
   const [done, setDone] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (reportReasons.length === 0) dispatch(fetchReportReasons());
@@ -22,16 +26,41 @@ export default function ReportModal({ postId, userId, commentId, replyId, onClos
   }, [onClose]);
 
   async function handleSubmit() {
-    if (!selected || reportSubmitting) return;
-    const action = userId
-      ? reportUser({ userId, reason: selected })
-      : replyId
-        ? reportReply({ postId, commentId, replyId, reason: selected })
+    if (!selected || reportSubmitting || isSubmitting) return;
+
+    if (siteId) {
+      // Mini-site report
+      setIsSubmitting(true);
+      const endpoint = replyId
+        ? `/${postId}/comments/${commentId}/replies/${replyId}/report`
         : commentId
-          ? reportComment({ postId, commentId, reason: selected })
-          : reportPost({ postId, reason: selected });
-    const result = await dispatch(action);
-    if (!result.error) setDone(true);
+          ? `/${postId}/comments/${commentId}/report`
+          : `/${postId}/report`;
+
+      try {
+        await apiRequest(`/api/mini-sites/${siteId}/feed${endpoint}`, {
+          method: 'POST',
+          token,
+          body: { reason: selected }
+        });
+        setDone(true);
+      } catch (err) {
+        console.error('Failed to submit report:', err);
+      } finally {
+        setIsSubmitting(false);
+      }
+    } else {
+      // General post report via Redux
+      const action = userId
+        ? reportUser({ userId, reason: selected })
+        : replyId
+          ? reportReply({ postId, commentId, replyId, reason: selected })
+          : commentId
+            ? reportComment({ postId, commentId, reason: selected })
+            : reportPost({ postId, reason: selected });
+      const result = await dispatch(action);
+      if (!result.error) setDone(true);
+    }
   }
 
   function handleOverlay(e) {
