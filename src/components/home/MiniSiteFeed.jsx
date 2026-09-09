@@ -340,7 +340,7 @@ export default function MiniSiteFeed({ siteId, siteName }) {
           </div>
         ) : (
           posts.map((post) => (
-            <PostCard key={post._id} post={post} canLike={canPost} />
+            <PostCard key={post._id} post={post} siteId={siteId} canLike={canPost} />
           ))
         )}
       </div>

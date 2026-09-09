@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import SkeletonImg from '../SkeletonImg';
 import { useDispatch, useSelector } from 'react-redux';
+import { apiRequest } from '../../services/api';
 import {
   likePost, commentPost, sharePost, likeComment, replyToComment, fetchPostComments, syncPostComments,
   deletePost, reportPost, addCommentRealtime,
@@ -190,9 +191,9 @@ function normalizeComment(c) {
   };
 }
 
-export default function PostCard({ post, onUserClick, groupId }) {
+export default function PostCard({ post, onUserClick, groupId, siteId, canLike }) {
   const dispatch = useDispatch();
-  const { user } = useSelector(s => s.auth);
+  const { user, token } = useSelector(s => s.auth);
   const { likingIds, commentingId, commentsLoadingIds, deletingId, sharingId, deletingCommentId } = useSelector(s => s.posts);
   const { connections, profile } = useSelector(s => s.profile);
   const groupComments = groupId ? useSelector(s => s.comments.commentsByPost[post._id] ?? []) : [];
@@ -200,7 +201,7 @@ export default function PostCard({ post, onUserClick, groupId }) {
   // source; auth.user is the fallback right after login).
   const rawMyAvatar = profile?.avatar ?? user?.avatar ?? '';
   const myAvatar = rawMyAvatar?.startsWith?.('http') ? rawMyAvatar : '';
-  
+
   const { blockingId } = useSelector(s => s.users);
 
   const isStatic = typeof post.likes === 'number';
@@ -248,6 +249,15 @@ export default function PostCard({ post, onUserClick, groupId }) {
   const commentMenuRef = useRef(null);
   const editInputRef = useRef(null);
 
+  // Mini-site specific API handlers
+  const miniSiteAPI = async (endpoint, options = {}) => {
+    if (!siteId) return null;
+    return apiRequest(`/api/mini-sites/${siteId}/feed${endpoint}`, {
+      token,
+      ...options
+    });
+  };
+
   function mentionCandidates(query) {
     const q = query.toLowerCase();
     return (connections ?? [])
@@ -269,7 +279,15 @@ export default function PostCard({ post, onUserClick, groupId }) {
       next.has(commentId) ? next.delete(commentId) : next.add(commentId);
       return next;
     });
-    dispatch(likeComment({ postId: post._id, commentId }));
+    if (siteId) {
+      miniSiteAPI(`/${post._id}/comments/${commentId}/like`, { method: 'POST' })
+        .catch(err => {
+          console.error('Failed to like comment:', err);
+          dispatch(showToast({ message: 'Failed to like comment', type: 'error' }));
+        });
+    } else {
+      dispatch(likeComment({ postId: post._id, commentId }));
+    }
   }
 
   function toggleCommentMenu(id) {
@@ -295,15 +313,34 @@ export default function PostCard({ post, onUserClick, groupId }) {
   async function saveEditComment(commentId, parentId) {
     const text = editDraft.trim();
     if (!text) return;
-    const action = parentId
-      ? editReply({ postId: post._id, commentId: parentId, replyId: commentId, text, mentions: [] })
-      : editComment({ postId: post._id, commentId, text, mentions: [] });
-    const result = await dispatch(action);
-    const ok = parentId ? editReply.fulfilled.match(result) : editComment.fulfilled.match(result);
-    if (ok) {
-      cancelEditComment();
+
+    if (siteId) {
+      // Mini-site post comment edit
+      const endpoint = parentId
+        ? `/${post._id}/comments/${parentId}/replies/${commentId}`
+        : `/${post._id}/comments/${commentId}`;
+      try {
+        await miniSiteAPI(endpoint, {
+          method: 'PATCH',
+          body: { text, mentions: [] }
+        });
+        cancelEditComment();
+        dispatch(showToast({ message: 'Comment updated', type: 'success' }));
+      } catch (err) {
+        console.error('Failed to save comment:', err);
+        dispatch(showToast({ message: 'Failed to save changes', type: 'error' }));
+      }
     } else {
-      dispatch(showToast({ message: result.payload?.message ?? 'Failed to save changes', type: 'error' }));
+      const action = parentId
+        ? editReply({ postId: post._id, commentId: parentId, replyId: commentId, text, mentions: [] })
+        : editComment({ postId: post._id, commentId, text, mentions: [] });
+      const result = await dispatch(action);
+      const ok = parentId ? editReply.fulfilled.match(result) : editComment.fulfilled.match(result);
+      if (ok) {
+        cancelEditComment();
+      } else {
+        dispatch(showToast({ message: result.payload?.message ?? 'Failed to save changes', type: 'error' }));
+      }
     }
   }
 
@@ -317,16 +354,32 @@ export default function PostCard({ post, onUserClick, groupId }) {
   async function handleDeleteCommentConfirm() {
     if (!commentDeleteTarget) return;
     const { commentId, parentId } = commentDeleteTarget;
-    const action = parentId
-      ? deleteReply({ postId: post._id, commentId: parentId, replyId: commentId })
-      : deleteComment({ postId: post._id, commentId });
-    const result = await dispatch(action);
-    const ok = parentId ? deleteReply.fulfilled.match(result) : deleteComment.fulfilled.match(result);
-    if (ok) {
-      dispatch(showToast({ message: parentId ? 'Reply deleted' : 'Comment deleted', type: 'success' }));
+
+    if (siteId) {
+      // Mini-site post comment delete
+      const endpoint = parentId
+        ? `/${post._id}/comments/${parentId}/replies/${commentId}`
+        : `/${post._id}/comments/${commentId}`;
+      try {
+        await miniSiteAPI(endpoint, { method: 'DELETE' });
+        dispatch(showToast({ message: parentId ? 'Reply deleted' : 'Comment deleted', type: 'success' }));
+      } catch (err) {
+        console.error('Failed to delete comment:', err);
+        dispatch(showToast({ message: 'Failed to delete', type: 'error' }));
+      }
     } else {
-      dispatch(showToast({ message: result.payload?.message ?? 'Failed to delete', type: 'error' }));
+      const action = parentId
+        ? deleteReply({ postId: post._id, commentId: parentId, replyId: commentId })
+        : deleteComment({ postId: post._id, commentId });
+      const result = await dispatch(action);
+      const ok = parentId ? deleteReply.fulfilled.match(result) : deleteComment.fulfilled.match(result);
+      if (ok) {
+        dispatch(showToast({ message: parentId ? 'Reply deleted' : 'Comment deleted', type: 'success' }));
+      } else {
+        dispatch(showToast({ message: result.payload?.message ?? 'Failed to delete', type: 'error' }));
+      }
     }
+
     setCommentDeleteTarget(null);
   }
 
@@ -396,15 +449,33 @@ export default function PostCard({ post, onUserClick, groupId }) {
   function handleSendReply(commentId) {
     if (!replyText.trim()) return;
     const { text, mentions } = trimWithMentions(replyText, replyMentions);
-    // Threads this reply right after the specific reply it was opened from
-    // (once the backend stores/returns replyingTo — see threadReplies above
-    // and the note on the replyToComment thunk).
-    dispatch(replyToComment({ postId: post._id, commentId, text, mentions, replyingTo: replyingTo?.replyId ?? null }));
-    setExpandedReplies(prev => new Set(prev).add(commentId));
-    setReplyText('');
-    setReplyMentions([]);
-    setReplyDropdown(null);
-    setReplyingTo(null);
+
+    if (siteId) {
+      // Mini-site post reply
+      miniSiteAPI(`/${post._id}/comments/${commentId}/replies`, {
+        method: 'POST',
+        body: { text, mentions, replyingTo: replyingTo?.replyId ?? null }
+      })
+        .then(() => {
+          setExpandedReplies(prev => new Set(prev).add(commentId));
+          setReplyText('');
+          setReplyMentions([]);
+          setReplyDropdown(null);
+          setReplyingTo(null);
+          dispatch(showToast({ message: 'Reply posted!', type: 'success' }));
+        })
+        .catch(err => {
+          console.error('Failed to post reply:', err);
+          dispatch(showToast({ message: 'Failed to post reply', type: 'error' }));
+        });
+    } else {
+      dispatch(replyToComment({ postId: post._id, commentId, text, mentions, replyingTo: replyingTo?.replyId ?? null }));
+      setExpandedReplies(prev => new Set(prev).add(commentId));
+      setReplyText('');
+      setReplyMentions([]);
+      setReplyDropdown(null);
+      setReplyingTo(null);
+    }
   }
 
   const userId = user?.id ?? user?._id;
@@ -567,24 +638,37 @@ export default function PostCard({ post, onUserClick, groupId }) {
 
   // Pick a specific reaction from the hover picker. Same reaction again = toggle off.
   function pickReaction(reactionId) {
-    console.log('🔔 [pickReaction] clicked:', { reactionId, isStatic, userId, postId: post._id });
     setPickerOpen(false);
     const remove = myReaction === reactionId;
     if (isStatic) {
-      console.log('📍 [pickReaction] isStatic=true, local only');
       setLocalReaction(remove ? null : reactionId);
       if (!remove) triggerBurst();
       return;
     }
     if (!userId) {
-      console.warn('❌ [pickReaction] NO userId!');
       return;
     }
     if (!remove) triggerBurst();
-    console.log('✅ [pickReaction] Dispatching likePost:', { postId: post._id, userId, reaction: reactionId, remove });
-    const result = dispatch(likePost({ postId: post._id, userId, reaction: reactionId, remove }));
-    if (result?.catch) {
-      result.catch(err => console.error('❌ [likePost] Rejected:', err));
+
+    // Mini-site post: use mini-site API
+    if (siteId) {
+      miniSiteAPI(`/${post._id}/like`, {
+        method: 'POST',
+        body: { reaction: reactionId, remove }
+      })
+        .then(data => {
+          console.log('✅ Mini-site like success:', data);
+        })
+        .catch(err => {
+          console.error('❌ Mini-site like failed:', err);
+          dispatch(showToast({ message: 'Failed to react to post', type: 'error' }));
+        });
+    } else {
+      // General post: use Redux thunk
+      const result = dispatch(likePost({ postId: post._id, userId, reaction: reactionId, remove }));
+      if (result?.catch) {
+        result.catch(err => console.error('❌ [likePost] Rejected:', err));
+      }
     }
   }
 
@@ -615,7 +699,17 @@ export default function PostCard({ post, onUserClick, groupId }) {
   function handleShared() {
     if (shareCounted.current) return;
     shareCounted.current = true;
-    dispatch(sharePost(post._id));
+
+    if (siteId) {
+      // Mini-site post share
+      miniSiteAPI(`/${post._id}/share`, { method: 'POST' })
+        .catch(err => {
+          console.error('Failed to share post:', err);
+          dispatch(showToast({ message: 'Failed to share post', type: 'error' }));
+        });
+    } else {
+      dispatch(sharePost(post._id));
+    }
   }
 
   function handleCommentTextChange(e) {
@@ -699,9 +793,31 @@ export default function PostCard({ post, onUserClick, groupId }) {
         likesCount: 0,
         replies: [],
         mentions,
-        pending: true, // Mark as pending so we can style differently if needed
+        pending: true,
       };
-      if (groupId) {
+
+      if (siteId) {
+        // Mini-site post comment
+        miniSiteAPI(`/${post._id}/comments`, {
+          method: 'POST',
+          body: { text, mentions }
+        })
+          .then(() => {
+            setShowComments(true);
+            dispatch(showToast({ message: 'Comment posted!', type: 'success' }));
+            // Fetch fresh comments
+            miniSiteAPI(`/${post._id}/comments`)
+              .then(data => {
+                if (data?.comments) {
+                  // Update local state with fresh comments
+                }
+              });
+          })
+          .catch(err => {
+            console.error('Failed to post comment:', err);
+            dispatch(showToast({ message: 'Failed to post comment', type: 'error' }));
+          });
+      } else if (groupId) {
         dispatch(createGroupComment({ groupId, postId: post._id, text })).then(() => {
           setShowComments(true);
           dispatch(fetchGroupComments({ groupId, postId: post._id, page: 1, limit: 50 }));
@@ -710,6 +826,7 @@ export default function PostCard({ post, onUserClick, groupId }) {
         dispatch(addCommentRealtime({ postId: post._id, comment: optimisticComment }));
         dispatch(commentPost({ postId: post._id, text, mentions }));
       }
+
       setComment('');
       setCommentMentions([]);
       setCommentDropdown(null);
