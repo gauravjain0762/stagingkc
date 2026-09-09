@@ -117,14 +117,25 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
   const isEditMode = !!editingPost;
 
   const [tab,           setTab]           = useState(initialTab);
-  const [caption,       setCaption]       = useState(editingPost?.caption ?? '');
+  // Posts use 'content' field, not 'caption'
+  const [caption,       setCaption]       = useState(editingPost?.content ?? editingPost?.caption ?? '');
   // Video tab: single file, goes through the trimmer before landing here.
   const [mediaFile,     setMediaFile]     = useState(null);
   const [mediaPreview,  setMediaPreview]  = useState(null);
   const [pendingVideo,  setPendingVideo]  = useState(null); // raw File awaiting trim/skip
   // Photo tab — each selected image lands here only after it's been through
   // the crop queue (cropped or explicitly skipped).
-  const [images,        setImages]        = useState([]); // [{ id, file, url }]
+  const [images,        setImages]        = useState(() => {
+    // Pre-populate with existing images if editing
+    if (editingPost?.images && Array.isArray(editingPost.images)) {
+      return editingPost.images.map((img, idx) => ({
+        id: `existing-${idx}`,
+        url: typeof img === 'string' ? img : img.url,
+        file: null
+      }));
+    }
+    return [];
+  });
   // Files picked but not yet cropped/skipped, processed one at a time.
   const [cropQueue,     setCropQueue]     = useState([]);
   const [cropIndex,     setCropIndex]     = useState(0);
