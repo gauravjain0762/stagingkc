@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { IconPhoto, IconImagePlus } from '@tabler/icons-react';
 import ContactFormSection from './ContactFormSection';
 
 const DEVICE_WIDTH = {
@@ -136,7 +137,10 @@ function SectionContent({ section, interactive, siteId, contactEmail }) {
             {heroImage ? (
               <img src={heroImage} alt={heroContent.headline} className="wp-hero-img" />
             ) : (
-              <div className="wp-placeholder-img"></div>
+              <div className="wp-placeholder-img">
+                <IconImagePlus className="wp-placeholder-img-icon" />
+                <span className="wp-placeholder-img-text">Add Photo</span>
+              </div>
             )}
           </div>
         </div>
@@ -175,7 +179,10 @@ function SectionContent({ section, interactive, siteId, contactEmail }) {
                 {item.image ? (
                   <img src={item.image} alt={item.caption} className="wp-gallery-img" />
                 ) : (
-                  <div className="wp-gallery-placeholder"></div>
+                  <div className="wp-gallery-placeholder">
+                    <IconPhoto className="wp-gallery-placeholder-icon" />
+                    <span className="wp-gallery-placeholder-text">Add Photo</span>
+                  </div>
                 )}
                 {item.caption && <p className="wp-gallery-caption">{item.caption}</p>}
               </div>
