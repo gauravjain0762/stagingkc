@@ -180,6 +180,11 @@
   color: #9ca3af !important;
 }
 
+/* Override any other placeholder styles */
+.minisite-feed-container textarea::placeholder {
+  color: #9ca3af !important;
+}
+
 .minisite-feed-container .creator-media-btn {
   background: #f9fafb !important;
   border: 1px solid #e5e7eb !important;
