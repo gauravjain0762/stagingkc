@@ -1,9 +1,9 @@
 .minisite-feed {
   width: 100%;
-  max-width: 600px;
+  max-width: 650px;
   margin: 0 auto;
-  padding: 20px;
-  background: #ffffff;
+  padding: 24px 16px;
+  background: #fafbfc;
 }
 
 /* Override home-feed styles for mini sites */
@@ -246,12 +246,18 @@
 
 /* Post Creator */
 .msf-creator {
-  background: rgba(59, 130, 246, 0.03);
-  border: 1px solid rgba(209, 213, 219, 0.5);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 24px;
-  backdrop-filter: blur(10px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+}
+
+.msf-creator:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .msf-creator-top {
@@ -264,19 +270,21 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(37, 99, 235, 0.1);
+  background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 18px;
   flex-shrink: 0;
+  color: white;
+  font-weight: 600;
 }
 
 .msf-creator-input {
   flex: 1;
   padding: 12px 14px;
-  background: rgba(59, 130, 246, 0.03);
-  border: 1px solid rgba(209, 213, 219, 0.5);
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
   color: #1f2937;
   font-family: inherit;
@@ -287,24 +295,30 @@
 }
 
 .msf-creator-input:hover {
-  background: rgba(59, 130, 246, 0.05);
-  border-color: rgba(59, 130, 246, 0.3);
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.msf-creator-input:focus {
+  background: #ffffff;
+  border-color: #0d9488;
+  outline: none;
 }
 
 .msf-creator-input::placeholder {
-  color: #6b7280;
+  color: #9ca3af;
 }
 
 .msf-creator-actions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
 }
 
 .msf-creator-btn {
   flex: 1;
   padding: 10px 12px;
-  background: #ffffff;
-  border: 1px solid rgba(209, 213, 219, 0.5);
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
   color: #6b7280;
   font-size: 13px;
@@ -318,9 +332,9 @@
 }
 
 .msf-creator-btn:hover {
-  background: rgba(59, 130, 246, 0.05);
-  border-color: rgba(59, 130, 246, 0.3);
-  color: #3b82f6;
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #0d9488;
 }
 
 .msf-creator-post-btn {
@@ -333,12 +347,16 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .msf-creator-post-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.msf-creator-post-btn:active {
+  transform: translateY(0);
 }
 
 /* Modal */
@@ -602,39 +620,47 @@
 
 /* Post Card */
 .msf-post-card {
-  background: rgba(59, 130, 246, 0.03);
-  border: 1px solid rgba(209, 213, 219, 0.5);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
   border-radius: 12px;
   overflow: hidden;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .msf-post-card:hover {
-  border-color: rgba(75, 85, 99, 0.3);
-  background: rgba(59, 130, 246, 0.03);
+  border-color: #3b82f6;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.12);
+  transform: translateY(-2px);
 }
 
 .msf-post-header {
   padding: 16px;
-  border-bottom: 1px solid rgba(219, 224, 235, 0.5);
+  border-bottom: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
 }
 
 .msf-post-author {
   display: flex;
   gap: 12px;
   align-items: flex-start;
+  flex: 1;
 }
 
 .msf-post-avatar {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: rgba(37, 99, 235, 0.1);
+  background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
   flex-shrink: 0;
+  color: white;
+  font-weight: 600;
 }
 
 .msf-post-meta {
@@ -643,28 +669,34 @@
 
 .msf-post-name {
   margin: 0;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   color: #1f2937;
+  transition: color 0.2s ease;
+}
+
+.msf-post-author:hover .msf-post-name {
+  color: #0d9488;
 }
 
 .msf-post-time {
-  margin: 2px 0 0;
+  margin: 3px 0 0;
   font-size: 12px;
-  color: #6b7280;
+  color: #9ca3af;
 }
 
 /* Post Content */
 .msf-post-content {
-  padding: 0 16px 12px;
+  padding: 12px 16px 16px;
 }
 
 .msf-post-text {
   margin: 0;
   font-size: 14px;
-  color: #1f2937;
-  line-height: 1.5;
+  color: #374151;
+  line-height: 1.6;
   word-break: break-word;
+  font-weight: 400;
 }
 
 /* Post Images */
@@ -707,35 +739,32 @@
 /* Post Actions */
 .msf-post-actions {
   display: flex;
-  gap: 0;
-  padding: 8px 0 0;
-  border-top: 1px solid rgba(219, 224, 235, 0.5);
+  gap: 4px;
+  padding: 12px 8px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafbfc;
 }
 
 .msf-action-btn {
   flex: 1;
-  padding: 8px 12px;
-  background: #ffffff;
+  padding: 10px 12px;
+  background: transparent;
   border: none;
-  border-right: 1px solid rgba(219, 224, 235, 0.5);
   color: #6b7280;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
+  border-radius: 8px;
   transition: all 0.2s ease;
 }
 
-.msf-action-btn:last-child {
-  border-right: none;
-}
-
 .msf-action-btn:hover {
-  color: #3b82f6;
-  background: rgba(59, 130, 246, 0.05);
+  color: #0d9488;
+  background: rgba(13, 148, 136, 0.08);
 }
 
 .msf-action-btn.liked {
@@ -743,7 +772,7 @@
 }
 
 .msf-action-btn.liked:hover {
-  background: rgba(239, 68, 68, 0.05);
+  background: rgba(239, 68, 68, 0.08);
 }
 
 /* Responsive */
