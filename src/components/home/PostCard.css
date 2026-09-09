@@ -847,8 +847,8 @@ video.post-image {
 
 /* Bubble */
 .pc-bubble {
-  background: #141928;
-  border: 1px solid #1e2a42;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
   border-radius: 0 12px 12px 12px;
   padding: 9px 13px;
   display: flex;
@@ -858,15 +858,15 @@ video.post-image {
 }
 
 .pc-bubble--reply {
-  background: #0f1520;
-  border-color: #1a2338;
+  background: #f9fafb;
+  border-color: #f3f4f6;
   border-radius: 0 10px 10px 10px;
 }
 
 .pc-name {
   font-size: 13px;
   font-weight: 700;
-  color: #e0e6f8;
+  color: #1f2937;
   font-family: 'Plus Jakarta Sans', sans-serif;
   /* Pinned so the avatar's margin-top above can be computed exactly; without it
      the line box depends on whatever line-height is inherited. */
@@ -875,7 +875,7 @@ video.post-image {
 
 .pc-time {
   font-size: 9.5px;
-  color: #4a5a80;
+  color: #6b7280;
   white-space: nowrap;
 }
 
@@ -893,7 +893,7 @@ video.post-image {
 
 .pc-text {
   font-size: 13px;
-  color: #94a3b8;
+  color: #374151;
   line-height: 1.55;
   margin: 0;
   padding-right: 92px;
