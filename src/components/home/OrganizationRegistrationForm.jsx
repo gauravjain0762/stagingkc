@@ -233,8 +233,9 @@ function OrganizationRegistrationForm({ onClose, onSubmit }) {
       // Call API to create organization
       const response = await createOrganization(orgPayload);
 
-      // Handle nested response structure: response.data.data.organization
+      // Handle nested response structure: response.data.data.organization and admin info
       const organizationData = response?.data?.data?.organization || response?.data?.organization || response?.data;
+      const adminData = response?.data?.data?.admin;
 
       if (organizationData?.id) {
         const orgData = {
@@ -244,6 +245,11 @@ function OrganizationRegistrationForm({ onClose, onSubmit }) {
           slug: organizationData.slug,
           status: organizationData.status,
           createdAt: organizationData.createdAt,
+          // Include admin credentials for admin portal
+          adminEmail: adminData?.email || adminData?.loginCredentials?.email || formData.adminEmail,
+          adminPassword: formData.password, // Store password from form
+          logo: organizationData.logo,
+          coverImage: organizationData.coverImage,
         };
 
         // Check if status is pending (needs admin approval)
@@ -252,8 +258,10 @@ function OrganizationRegistrationForm({ onClose, onSubmit }) {
             message: '✋ Organization submitted! Waiting for admin approval. We\'ll notify you once it\'s approved.',
             type: 'info',
           }));
+          // Still save to localStorage for admin portal access
+          localStorage.setItem('userOrganization', JSON.stringify(orgData));
         } else if (organizationData.status === 'approved') {
-          // Save to localStorage only if approved
+          // Save to localStorage if approved
           localStorage.setItem('userOrganization', JSON.stringify(orgData));
 
           dispatch(showToast({
