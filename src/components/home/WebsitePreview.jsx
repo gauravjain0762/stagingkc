@@ -138,7 +138,7 @@ function SectionContent({ section, interactive, siteId, contactEmail }) {
               <img src={heroImage} alt={heroContent.headline} className="wp-hero-img" />
             ) : (
               <div className="wp-placeholder-img">
-                <IconImagePlus className="wp-placeholder-img-icon" />
+                <IconImagePlus size={48} stroke={1.5} />
                 <span className="wp-placeholder-img-text">Add Photo</span>
               </div>
             )}
@@ -180,7 +180,7 @@ function SectionContent({ section, interactive, siteId, contactEmail }) {
                   <img src={item.image} alt={item.caption} className="wp-gallery-img" />
                 ) : (
                   <div className="wp-gallery-placeholder">
-                    <IconPhoto className="wp-gallery-placeholder-icon" />
+                    <IconPhoto size={36} stroke={1.5} />
                     <span className="wp-gallery-placeholder-text">Add Photo</span>
                   </div>
                 )}
