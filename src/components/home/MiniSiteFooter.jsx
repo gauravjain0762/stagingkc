@@ -1,8 +1,13 @@
 export default function MiniSiteFooter({ section }) {
   if (!section) return null;
 
-  const { content } = section;
+  const { content, style = {} } = section;
   if (!content) return null;
+
+  // Use section's style colors or fallback to defaults
+  const background = style.background || '#0d1526';
+  const textColor = style.textColor || '#94a3b8';
+  const accentColor = style.accentColor || '#3b82f6';
 
   const SocialIcons = {
     linkedin: (
@@ -33,27 +38,34 @@ export default function MiniSiteFooter({ section }) {
 
   if (!hasSocial && !hasLinks && !hasText) return null;
 
+  const linkBgColor = (() => {
+    const rgb = hexToRgb(background);
+    if (!rgb) return background;
+    const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+    return brightness > 128 ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+  })();
+
   return (
-    <footer className="mini-site-footer">
+    <footer className="mini-site-footer" style={{ background, color: textColor, borderTopColor: accentColor }}>
       {hasSocial && (
         <div className="mini-site-footer-social">
           {content.social.linkedin && (
-            <a href={content.social.linkedin} target="_blank" rel="noopener noreferrer" className="mini-site-social-link" title="LinkedIn">
+            <a href={content.social.linkedin} target="_blank" rel="noopener noreferrer" className="mini-site-social-link" title="LinkedIn" style={{ backgroundColor: linkBgColor, color: accentColor }}>
               {SocialIcons.linkedin}
             </a>
           )}
           {content.social.youtube && (
-            <a href={content.social.youtube} target="_blank" rel="noopener noreferrer" className="mini-site-social-link" title="YouTube">
+            <a href={content.social.youtube} target="_blank" rel="noopener noreferrer" className="mini-site-social-link" title="YouTube" style={{ backgroundColor: linkBgColor, color: accentColor }}>
               {SocialIcons.youtube}
             </a>
           )}
           {content.social.instagram && (
-            <a href={content.social.instagram} target="_blank" rel="noopener noreferrer" className="mini-site-social-link" title="Instagram">
+            <a href={content.social.instagram} target="_blank" rel="noopener noreferrer" className="mini-site-social-link" title="Instagram" style={{ backgroundColor: linkBgColor, color: accentColor }}>
               {SocialIcons.instagram}
             </a>
           )}
           {content.social.facebook && (
-            <a href={content.social.facebook} target="_blank" rel="noopener noreferrer" className="mini-site-social-link" title="Facebook">
+            <a href={content.social.facebook} target="_blank" rel="noopener noreferrer" className="mini-site-social-link" title="Facebook" style={{ backgroundColor: linkBgColor, color: accentColor }}>
               {SocialIcons.facebook}
             </a>
           )}
@@ -63,12 +75,22 @@ export default function MiniSiteFooter({ section }) {
       {hasLinks && (
         <div className="mini-site-footer-links">
           {content.links.map((link, i) => (
-            <a key={i} href={link.url}>{link.label}</a>
+            <a key={i} href={link.url} style={{ color: accentColor }}>{link.label}</a>
           ))}
         </div>
       )}
 
-      {hasText && <p className="mini-site-footer-text">{content.text}</p>}
+      {hasText && <p className="mini-site-footer-text" style={{ color: textColor }}>{content.text}</p>}
     </footer>
   );
+}
+
+function hexToRgb(hex) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+}
 }
