@@ -233,6 +233,39 @@ export default function MiniSiteMembersPage({ siteId, siteName, onBack }) {
                 </div>
               )}
 
+              {selectedProfile.phone && (
+                <div className="msg-profile-section">
+                  <h3 className="msg-profile-section-title">Phone</h3>
+                  <p className="msg-profile-text">{selectedProfile.phone}</p>
+                </div>
+              )}
+
+              {selectedProfile.profession && (
+                <div className="msg-profile-section">
+                  <h3 className="msg-profile-section-title">Profession</h3>
+                  <p className="msg-profile-text">{selectedProfile.profession}</p>
+                </div>
+              )}
+
+              {selectedProfile.education && selectedProfile.education.length > 0 && (
+                <div className="msg-profile-section">
+                  <h3 className="msg-profile-section-title">Education</h3>
+                  {selectedProfile.education.map((edu, idx) => (
+                    <div key={idx} className="msg-profile-edu">
+                      <p className="msg-profile-edu-school">{edu.school}</p>
+                      <p className="msg-profile-edu-degree">{edu.degree} • {edu.years}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {selectedProfile.website && (
+                <div className="msg-profile-section">
+                  <h3 className="msg-profile-section-title">Website</h3>
+                  <p className="msg-profile-text"><a href={selectedProfile.website} target="_blank" rel="noopener noreferrer" className="msg-profile-link">{selectedProfile.website}</a></p>
+                </div>
+              )}
+
               {selectedProfile.headline && (
                 <div className="msg-profile-section">
                   <h3 className="msg-profile-section-title">Headline</h3>

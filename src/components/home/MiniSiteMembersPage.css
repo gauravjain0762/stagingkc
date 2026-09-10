@@ -213,12 +213,17 @@
   transition: all 0.2s ease;
   flex-shrink: 0;
   white-space: nowrap;
+  letter-spacing: 0.3px;
 }
 
 .msg-member-profile-btn:hover:not(:disabled) {
   background: #0b7f78;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
+}
+
+.msg-member-profile-btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .msg-member-profile-btn:disabled {
@@ -279,7 +284,8 @@
   display: flex;
   justify-content: center;
   padding: 32px 24px 24px;
-  background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+  background: #fafbfc;
+  border-bottom: 1px solid #e5e7eb;
   border-radius: 14px 14px 0 0;
 }
 
@@ -297,14 +303,14 @@
   height: 100px;
   border-radius: 50%;
   background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
-  border: 4px solid #ffffff;
+  border: 4px solid #f3f4f6;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 32px;
   font-weight: 700;
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .msg-profile-body {
@@ -356,4 +362,40 @@
   font-size: 14px;
   color: #6b7280;
   line-height: 1.6;
+}
+
+.msg-profile-link {
+  color: #0d9488;
+  text-decoration: none;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.msg-profile-link:hover {
+  text-decoration: underline;
+}
+
+.msg-profile-edu {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.msg-profile-edu:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.msg-profile-edu-school {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.msg-profile-edu-degree {
+  margin: 0;
+  font-size: 13px;
+  color: #9ca3af;
 }
