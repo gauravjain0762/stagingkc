@@ -23,10 +23,12 @@ const DEMO_MEMBERS = [
 
 export default function MiniSiteMembersPage({ siteId, siteName, onBack }) {
   const dispatch = useDispatch();
-  const { token } = useSelector(s => s.auth);
+  const { token, user } = useSelector(s => s.auth);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedProfile, setSelectedProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   useEffect(() => {
     if (siteId && token) {
@@ -86,6 +88,41 @@ export default function MiniSiteMembersPage({ siteId, siteName, onBack }) {
     (member.fullName || member.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (member.location || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleViewProfile = async (memberId) => {
+    // Check if user is logged in
+    if (!token || !user) {
+      // Redirect to login with return URL
+      const returnUrl = encodeURIComponent(window.location.href);
+      window.location.href = `/login?returnUrl=${returnUrl}`;
+      return;
+    }
+
+    // Fetch member profile
+    setProfileLoading(true);
+    try {
+      const data = await apiRequest(`/api/users/${memberId}`, {
+        token
+      });
+
+      if (data?.success || data?.data) {
+        setSelectedProfile(data?.data || data);
+      } else {
+        dispatch(showToast({
+          message: '❌ Failed to load profile',
+          type: 'error'
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to fetch profile:', err);
+      dispatch(showToast({
+        message: '❌ Failed to load profile',
+        type: 'error'
+      }));
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
   return (
     <div className="msg-members-page">
@@ -147,11 +184,72 @@ export default function MiniSiteMembersPage({ siteId, siteName, onBack }) {
                   <h3 className="msg-member-name">{member.fullName || member.name}</h3>
                   <p className="msg-member-location">{member.location ? <><PinIcon />{member.location}</> : (member.email || 'Member')}</p>
                 </div>
+                <button
+                  className="msg-member-profile-btn"
+                  onClick={() => handleViewProfile(member._id || member.userId || member.id)}
+                  disabled={profileLoading}
+                >
+                  View Profile
+                </button>
               </div>
             );
           })
         )}
       </div>
+
+      {/* Profile Modal */}
+      {selectedProfile && (
+        <div className="msg-profile-modal-overlay" onClick={() => setSelectedProfile(null)}>
+          <div className="msg-profile-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="msg-profile-close" onClick={() => setSelectedProfile(null)}>✕</button>
+
+            <div className="msg-profile-header">
+              {selectedProfile.profileImage && selectedProfile.profileImage.startsWith('http') ? (
+                <img
+                  src={selectedProfile.profileImage}
+                  alt={selectedProfile.fullName || selectedProfile.name}
+                  className="msg-profile-avatar-large"
+                />
+              ) : (
+                <div className="msg-profile-avatar-large msg-profile-avatar-fallback">KA</div>
+              )}
+            </div>
+
+            <div className="msg-profile-body">
+              <h2 className="msg-profile-name">{selectedProfile.fullName || selectedProfile.name}</h2>
+
+              {selectedProfile.email && (
+                <p className="msg-profile-email">{selectedProfile.email}</p>
+              )}
+
+              {selectedProfile.location && (
+                <p className="msg-profile-location"><PinIcon />{selectedProfile.location}</p>
+              )}
+
+              {selectedProfile.bio && (
+                <div className="msg-profile-section">
+                  <h3 className="msg-profile-section-title">Bio</h3>
+                  <p className="msg-profile-text">{selectedProfile.bio}</p>
+                </div>
+              )}
+
+              {selectedProfile.headline && (
+                <div className="msg-profile-section">
+                  <h3 className="msg-profile-section-title">Headline</h3>
+                  <p className="msg-profile-text">{selectedProfile.headline}</p>
+                </div>
+              )}
+
+              {selectedProfile.about && (
+                <div className="msg-profile-section">
+                  <h3 className="msg-profile-section-title">About</h3>
+                  <p className="msg-profile-text">{selectedProfile.about}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
