@@ -323,7 +323,7 @@ export default function MiniSiteFeed({ siteId, siteName }) {
           marginBottom: '16px'
         }}>
           <p style={{ margin: '0', color: '#1e40af', fontSize: '14px', fontWeight: '500' }}>
-            📖 You can view posts but need to join this organization to post
+            You can view posts but need to join this organization to post
           </p>
         </div>
       )}
@@ -339,7 +339,6 @@ export default function MiniSiteFeed({ siteId, siteName }) {
       <div className="feed-posts" ref={feedRef}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-            Loading posts...
           </div>
         ) : posts.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>

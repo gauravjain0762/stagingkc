@@ -129,6 +129,21 @@ export default function MiniSiteMembersPage({ siteId, siteName, onBack }) {
         </div>
       </div>
 
+      {!token && (
+        <div style={{
+          marginLeft: '20px',
+          marginRight: '20px',
+          padding: '12px 16px',
+          backgroundColor: '#dbeafe',
+          borderRadius: '8px',
+          marginBottom: '16px'
+        }}>
+          <p style={{ margin: '0', color: '#1e40af', fontSize: '14px', fontWeight: '500' }}>
+            You can view members but need to join this organization
+          </p>
+        </div>
+      )}
+
       <div className="msg-members-list">
         {loading ? (
           <div className="msg-members-empty">
