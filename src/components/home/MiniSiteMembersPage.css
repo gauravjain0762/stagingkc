@@ -251,8 +251,10 @@
   border-radius: 14px;
   width: 100%;
   max-width: 500px;
-  max-height: 80vh;
-  overflow-y: auto;
+  max-height: 85vh;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
   position: relative;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
 }
@@ -283,10 +285,12 @@
 .msg-profile-header {
   display: flex;
   justify-content: center;
+  align-items: center;
   padding: 32px 24px 24px;
   background: #fafbfc;
   border-bottom: 1px solid #e5e7eb;
   border-radius: 14px 14px 0 0;
+  flex-shrink: 0;
 }
 
 .msg-profile-avatar-large {
@@ -315,6 +319,8 @@
 
 .msg-profile-body {
   padding: 24px;
+  overflow-y: auto;
+  flex-grow: 1;
 }
 
 .msg-profile-name {
