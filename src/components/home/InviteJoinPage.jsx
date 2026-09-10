@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { apiRequest } from '../../services/api';
 import { showToast } from '../../store/slices/toastSlice';
-import { setPage } from '../../store/slices/uiSlice';
+import { showLogin } from '../../store/slices/uiSlice';
 import './InviteJoinPage.css';
 
 function CloseIcon() {
@@ -54,7 +54,7 @@ export default function InviteJoinPage({ token, onClose }) {
       }));
 
       // Redirect to login
-      dispatch(setPage('login'));
+      dispatch(showLogin());
       return;
     }
 
