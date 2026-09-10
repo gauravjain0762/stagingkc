@@ -92,15 +92,10 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
 
   const handleViewSite = (org) => {
     if (org?.miniSitesCount > 0) {
-      window.open(org.url || `https://minisites.app/landkas/${org.slug}`, '_blank');
+      // Construct local dev URL with site parameter format: ?site=slug
+      // Get the site slug from the organization - it's typically organization-slug or we need to know which site
+      window.location.href = `/?site=${org.slug}`;
     }
-  }
-
-  const checkIsMember = (org) => {
-    // Check if user is member of the organization
-    // This would typically come from the user's joined organizations
-    // For now, return false - you'll need to integrate with your membership check
-    return false;
   }
 
   // Infinite scroll: load more posts when user scrolls near bottom

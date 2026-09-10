@@ -246,6 +246,26 @@ export default function PublicSitePage({ slug }) {
     }
   };
 
+  const handleJoinOrgFromModal = async (org) => {
+    try {
+      await apiRequest(`/api/organizations/${org.id}/join`, {
+        method: 'POST',
+        token: token
+      });
+      // Close modal after joining
+      setSelectedOrgDetail(null);
+    } catch (err) {
+      console.error('Failed to join organization:', err);
+    }
+  };
+
+  const handleViewSite = (org) => {
+    if (org?.id && site?.slug) {
+      // Navigate to site with proper URL format: ?site=slug
+      window.location.href = `/?site=${site.slug}`;
+    }
+  };
+
   async function handleVerifyPassword(e) {
     e.preventDefault();
     setVerifying(true);
@@ -445,12 +465,30 @@ export default function PublicSitePage({ slug }) {
                 )}
 
                 <div className="msl-modal-footer">
-                  <button
-                    className="msl-modal-btn msl-modal-btn--primary"
-                    onClick={() => setSelectedOrgDetail(null)}
-                  >
-                    Back to Site
-                  </button>
+                  {isMember ? (
+                    <button
+                      className="msl-modal-btn msl-modal-btn--primary"
+                      onClick={() => handleViewSite(selectedOrgDetail)}
+                    >
+                      View Site
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        className="msl-modal-btn"
+                        style={{ background: 'rgba(255,255,255,0.1)', color: '#c8d0e0' }}
+                        onClick={() => setSelectedOrgDetail(null)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="msl-modal-btn msl-modal-btn--primary"
+                        onClick={() => handleJoinOrgFromModal(selectedOrgDetail)}
+                      >
+                        Join
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             )}
