@@ -100,7 +100,8 @@ export default function MiniSiteMembersPage({ siteId, siteName, onBack }) {
     }
 
     // Redirect to member's profile page on main platform
-    window.location.href = `/profile/${memberId}`;
+    // Use query params that HomePage navigation system expects
+    window.location.href = `/?section=userProfile&id=${memberId}`;
   };
 
   return (
