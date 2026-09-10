@@ -149,7 +149,13 @@ export default function PublicSitePage({ slug }) {
         const data = await apiRequest(`/api/organizations/${site.organizationId}/members`, {
           token
         });
+        console.log('🔍 Membership check:', {
+          userIds: { _id: user._id, id: user.id, userId: user.userId },
+          membersCount: data?.data?.length,
+          members: data?.data?.map(m => ({ _id: m._id, id: m.id, userId: m.userId, name: m.fullName || m.name }))
+        });
         const isUserMember = data?.data?.some(member => member._id === user._id || member.id === user._id || member.userId === user._id);
+        console.log('✅ Is member:', isUserMember);
         setIsMember(isUserMember || false);
       } catch (err) {
         console.error('Failed to check membership:', err);
