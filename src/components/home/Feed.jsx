@@ -90,7 +90,18 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
             const membersData = await apiRequest(`/api/organizations/${orgId}/members`, {
               token: authToken
             });
-            const isUserMember = membersData?.data?.some(member => member._id === user._id || member.id === user._id || member.userId === user._id);
+
+            // Handle different response formats
+            let membersList = [];
+            if (Array.isArray(membersData?.data)) {
+              membersList = membersData.data;
+            } else if (Array.isArray(membersData)) {
+              membersList = membersData;
+            } else if (membersData?.data?.members && Array.isArray(membersData.data.members)) {
+              membersList = membersData.data.members;
+            }
+
+            const isUserMember = membersList.some(member => member._id === user._id || member.id === user._id || member.userId === user._id);
             setIsOrgMember(isUserMember || false);
           } catch (err) {
             console.error('Failed to check organization membership:', err);
