@@ -336,6 +336,9 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                           <h3 className="msl-org-name">{org.name}</h3>
                           <p className="msl-org-members">{org.memberCount || 0} members</p>
                         </div>
+                        <div className={`msl-visibility-badge msl-visibility-${org.visibility || 'public'}`}>
+                          {org.visibility === 'private' ? '🔒 Private' : org.visibility === 'invite-only' ? '🔗 Invite' : '🌐 Public'}
+                        </div>
                       </div>
                       <p className="msl-org-description">{org.shortDescription}</p>
                       <div className="msl-card-actions">
@@ -385,7 +388,12 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                           <h3 className="msl-org-name">{org.name}</h3>
                           <p className="msl-org-members">{org.memberCount || 0} members</p>
                         </div>
-                        <div className="msl-pending-badge">Pending</div>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <div className={`msl-visibility-badge msl-visibility-${org.visibility || 'public'}`}>
+                            {org.visibility === 'private' ? '🔒 Private' : org.visibility === 'invite-only' ? '🔗 Invite' : '🌐 Public'}
+                          </div>
+                          <div className="msl-pending-badge">Pending</div>
+                        </div>
                       </div>
                       <p className="msl-org-description">{org.shortDescription}</p>
                       <div className="msl-card-actions">
@@ -448,6 +456,9 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                         <div className="msl-org-info">
                           <h3 className="msl-org-name">{org.name}</h3>
                           <p className="msl-org-members">{org.memberCount || 0} members</p>
+                        </div>
+                        <div className={`msl-visibility-badge msl-visibility-${org.visibility || 'public'}`}>
+                          {org.visibility === 'private' ? '🔒 Private' : org.visibility === 'invite-only' ? '🔗 Invite' : '🌐 Public'}
                         </div>
                       </div>
                       <p className="msl-org-description">{org.shortDescription || org.description || ''}</p>
