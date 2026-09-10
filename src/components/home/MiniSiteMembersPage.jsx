@@ -166,7 +166,6 @@ export default function MiniSiteMembersPage({ siteId, siteName, onBack }) {
                 <button
                   className="msg-member-profile-btn"
                   onClick={() => handleViewProfile(member._id || member.userId || member.id)}
-                  disabled={profileLoading}
                 >
                   View Profile
                 </button>
