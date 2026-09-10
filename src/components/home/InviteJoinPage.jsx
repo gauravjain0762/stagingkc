@@ -78,10 +78,11 @@ export default function InviteJoinPage({ token, onClose }) {
         // Clear pending invite token
         localStorage.removeItem('pendingInviteToken');
 
-        // Redirect to mini sites page after 1.5 seconds
+        // Close modal and refresh to show updated organizations
         setTimeout(() => {
           onClose?.();
-          window.location.href = '/minisites';
+          // Refresh page to show updated organization list
+          window.location.reload();
         }, 1500);
       } else {
         const errorMsg = data?.message || 'Failed to join organization';
