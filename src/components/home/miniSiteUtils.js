@@ -56,6 +56,8 @@ export function normalizeSite(raw) {
     updatedAt: raw.updatedAt ?? null,
     publishedAt: raw.publishedAt ?? null,
     publishedUrl: raw.publishedUrl ?? raw.url ?? '',
+    organizationId: raw.organizationId ?? '',
+    organizationName: raw.organizationName ?? '',
   };
 }
 
