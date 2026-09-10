@@ -69,10 +69,10 @@ function OrganizationDetailModal({ org, onClose }) {
             </div>
           )}
 
-          {org.description && (
+          {(org.fullDescription || org.description) && (
             <div className="msl-modal-section">
               <h3 className="msl-modal-section-title">Details</h3>
-              <p className="msl-modal-text">{org.description}</p>
+              <p className="msl-modal-text">{org.fullDescription || org.description}</p>
             </div>
           )}
         </div>
