@@ -318,28 +318,66 @@ function EditOrganizationModal({ org, onClose, onSave, loading }) {
           <div className="ms-form-group">
             <label className="ms-form-label">Organization Logo (Optional)</label>
             <div className="ms-file-input-wrapper">
-              {formData.logo && <img src={formData.logo} alt="Logo preview" className="ms-logo-preview" />}
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleLogoChange}
                 className="ms-file-input"
+                id="logo-input-edit"
               />
-              <span className="ms-file-input-label">Choose logo image</span>
+              {!formData.logo ? (
+                <label htmlFor="logo-input-edit" className="ms-file-input-label">
+                  <PlusIcon />
+                </label>
+              ) : (
+                <div className="ms-logo-preview-wrapper">
+                  <img src={formData.logo} alt="Logo preview" className="ms-logo-preview" />
+                  <button
+                    type="button"
+                    className="ms-remove-btn"
+                    onClick={() => {
+                      setFormData(prev => ({ ...prev, logo: null }));
+                      setLogoFile(null);
+                      document.getElementById('logo-input-edit').value = '';
+                    }}
+                  >
+                    <TrashIcon />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
           <div className="ms-form-group">
             <label className="ms-form-label">Cover/Banner Image (Optional)</label>
             <div className="ms-file-input-wrapper">
-              {formData.coverImage && <img src={formData.coverImage} alt="Cover preview" className="ms-cover-preview" />}
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleCoverChange}
                 className="ms-file-input"
+                id="cover-input-edit"
               />
-              <span className="ms-file-input-label">Choose cover image</span>
+              {!formData.coverImage ? (
+                <label htmlFor="cover-input-edit" className="ms-file-input-label">
+                  <PlusIcon />
+                </label>
+              ) : (
+                <div className="ms-cover-preview-wrapper">
+                  <img src={formData.coverImage} alt="Cover preview" className="ms-cover-preview" />
+                  <button
+                    type="button"
+                    className="ms-remove-btn"
+                    onClick={() => {
+                      setFormData(prev => ({ ...prev, coverImage: null }));
+                      setCoverFile(null);
+                      document.getElementById('cover-input-edit').value = '';
+                    }}
+                  >
+                    <TrashIcon />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -948,9 +986,13 @@ export default function MiniSitesPage({
               >
                 <PlusIcon /> Create Organization
               </button>
-            ) : (
+            ) : sites.length === 0 ? (
               <button className="ms-create-btn" onClick={handleCreateSite}>
                 <PlusIcon /> Create New Site
+              </button>
+            ) : (
+              <button className="ms-create-btn ms-create-btn--disabled" disabled title="Organization already has a site">
+                <PlusIcon /> Site Created
               </button>
             )}
           </div>

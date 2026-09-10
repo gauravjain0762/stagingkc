@@ -8,6 +8,7 @@ import PostCard from './PostCard';
 import CreatePostModal from './CreatePostModal';
 import EventCardFeed from './EventCardFeed';
 import GroupCard from './GroupCard';
+import './MiniSitesLanding.css'; // Import modal styles
 
 function PhotosIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>; }
 function VideoIcon()  { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>; }
@@ -27,6 +28,8 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
   const [eventsLoading,  setEventsLoading]  = useState(false);
   const [groups,         setGroups]         = useState([]);
   const [groupsLoading,  setGroupsLoading]  = useState(false);
+  const [selectedOrgDetail, setSelectedOrgDetail] = useState(null);
+  const [orgDetailLoading, setOrgDetailLoading] = useState(false);
   const clickTimer = useRef(null);
   const feedRef = useRef(null);
   const authToken = user?.token ?? useSelector(s => s.auth.token);
@@ -36,6 +39,17 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
     dispatch(fetchConnections()); // candidates for @mention autocomplete in post/comment composers
     loadFeedEvents();
     loadFeedGroups();
+
+    // Handle join organization redirect from mini site
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    const orgId = params.get('orgId');
+
+    if (action === 'joinOrganization' && orgId) {
+      fetchOrgDetailModal(orgId);
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, [dispatch]);
 
   async function loadFeedEvents() {
@@ -60,6 +74,33 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
     } finally {
       setGroupsLoading(false);
     }
+  }
+
+  async function fetchOrgDetailModal(orgId) {
+    setOrgDetailLoading(true);
+    try {
+      const data = await apiRequest(`/api/organizations/${orgId}`, { token: authToken });
+      if (data?.data) {
+        setSelectedOrgDetail(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch organization details:', err);
+    } finally {
+      setOrgDetailLoading(false);
+    }
+  }
+
+  const handleViewSite = (org) => {
+    if (org?.miniSitesCount > 0) {
+      window.open(org.url || `https://minisites.app/landkas/${org.slug}`, '_blank');
+    }
+  }
+
+  const checkIsMember = (org) => {
+    // Check if user is member of the organization
+    // This would typically come from the user's joined organizations
+    // For now, return false - you'll need to integrate with your membership check
+    return false;
   }
 
   // Infinite scroll: load more posts when user scrolls near bottom
@@ -157,6 +198,71 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
           <div style={{ textAlign: 'center', padding: '2rem', color: '#5c6a8c' }}>No more items</div>
         )}
       </div>
+
+      {/* Organization Detail Modal for Join Flow */}
+      {selectedOrgDetail && (
+        <div className="msl-modal-overlay" onClick={() => setSelectedOrgDetail(null)}>
+          <div className="msl-modal-content msl-modal-content--large" onClick={(e) => e.stopPropagation()}>
+            <button className="msl-modal-close" onClick={() => setSelectedOrgDetail(null)}>✕</button>
+
+            {/* Cover Image */}
+            {selectedOrgDetail.coverImage && (
+              <div className="msl-modal-cover">
+                <img src={selectedOrgDetail.coverImage} alt="Cover" />
+              </div>
+            )}
+
+            <div className="msl-modal-header">
+              <div className="msl-modal-header-content">
+                {selectedOrgDetail.logo && (
+                  <img src={selectedOrgDetail.logo} alt="Logo" className="msl-modal-logo" />
+                )}
+                <div>
+                  <h2 className="msl-modal-title">{selectedOrgDetail.name}</h2>
+                  <p className="msl-modal-meta">{selectedOrgDetail.memberCount || 0} members • {selectedOrgDetail.miniSitesCount || 0} site{selectedOrgDetail.miniSitesCount !== 1 ? 's' : ''}</p>
+                </div>
+              </div>
+            </div>
+
+            {orgDetailLoading ? (
+              <div className="msl-modal-body">
+                <p className="msl-modal-text">Loading details...</p>
+              </div>
+            ) : (
+              <div className="msl-modal-body">
+                {selectedOrgDetail.shortDescription && (
+                  <div className="msl-modal-section">
+                    <h3 className="msl-modal-section-title">Overview</h3>
+                    <p className="msl-modal-text">{selectedOrgDetail.shortDescription}</p>
+                  </div>
+                )}
+
+                {selectedOrgDetail.fullDescription && (
+                  <div className="msl-modal-section">
+                    <h3 className="msl-modal-section-title">Description</h3>
+                    <p className="msl-modal-text">{selectedOrgDetail.fullDescription}</p>
+                  </div>
+                )}
+
+                <div className="msl-modal-footer">
+                  {selectedOrgDetail.miniSitesCount > 0 ? (
+                    <button
+                      className="msl-modal-btn msl-modal-btn--primary"
+                      onClick={() => handleViewSite(selectedOrgDetail)}
+                    >
+                      View Site
+                    </button>
+                  ) : (
+                    <div className="msl-modal-message">
+                      📋 This organization doesn't have a mini site yet.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }

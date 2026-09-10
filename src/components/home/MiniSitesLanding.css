@@ -113,37 +113,37 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(100, 200, 255, 0.2);
-  border-radius: 12px;
-  transition: all 0.2s ease;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #0d1526;
+  border: 1px solid #1a2540;
+  border-radius: 8px;
+  color: #4b5a7a;
+  transition: border-color 0.15s;
 }
 
 .msl-search:focus-within {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(100, 200, 255, 0.5);
-  box-shadow: 0 0 20px rgba(100, 200, 255, 0.1);
+  border-color: #2563eb88;
 }
 
 .msl-search svg {
-  color: #64c8ff;
+  color: #4b5a7a;
   flex-shrink: 0;
 }
 
 .msl-search-input {
   flex: 1;
+  min-width: 0;
   background: transparent;
   border: none;
-  color: #fff;
-  font-size: 14px;
-  font-family: inherit;
+  color: #c8d0e0;
+  font-size: 13px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   outline: none;
 }
 
 .msl-search-input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: #3a4a68;
 }
 
 /* Empty State */
@@ -238,6 +238,17 @@
   flex: 1;
 }
 
+.msl-pending-alert {
+  padding: 8px 12px;
+  background: rgba(251, 191, 36, 0.15);
+  border-left: 3px solid #fbbf24;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #fbbf24;
+  font-weight: 500;
+  margin: 0;
+}
+
 .msl-org-header {
   display: flex;
   gap: 12px;
@@ -269,6 +280,7 @@
 .msl-visibility-badge {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   padding: 4px 10px;
   border-radius: 6px;
   font-size: 11px;
@@ -277,22 +289,27 @@
   flex-shrink: 0;
 }
 
+.msl-visibility-badge svg {
+  color: inherit;
+  stroke: currentColor;
+}
+
 .msl-visibility-public {
-  background: rgba(34, 197, 94, 0.15);
-  color: #86efac;
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+  border: 1px solid rgba(168, 85, 247, 0.3);
 }
 
 .msl-visibility-private {
   background: rgba(168, 85, 247, 0.15);
-  color: #d8b4fe;
+  color: #a855f7;
   border: 1px solid rgba(168, 85, 247, 0.3);
 }
 
 .msl-visibility-invite-only {
-  background: rgba(59, 130, 246, 0.15);
-  color: #93c5fd;
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+  border: 1px solid rgba(168, 85, 247, 0.3);
 }
 
 .msl-org-description {
@@ -526,6 +543,100 @@
   font-size: 14px;
   color: #93c5fd;
   font-weight: 600;
+}
+
+/* Large Modal for Organization Details */
+.msl-modal-content--large {
+  max-width: 700px;
+  max-height: 90vh;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.msl-modal-cover {
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+  background: linear-gradient(135deg, rgba(79, 94, 222, 0.6) 0%, rgba(59, 130, 246, 0.6) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.msl-modal-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.msl-modal-header {
+  padding: 20px 32px;
+  border-bottom: 1px solid rgba(100, 200, 255, 0.1);
+}
+
+.msl-modal-header-content {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.msl-modal-logo {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid rgba(100, 200, 255, 0.2);
+}
+
+.msl-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px;
+}
+
+.msl-modal-footer {
+  padding: 24px 32px;
+  border-top: 1px solid rgba(100, 200, 255, 0.1);
+  display: flex;
+  gap: 12px;
+}
+
+.msl-modal-btn {
+  flex: 1;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.msl-modal-btn--primary {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.msl-modal-btn--primary:hover {
+  background: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+}
+
+.msl-modal-message {
+  padding: 16px;
+  background: rgba(251, 146, 60, 0.1);
+  border: 1px solid rgba(251, 146, 60, 0.3);
+  border-radius: 8px;
+  color: #fdba74;
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
 }
 
 /* Responsive */

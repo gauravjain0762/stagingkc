@@ -3823,31 +3823,44 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
             display: 'flex',
             gap: '8px'
           }}>
-            <input
-              type="text"
-              placeholder="🔍 Search suggested groups..."
-              value={suggestedSearch}
-              onChange={(e) => setSuggestedSearch(e.target.value)}
-              style={{
-                flex: 1,
-                padding: '12px 16px',
-                borderRadius: '8px',
-                border: '1px solid #252d4a',
-                background: '#0a0e1a',
-                color: '#e0e6f8',
-                fontSize: '14px',
-                outline: 'none',
-                transition: 'all 0.2s'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#3b82f6';
-                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#252d4a';
-                e.target.style.boxShadow = 'none';
-              }}
-            />
+            <div style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: '1px solid #1a2540',
+              background: '#0d1526',
+              color: '#4b5a7a',
+              transition: 'border-color 0.15s'
+            }}>
+              <SearchIcon />
+              <input
+                type="text"
+                className="grp-search-input"
+                placeholder="Search suggested groups..."
+                value={suggestedSearch}
+                onChange={(e) => setSuggestedSearch(e.target.value)}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  padding: '0',
+                  border: 'none',
+                  background: 'transparent',
+                  color: '#c8d0e0',
+                  fontSize: '13px',
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  outline: 'none'
+                }}
+                onFocus={(e) => {
+                  e.target.parentElement.style.borderColor = '#2563eb88';
+                }}
+                onBlur={(e) => {
+                  e.target.parentElement.style.borderColor = '#1a2540';
+                }}
+              />
+            </div>
             {suggestedSearch && (
               <button
                 onClick={() => setSuggestedSearch('')}

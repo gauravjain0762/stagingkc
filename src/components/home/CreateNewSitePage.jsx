@@ -189,6 +189,16 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
     return Object.keys(newErrors).length === 0;
   };
 
+  // Helper function to convert File/Blob to base64
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
   // Handle form submission — call API
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -209,10 +219,21 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
     try {
       // Create starter sections with customized navbar and hero
       const starterSections = createStarterSections();
+
+      // Convert logo to base64 if it exists
+      let logoBase64 = null;
+      if (formData.logo) {
+        logoBase64 = await fileToBase64(formData.logo);
+      }
+
       starterSections.forEach(section => {
         if (section.type === 'navbar') {
           section.content.logoText = formData.siteName;
-          section.content.secondaryCtaLink = `/?action=joinOrganization&orgId=${organizationId}`;
+          if (logoBase64) {
+            section.content.logo = logoBase64;
+          }
+          // Pass orgId as query parameter to the mini site URL (will be set after site creation)
+          section.content.secondaryCtaLink = `?showOrgModal=true&orgId=${organizationId}`;
         } else if (section.type === 'hero') {
           section.content.headline = 'Welcome to ' + formData.siteName;
           section.content.subheadline = formData.description || 'Your awesome website';
@@ -222,6 +243,18 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
       // Remove IDs from sections — backend generates them
       const sectionsForApi = starterSections.map(({ id, ...section }) => section);
 
+      // Convert cover image to base64 (use first image if multiple)
+      let coverImageBase64 = null;
+      if (formData.coverImages.length > 0) {
+        const firstCoverImage = formData.coverImages[0];
+        if (firstCoverImage instanceof File || firstCoverImage instanceof Blob) {
+          coverImageBase64 = await fileToBase64(firstCoverImage);
+        } else if (typeof firstCoverImage === 'string') {
+          // Already a URL string, keep as is
+          coverImageBase64 = firstCoverImage;
+        }
+      }
+
       const apiPayload = {
         name: formData.siteName,
         slug: formData.slug,
@@ -230,6 +263,16 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
         visibility: formData.visibility,
         sections: sectionsForApi,
       };
+
+      // Add cover image if provided (singular, matching organization format)
+      if (coverImageBase64) {
+        apiPayload.coverImage = coverImageBase64;
+      }
+
+      // Add logo if provided
+      if (logoBase64) {
+        apiPayload.logo = logoBase64;
+      }
 
       const response = await createMiniSite(organizationId, apiPayload);
 
@@ -341,96 +384,92 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
             <p className="csp-helper">Generated automatically from the site name.</p>
           </div>
 
-          {/* Visibility */}
-          <div className="csp-form-group">
-            <label className="csp-label">Who can see this Mini-Site?</label>
-            <div className="csp-visibility-options">
-              {[
-                { value: 'public', label: 'Public', Icon: GlobeIcon, description: 'Anyone can see' },
-                { value: 'members', label: 'Members Only', Icon: LockIcon, description: 'Community members only' },
-                { value: 'private', label: 'Private', Icon: KeyIcon, description: 'Only you can see' },
-              ].map(option => (
-                <label key={option.value} className="csp-visibility-option">
-                  <input
-                    type="radio"
-                    name="visibility"
-                    value={option.value}
-                    checked={formData.visibility === option.value}
-                    onChange={handleInputChange}
-                    className="csp-radio-input"
-                  />
-                  <div className="csp-visibility-card">
-                    <span className="csp-visibility-icon csp-visibility-icon--small"><option.Icon /></span>
-                    <div className="csp-visibility-content">
-                      <p className="csp-visibility-label">{option.label}</p>
-                      <p className="csp-visibility-desc">{option.description}</p>
+          {/* Settings Row - All in one line */}
+          <div className="csp-settings-row">
+            {/* Visibility */}
+            <div className="csp-form-group">
+              <label className="csp-label">Who can see this Mini-Site?</label>
+              <div className="csp-visibility-options">
+                {[
+                  { value: 'public', label: 'Public', Icon: GlobeIcon, description: 'Anyone can see' },
+                ].map(option => (
+                  <label key={option.value} className="csp-visibility-option">
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value={option.value}
+                      checked={formData.visibility === option.value}
+                      onChange={handleInputChange}
+                      className="csp-radio-input"
+                    />
+                    <div className="csp-visibility-card">
+                      <div className="csp-visibility-content">
+                        <p className="csp-visibility-label">{option.label}</p>
+                        <p className="csp-visibility-desc">{option.description}</p>
+                      </div>
+                      <div className={`csp-visibility-check ${formData.visibility === option.value ? 'csp-visibility-check--active' : ''}`}>
+                        <CheckIcon />
+                      </div>
                     </div>
-                    <div className={`csp-visibility-check ${formData.visibility === option.value ? 'csp-visibility-check--active' : ''}`}>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Who can join? */}
+            <div className="csp-form-group">
+              <label className="csp-label">Who can join?</label>
+              <div className="csp-options-compact">
+                {[
+                  { value: 'anyone', label: 'Anyone can join', description: 'No approval needed' },
+                ].map(option => (
+                  <label key={option.value} className="csp-option-compact">
+                    <input
+                      type="radio"
+                      name="joinPolicy"
+                      value={option.value}
+                      checked={formData.joinPolicy === option.value}
+                      onChange={handleInputChange}
+                      className="csp-radio-input"
+                    />
+                    <div className="csp-option-content">
+                      <p className="csp-option-label">{option.label}</p>
+                      <p className="csp-option-desc">{option.description}</p>
+                    </div>
+                    <div className={`csp-radio-check ${formData.joinPolicy === option.value ? 'csp-radio-check--active' : ''}`}>
                       <CheckIcon />
                     </div>
-                  </div>
-                </label>
-              ))}
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Who can join? */}
-          <div className="csp-form-group">
-            <label className="csp-label">Who can join?</label>
-            <div className="csp-options-compact">
-              {[
-                { value: 'anyone', label: 'Anyone can join', description: 'No approval needed' },
-                { value: 'approval', label: 'Approval required', description: 'Members must be approved' },
-                { value: 'invite', label: 'Invite only', description: 'By invitation only' },
-              ].map(option => (
-                <label key={option.value} className="csp-option-compact">
-                  <input
-                    type="radio"
-                    name="joinPolicy"
-                    value={option.value}
-                    checked={formData.joinPolicy === option.value}
-                    onChange={handleInputChange}
-                    className="csp-radio-input"
-                  />
-                  <div className="csp-option-content">
-                    <p className="csp-option-label">{option.label}</p>
-                    <p className="csp-option-desc">{option.description}</p>
-                  </div>
-                  <div className={`csp-radio-check ${formData.joinPolicy === option.value ? 'csp-radio-check--active' : ''}`}>
-                    <CheckIcon />
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Member List Visibility */}
-          <div className="csp-form-group">
-            <label className="csp-label">Member List Visibility</label>
-            <div className="csp-options-compact">
-              {[
-                { value: 'everyone', label: 'Everyone', description: 'All members visible to all' },
-                { value: 'members', label: 'Members only', description: 'Only members can see the list' },
-                { value: 'admin', label: 'Admin/Moderator only', description: 'Only admins and moderators' },
-              ].map(option => (
-                <label key={option.value} className="csp-option-compact">
-                  <input
-                    type="radio"
-                    name="memberListVisibility"
-                    value={option.value}
-                    checked={formData.memberListVisibility === option.value}
-                    onChange={handleInputChange}
-                    className="csp-radio-input"
-                  />
-                  <div className="csp-option-content">
-                    <p className="csp-option-label">{option.label}</p>
-                    <p className="csp-option-desc">{option.description}</p>
-                  </div>
-                  <div className={`csp-radio-check ${formData.memberListVisibility === option.value ? 'csp-radio-check--active' : ''}`}>
-                    <CheckIcon />
-                  </div>
-                </label>
-              ))}
+            {/* Member List Visibility */}
+            <div className="csp-form-group">
+              <label className="csp-label">Member List Visibility</label>
+              <div className="csp-options-compact">
+                {[
+                  { value: 'everyone', label: 'Everyone', description: 'All members visible to all' },
+                ].map(option => (
+                  <label key={option.value} className="csp-option-compact">
+                    <input
+                      type="radio"
+                      name="memberListVisibility"
+                      value={option.value}
+                      checked={formData.memberListVisibility === option.value}
+                      onChange={handleInputChange}
+                      className="csp-radio-input"
+                    />
+                    <div className="csp-option-content">
+                      <p className="csp-option-label">{option.label}</p>
+                      <p className="csp-option-desc">{option.description}</p>
+                    </div>
+                    <div className={`csp-radio-check ${formData.memberListVisibility === option.value ? 'csp-radio-check--active' : ''}`}>
+                      <CheckIcon />
+                    </div>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
 

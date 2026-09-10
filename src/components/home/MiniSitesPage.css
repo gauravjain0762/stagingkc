@@ -1604,10 +1604,35 @@
 }
 
 .ms-file-input-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(100, 200, 255, 0.05);
+  border: 2px dashed rgba(100, 200, 255, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
   color: #64c8ff;
-  font-size: 13px;
-  font-weight: 600;
-  pointer-events: none;
+}
+
+.ms-file-input-label:hover {
+  background: rgba(100, 200, 255, 0.1);
+  border-color: rgba(100, 200, 255, 0.5);
+  color: #fff;
+}
+
+.ms-file-input-label svg {
+  width: 24px;
+  height: 24px;
+  color: inherit;
+}
+
+.ms-logo-preview-wrapper,
+.ms-cover-preview-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
 }
 
 .ms-logo-preview,
@@ -1616,6 +1641,35 @@
   max-height: 200px;
   margin-bottom: 12px;
   border-radius: 8px;
+  display: block;
+  border: 1px solid rgba(100, 200, 255, 0.2);
+}
+
+.ms-remove-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.9);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.ms-remove-btn:hover {
+  background: rgba(239, 68, 68, 1);
+  transform: scale(1.1);
+}
+
+.ms-remove-btn:active {
+  transform: scale(0.95);
 }
 
 .ms-form-actions {

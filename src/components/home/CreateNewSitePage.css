@@ -109,6 +109,47 @@
   margin-bottom: 32px;
 }
 
+/* Settings Row - Display three settings in one line */
+.csp-settings-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  margin-bottom: 40px;
+  width: 100%;
+}
+
+.csp-settings-row .csp-form-group {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.csp-settings-row .csp-label {
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.csp-settings-row .csp-visibility-options,
+.csp-settings-row .csp-options-compact {
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+@media (max-width: 1200px) {
+  .csp-settings-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .csp-settings-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .csp-label {
   display: block;
   font-size: 14px;
@@ -574,14 +615,15 @@
 }
 
 .csp-btn--create {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: #1d4ed8;
   color: white;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
 }
 
 .csp-btn--create:hover:not(:disabled) {
+  background: #2563eb;
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 8px 20px rgba(29, 78, 216, 0.4);
 }
 
 .csp-btn--create:disabled {

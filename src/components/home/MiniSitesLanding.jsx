@@ -7,11 +7,23 @@ import { publicSiteUrl } from './miniSiteUtils';
 import './MiniSitesLanding.css';
 
 function SearchIcon() {
-  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
 }
 
 function PlusIcon() {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+}
+
+function GlobeIcon() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
+}
+
+function LockIcon() {
+  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>;
+}
+
+function KeyIcon() {
+  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0L19 4m-3.5 3.5L18 10"/></svg>;
 }
 
 function StatusBadge({ status, rejectionReason }) {
@@ -49,33 +61,94 @@ function StatusBadge({ status, rejectionReason }) {
   );
 }
 
-function OrganizationDetailModal({ org, onClose }) {
+function OrganizationDetailModal({ org, onClose, onJoin, authToken }) {
+  const [fullOrgData, setFullOrgData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!org || !authToken) return;
+
+    const fetchOrgDetails = async () => {
+      setLoading(true);
+      try {
+        const data = await apiRequest(`/api/organizations/${org.id}`, {
+          token: authToken
+        });
+        setFullOrgData(data?.data);
+      } catch (err) {
+        console.error('Failed to fetch organization details:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrgDetails();
+  }, [org, authToken]);
+
   if (!org) return null;
+  const displayData = fullOrgData || org;
 
   return (
     <div className="msl-modal-overlay" onClick={onClose}>
-      <div className="msl-modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="msl-modal-content msl-modal-content--large" onClick={(e) => e.stopPropagation()}>
         <button className="msl-modal-close" onClick={onClose}>✕</button>
 
+        {/* Cover Image */}
+        {displayData.coverImage && (
+          <div className="msl-modal-cover">
+            <img src={displayData.coverImage} alt="Cover" />
+          </div>
+        )}
+
         <div className="msl-modal-header">
-          <h2 className="msl-modal-title">{org.name}</h2>
+          <div className="msl-modal-header-content">
+            {displayData.logo && (
+              <img src={displayData.logo} alt="Logo" className="msl-modal-logo" />
+            )}
+            <div>
+              <h2 className="msl-modal-title">{displayData.name}</h2>
+              <p className="msl-modal-meta">{displayData.memberCount || 0} members • {displayData.miniSitesCount || 0} sites</p>
+            </div>
+          </div>
         </div>
 
-        <div className="msl-modal-body">
-          {org.shortDescription && (
-            <div className="msl-modal-section">
-              <h3 className="msl-modal-section-title">Overview</h3>
-              <p className="msl-modal-text">{org.shortDescription}</p>
-            </div>
-          )}
+        {loading ? (
+          <div className="msl-modal-body">
+            <p className="msl-modal-text">Loading details...</p>
+          </div>
+        ) : (
+          <div className="msl-modal-body">
+            {displayData.shortDescription && (
+              <div className="msl-modal-section">
+                <h3 className="msl-modal-section-title">Overview</h3>
+                <p className="msl-modal-text">{displayData.shortDescription}</p>
+              </div>
+            )}
 
-          {(org.fullDescription || org.description) && (
-            <div className="msl-modal-section">
-              <h3 className="msl-modal-section-title">Details</h3>
-              <p className="msl-modal-text">{org.fullDescription || org.description}</p>
+            {displayData.fullDescription && (
+              <div className="msl-modal-section">
+                <h3 className="msl-modal-section-title">Description</h3>
+                <p className="msl-modal-text">{displayData.fullDescription}</p>
+              </div>
+            )}
+
+            <div className="msl-modal-footer">
+              {displayData.visibility === 'public' ? (
+                <button className="msl-modal-btn msl-modal-btn--primary" onClick={() => onJoin(displayData)}>
+                  Join Organization
+                </button>
+              ) : displayData.visibility === 'private' ? (
+                <button className="msl-modal-btn msl-modal-btn--primary" onClick={() => onJoin(displayData)}>
+                  Send Join Request
+                </button>
+              ) : (
+                <div className="msl-modal-message">
+                  ⛓️ This organization is invite-only. You need an invite link to join.
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -86,6 +159,9 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
   const authToken = useSelector(s => s.auth?.token);
   const [activeTab, setActiveTab] = useState('suggested');
   const [searchTerm, setSearchTerm] = useState('');
+  const [joinedSearch, setJoinedSearch] = useState('');
+  const [pendingSearch, setPendingSearch] = useState('');
+  const [createdSearch, setCreatedSearch] = useState('');
   const [suggestedOrgs, setSuggestedOrgs] = useState([]);
   const [joinedOrgs, setJoinedOrgs] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
@@ -277,8 +353,12 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
               <div className="msl-cards-grid">
                 {suggestedOrgs.map(org => (
                   <div key={org.id} className="msl-org-card">
-                    <div className="msl-card-cover">
-                      <span className="msl-card-cover-text">Social Platform</span>
+                    <div className="msl-card-cover" style={{
+                      backgroundImage: org.coverImage ? `url(${org.coverImage})` : 'none',
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center'
+                    }}>
+                      {!org.coverImage && <span className="msl-card-cover-text">Social Platform</span>}
                     </div>
                     <div className="msl-card-content">
                       <div className="msl-org-header">
@@ -287,7 +367,13 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                           <p className="msl-org-members">{org.memberCount || 0} members</p>
                         </div>
                         <div className={`msl-visibility-badge msl-visibility-${org.visibility || 'public'}`}>
-                          {org.visibility === 'private' ? '🔒 Private' : org.visibility === 'invite-only' ? '🔗 Invite' : '🌐 Public'}
+                          {org.visibility === 'private' ? (
+                            <><LockIcon /> Private</>
+                          ) : org.visibility === 'invite-only' ? (
+                            <><KeyIcon /> Invite</>
+                          ) : (
+                            <><GlobeIcon /> Public</>
+                          )}
                         </div>
                       </div>
                       <p className="msl-org-description">{org.shortDescription}</p>
@@ -315,20 +401,40 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
         );
 
       case 'joined':
+        const filteredJoinedOrgs = joinedOrgs.filter(org =>
+          org.name.toLowerCase().includes(joinedSearch.toLowerCase()) ||
+          org.shortDescription?.toLowerCase().includes(joinedSearch.toLowerCase())
+        );
         return (
           <div className="msl-content">
+            <div className="msl-search-wrap">
+              <div className="msl-search">
+                <SearchIcon />
+                <input
+                  type="text"
+                  placeholder="Search joined organizations..."
+                  value={joinedSearch}
+                  onChange={(e) => setJoinedSearch(e.target.value)}
+                  className="msl-search-input"
+                />
+              </div>
+            </div>
             {loadingOrgs ? (
               <div className="msl-empty-state">Loading organizations...</div>
-            ) : joinedOrgs.length === 0 ? (
+            ) : filteredJoinedOrgs.length === 0 ? (
               <div className="msl-empty-state">
-                <p>You haven't joined any organizations yet</p>
+                <p>{joinedOrgs.length === 0 ? "You haven't joined any organizations yet" : 'No organizations found'}</p>
               </div>
             ) : (
               <div className="msl-cards-grid">
-                {joinedOrgs.map(org => (
+                {filteredJoinedOrgs.map(org => (
                   <div key={org.id} className="msl-org-card">
-                    <div className="msl-card-cover">
-                      <span className="msl-card-cover-text">Social Platform</span>
+                    <div className="msl-card-cover" style={{
+                      backgroundImage: org.coverImage ? `url(${org.coverImage})` : 'none',
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center'
+                    }}>
+                      {!org.coverImage && <span className="msl-card-cover-text">Social Platform</span>}
                     </div>
                     <div className="msl-card-content">
                       <div className="msl-org-header">
@@ -337,7 +443,13 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                           <p className="msl-org-members">{org.memberCount || 0} members</p>
                         </div>
                         <div className={`msl-visibility-badge msl-visibility-${org.visibility || 'public'}`}>
-                          {org.visibility === 'private' ? '🔒 Private' : org.visibility === 'invite-only' ? '🔗 Invite' : '🌐 Public'}
+                          {org.visibility === 'private' ? (
+                            <><LockIcon /> Private</>
+                          ) : org.visibility === 'invite-only' ? (
+                            <><KeyIcon /> Invite</>
+                          ) : (
+                            <><GlobeIcon /> Public</>
+                          )}
                         </div>
                       </div>
                       <p className="msl-org-description">{org.shortDescription}</p>
@@ -367,32 +479,56 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
         );
 
       case 'pending':
+        const filteredPendingReqs = pendingRequests.filter(org =>
+          org.name.toLowerCase().includes(pendingSearch.toLowerCase()) ||
+          org.shortDescription?.toLowerCase().includes(pendingSearch.toLowerCase())
+        );
         return (
           <div className="msl-content">
+            <div className="msl-search-wrap">
+              <div className="msl-search">
+                <SearchIcon />
+                <input
+                  type="text"
+                  placeholder="Search pending requests..."
+                  value={pendingSearch}
+                  onChange={(e) => setPendingSearch(e.target.value)}
+                  className="msl-search-input"
+                />
+              </div>
+            </div>
             {loadingOrgs ? (
               <div className="msl-empty-state">Loading pending requests...</div>
-            ) : pendingRequests.length === 0 ? (
+            ) : filteredPendingReqs.length === 0 ? (
               <div className="msl-empty-state">
-                <p>You have no pending join requests</p>
+                <p>{pendingRequests.length === 0 ? "You have no pending join requests" : 'No pending requests found'}</p>
               </div>
             ) : (
               <div className="msl-cards-grid">
-                {pendingRequests.map(org => (
+                {filteredPendingReqs.map(org => (
                   <div key={org.id} className="msl-org-card">
-                    <div className="msl-card-cover">
-                      <span className="msl-card-cover-text">Social Platform</span>
+                    <div className="msl-card-cover" style={{
+                      backgroundImage: org.coverImage ? `url(${org.coverImage})` : 'none',
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center'
+                    }}>
+                      {!org.coverImage && <span className="msl-card-cover-text">Social Platform</span>}
                     </div>
                     <div className="msl-card-content">
+                      <div className="msl-pending-alert">⚠️ Approval pending by admin</div>
                       <div className="msl-org-header">
                         <div className="msl-org-info">
                           <h3 className="msl-org-name">{org.name}</h3>
                           <p className="msl-org-members">{org.memberCount || 0} members</p>
                         </div>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <div className={`msl-visibility-badge msl-visibility-${org.visibility || 'public'}`}>
-                            {org.visibility === 'private' ? '🔒 Private' : org.visibility === 'invite-only' ? '🔗 Invite' : '🌐 Public'}
-                          </div>
-                          <div className="msl-pending-badge">Pending</div>
+                        <div className={`msl-visibility-badge msl-visibility-${org.visibility || 'public'}`}>
+                          {org.visibility === 'private' ? (
+                            <><LockIcon /> Private</>
+                          ) : org.visibility === 'invite-only' ? (
+                            <><KeyIcon /> Invite</>
+                          ) : (
+                            <><GlobeIcon /> Public</>
+                          )}
                         </div>
                       </div>
                       <p className="msl-org-description">{org.shortDescription}</p>
@@ -404,17 +540,17 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                           View Detail
                         </button>
                         <button
-                          className="msl-cancel-btn"
+                          className="msl-detail-btn"
                           onClick={() => {
                             setPendingRequests(pendingRequests.filter(o => o.id !== org.id));
                             setSuggestedOrgs([...suggestedOrgs, org]);
                             dispatch(showToast({
-                              message: 'Join request cancelled',
+                              message: 'Join request deleted',
                               type: 'info'
                             }));
                           }}
                         >
-                          Cancel
+                          Delete Request
                         </button>
                       </div>
                     </div>
@@ -426,19 +562,36 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
         );
 
       case 'mycreated':
+        const filteredCreatedOrgs = createdOrgs.filter(org =>
+          org.name.toLowerCase().includes(createdSearch.toLowerCase()) ||
+          org.shortDescription?.toLowerCase().includes(createdSearch.toLowerCase()) ||
+          org.description?.toLowerCase().includes(createdSearch.toLowerCase())
+        );
         return (
           <div className="msl-content">
+            <div className="msl-search-wrap">
+              <div className="msl-search">
+                <SearchIcon />
+                <input
+                  type="text"
+                  placeholder="Search created organizations..."
+                  value={createdSearch}
+                  onChange={(e) => setCreatedSearch(e.target.value)}
+                  className="msl-search-input"
+                />
+              </div>
+            </div>
             {loadingOrgs ? (
               <div className="msl-empty-state">
                 Loading organizations...
               </div>
-            ) : createdOrgs.length === 0 ? (
+            ) : filteredCreatedOrgs.length === 0 ? (
               <div className="msl-empty-state">
-                <p>No organizations created yet</p>
+                <p>{createdOrgs.length === 0 ? "No organizations created yet" : 'No organizations found'}</p>
               </div>
             ) : (
               <div className="msl-cards-grid">
-                {createdOrgs.map(org => (
+                {filteredCreatedOrgs.map(org => (
                   <div
                     key={org.id}
                     className={`msl-org-card ${org.status !== 'approved' ? 'msl-org-card--disabled' : ''}`}
@@ -458,7 +611,13 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                           <p className="msl-org-members">{org.memberCount || 0} members</p>
                         </div>
                         <div className={`msl-visibility-badge msl-visibility-${org.visibility || 'public'}`}>
-                          {org.visibility === 'private' ? '🔒 Private' : org.visibility === 'invite-only' ? '🔗 Invite' : '🌐 Public'}
+                          {org.visibility === 'private' ? (
+                            <><LockIcon /> Private</>
+                          ) : org.visibility === 'invite-only' ? (
+                            <><KeyIcon /> Invite</>
+                          ) : (
+                            <><GlobeIcon /> Public</>
+                          )}
                         </div>
                       </div>
                       <p className="msl-org-description">{org.shortDescription || org.description || ''}</p>
@@ -534,6 +693,8 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
         <OrganizationDetailModal
           org={selectedOrgDetail}
           onClose={() => setSelectedOrgDetail(null)}
+          onJoin={handleJoinOrganization}
+          authToken={authToken}
         />
       )}
     </div>

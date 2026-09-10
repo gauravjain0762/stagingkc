@@ -10,6 +10,7 @@ import MiniSiteMembersPage from './MiniSiteMembersPage';
 import Loader from '../Loader';
 import { normalizeSite } from './miniSiteUtils';
 import './PublicSitePage.css';
+import './MiniSitesLanding.css'; // For modal styles
 
 function siteTokenKey(slug) {
   return `site-token-${slug}`;
@@ -37,6 +38,8 @@ export default function PublicSitePage({ slug }) {
   const [showCalendar, setShowCalendar] = useState(false);
   const [showGroups, setShowGroups] = useState(false);
   const [isMember, setIsMember] = useState(false);
+  const [selectedOrgDetail, setSelectedOrgDetail] = useState(null);
+  const [orgDetailLoading, setOrgDetailLoading] = useState(false);
   const viewTracked = useRef(false);
 
   useEffect(() => {
@@ -214,6 +217,35 @@ export default function PublicSitePage({ slug }) {
     return () => window.removeEventListener('click', handleNavClick);
   }, [showFeed]);
 
+  // Handle organization modal from mini site join link
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const showOrgModal = params.get('showOrgModal');
+    const orgId = params.get('orgId');
+
+    if (showOrgModal === 'true' && orgId) {
+      fetchOrgDetailModal(orgId);
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  const fetchOrgDetailModal = async (orgId) => {
+    setOrgDetailLoading(true);
+    try {
+      const data = await apiRequest(`/api/organizations/${orgId}`, {
+        token: token
+      });
+      if (data?.data) {
+        setSelectedOrgDetail(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch organization details:', err);
+    } finally {
+      setOrgDetailLoading(false);
+    }
+  };
+
   async function handleVerifyPassword(e) {
     e.preventDefault();
     setVerifying(true);
@@ -365,6 +397,65 @@ export default function PublicSitePage({ slug }) {
           contactEmail={site?.contactInfo?.email}
           isMember={isMember}
         />
+      )}
+
+      {/* Organization Detail Modal */}
+      {selectedOrgDetail && (
+        <div className="msl-modal-overlay" onClick={() => setSelectedOrgDetail(null)}>
+          <div className="msl-modal-content msl-modal-content--large" onClick={(e) => e.stopPropagation()}>
+            <button className="msl-modal-close" onClick={() => setSelectedOrgDetail(null)}>✕</button>
+
+            {/* Cover Image */}
+            {selectedOrgDetail.coverImage && (
+              <div className="msl-modal-cover">
+                <img src={selectedOrgDetail.coverImage} alt="Cover" />
+              </div>
+            )}
+
+            <div className="msl-modal-header">
+              <div className="msl-modal-header-content">
+                {selectedOrgDetail.logo && (
+                  <img src={selectedOrgDetail.logo} alt="Logo" className="msl-modal-logo" />
+                )}
+                <div>
+                  <h2 className="msl-modal-title">{selectedOrgDetail.name}</h2>
+                  <p className="msl-modal-meta">{selectedOrgDetail.memberCount || 0} members • {selectedOrgDetail.miniSitesCount || 0} site{selectedOrgDetail.miniSitesCount !== 1 ? 's' : ''}</p>
+                </div>
+              </div>
+            </div>
+
+            {orgDetailLoading ? (
+              <div className="msl-modal-body">
+                <p className="msl-modal-text">Loading details...</p>
+              </div>
+            ) : (
+              <div className="msl-modal-body">
+                {selectedOrgDetail.shortDescription && (
+                  <div className="msl-modal-section">
+                    <h3 className="msl-modal-section-title">Overview</h3>
+                    <p className="msl-modal-text">{selectedOrgDetail.shortDescription}</p>
+                  </div>
+                )}
+
+                {selectedOrgDetail.fullDescription && (
+                  <div className="msl-modal-section">
+                    <h3 className="msl-modal-section-title">Description</h3>
+                    <p className="msl-modal-text">{selectedOrgDetail.fullDescription}</p>
+                  </div>
+                )}
+
+                <div className="msl-modal-footer">
+                  <button
+                    className="msl-modal-btn msl-modal-btn--primary"
+                    onClick={() => setSelectedOrgDetail(null)}
+                  >
+                    Back to Site
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

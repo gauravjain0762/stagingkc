@@ -4039,3 +4039,8 @@
   color: #5c6a8c;
   margin: 4px 0 0;
 }
+
+/* Search Input Placeholder Styling */
+.grp-search-input::placeholder {
+  color: #3a4a68;
+}
