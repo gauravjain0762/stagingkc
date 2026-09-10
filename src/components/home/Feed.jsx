@@ -115,7 +115,11 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
 
   const handleJoinOrgFromModal = async (org) => {
     try {
-      await apiRequest(`/api/organizations/${org.id}/join`, {
+      const endpoint = org.visibility === 'private'
+        ? `/api/organizations/${org.id}/join-request`
+        : `/api/organizations/${org.id}/join`;
+
+      await apiRequest(endpoint, {
         method: 'POST',
         token: authToken
       });
@@ -282,6 +286,10 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
                         📋 This organization doesn't have a mini site yet.
                       </div>
                     )
+                  ) : selectedOrgDetail.visibility === 'invite' ? (
+                    <div className="msl-modal-message">
+                      🔐 This organization is invite-only. You need an invite link to join.
+                    </div>
                   ) : (
                     <>
                       <button
@@ -295,7 +303,7 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
                         className="msl-modal-btn msl-modal-btn--primary"
                         onClick={() => handleJoinOrgFromModal(selectedOrgDetail)}
                       >
-                        Join
+                        {selectedOrgDetail.visibility === 'private' ? 'Send Request' : 'Join'}
                       </button>
                     </>
                   )}

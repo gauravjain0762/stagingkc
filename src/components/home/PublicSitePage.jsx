@@ -263,7 +263,11 @@ export default function PublicSitePage({ slug }) {
 
   const handleJoinOrgFromModal = async (org) => {
     try {
-      await apiRequest(`/api/organizations/${org.id}/join`, {
+      const endpoint = org.visibility === 'private'
+        ? `/api/organizations/${org.id}/join-request`
+        : `/api/organizations/${org.id}/join`;
+
+      await apiRequest(endpoint, {
         method: 'POST',
         token: token
       });
@@ -488,6 +492,10 @@ export default function PublicSitePage({ slug }) {
                     >
                       View Site
                     </button>
+                  ) : selectedOrgDetail.visibility === 'invite' ? (
+                    <div className="msl-modal-message">
+                      🔐 This organization is invite-only. You need an invite link to join.
+                    </div>
                   ) : (
                     <>
                       <button
@@ -501,7 +509,7 @@ export default function PublicSitePage({ slug }) {
                         className="msl-modal-btn msl-modal-btn--primary"
                         onClick={() => handleJoinOrgFromModal(selectedOrgDetail)}
                       >
-                        Join
+                        {selectedOrgDetail.visibility === 'private' ? 'Send Request' : 'Join'}
                       </button>
                     </>
                   )}
