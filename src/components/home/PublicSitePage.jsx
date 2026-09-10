@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSelector } from 'react-redux';
+import { apiRequest } from '../../services/api';
 import WebsitePreview from './WebsitePreview';
 import MiniSiteFeed from './MiniSiteFeed';
 import MiniSiteFooter from './MiniSiteFooter';
@@ -24,6 +26,7 @@ function KeyIcon() {
 }
 
 export default function PublicSitePage({ slug }) {
+  const { token, user } = useSelector(s => s.auth);
   const [status, setStatus] = useState('loading'); // loading | ready | notfound | forbidden | needs-password | error
   const [site, setSite] = useState(null);
   const [password, setPassword] = useState('');
@@ -33,6 +36,7 @@ export default function PublicSitePage({ slug }) {
   const [showMembers, setShowMembers] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [showGroups, setShowGroups] = useState(false);
+  const [isMember, setIsMember] = useState(false);
   const viewTracked = useRef(false);
 
   useEffect(() => {
@@ -128,6 +132,29 @@ export default function PublicSitePage({ slug }) {
     viewTracked.current = true;
     console.log('📊 View tracked for site:', slug);
   }, [status, slug]);
+
+  // Check if user is a member of the organization
+  useEffect(() => {
+    if (!site?.organizationId || !token || !user) {
+      setIsMember(false);
+      return;
+    }
+
+    const checkMembership = async () => {
+      try {
+        const data = await apiRequest(`/api/organizations/${site.organizationId}/members`, {
+          token
+        });
+        const isUserMember = data?.data?.some(member => member._id === user._id || member.id === user._id || member.userId === user._id);
+        setIsMember(isUserMember || false);
+      } catch (err) {
+        console.error('Failed to check membership:', err);
+        setIsMember(false);
+      }
+    };
+
+    checkMembership();
+  }, [site?.organizationId, token, user?.id, user?._id]);
 
   // Listen for navigation link clicks
   useEffect(() => {
@@ -287,6 +314,7 @@ export default function PublicSitePage({ slug }) {
         interactive={false}
         siteId={site?.id}
         contactEmail={site?.contactInfo?.email}
+        isMember={isMember}
       />
     )
   );
@@ -335,6 +363,7 @@ export default function PublicSitePage({ slug }) {
           interactive={false}
           siteId={site?.id}
           contactEmail={site?.contactInfo?.email}
+          isMember={isMember}
         />
       )}
     </div>

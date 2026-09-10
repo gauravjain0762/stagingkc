@@ -81,7 +81,7 @@ function TextBody({ text }) {
   );
 }
 
-function SectionContent({ section, interactive, siteId, contactEmail }) {
+function SectionContent({ section, interactive, siteId, contactEmail, isMember }) {
   const c = section.content || {};
 
   switch (section.type) {
@@ -98,7 +98,7 @@ function SectionContent({ section, interactive, siteId, contactEmail }) {
             ))}
           </nav>
           <div className="wp-navbar-actions">
-            {c.secondaryCtaText && (
+            {c.secondaryCtaText && !isMember && (
               <a href={c.secondaryCtaLink || '#'} className="wp-btn wp-btn-secondary wp-navbar-cta" onClick={(e) => handleNavLinkClick(e, c.secondaryCtaLink, interactive, siteId)}>
                 {c.secondaryCtaText}
               </a>
@@ -320,6 +320,7 @@ export default function WebsitePreview({
   interactive = true,
   siteId,
   contactEmail,
+  isMember = false,
 }) {
   const visibleSections = sections.filter((section) =>
     device === 'mobile' ? section.visibleOnMobile !== false : section.visibleOnDesktop !== false
@@ -381,7 +382,7 @@ export default function WebsitePreview({
                 style={wrapperStyle}
                 onClick={interactive ? () => onSelectSection(section.id) : undefined}
               >
-                <SectionContent section={section} interactive={interactive} siteId={siteId} contactEmail={contactEmail} />
+                <SectionContent section={section} interactive={interactive} siteId={siteId} contactEmail={contactEmail} isMember={isMember} />
               </div>
             );
           })}
