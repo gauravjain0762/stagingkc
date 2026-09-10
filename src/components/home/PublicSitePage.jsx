@@ -38,6 +38,7 @@ export default function PublicSitePage({ slug }) {
   const [showCalendar, setShowCalendar] = useState(false);
   const [showGroups, setShowGroups] = useState(false);
   const [isMember, setIsMember] = useState(false);
+  const [isOrgMember, setIsOrgMember] = useState(false);
   const [selectedOrgDetail, setSelectedOrgDetail] = useState(null);
   const [orgDetailLoading, setOrgDetailLoading] = useState(false);
   const viewTracked = useRef(false);
@@ -238,6 +239,20 @@ export default function PublicSitePage({ slug }) {
       });
       if (data?.data) {
         setSelectedOrgDetail(data.data);
+
+        // Check if user is a member of this organization
+        if (token && user) {
+          try {
+            const membersData = await apiRequest(`/api/organizations/${orgId}/members`, {
+              token
+            });
+            const isUserMember = membersData?.data?.some(member => member._id === user._id || member.id === user._id || member.userId === user._id);
+            setIsOrgMember(isUserMember || false);
+          } catch (err) {
+            console.error('Failed to check organization membership:', err);
+            setIsOrgMember(false);
+          }
+        }
       }
     } catch (err) {
       console.error('Failed to fetch organization details:', err);
@@ -252,7 +267,8 @@ export default function PublicSitePage({ slug }) {
         method: 'POST',
         token: token
       });
-      // Close modal after joining
+      // Update membership status and close modal
+      setIsOrgMember(true);
       setSelectedOrgDetail(null);
     } catch (err) {
       console.error('Failed to join organization:', err);
@@ -421,9 +437,9 @@ export default function PublicSitePage({ slug }) {
 
       {/* Organization Detail Modal */}
       {selectedOrgDetail && (
-        <div className="msl-modal-overlay" onClick={() => setSelectedOrgDetail(null)}>
+        <div className="msl-modal-overlay" onClick={() => { setSelectedOrgDetail(null); setIsOrgMember(false); }}>
           <div className="msl-modal-content msl-modal-content--large" onClick={(e) => e.stopPropagation()}>
-            <button className="msl-modal-close" onClick={() => setSelectedOrgDetail(null)}>✕</button>
+            <button className="msl-modal-close" onClick={() => { setSelectedOrgDetail(null); setIsOrgMember(false); }}>✕</button>
 
             {/* Cover Image */}
             {selectedOrgDetail.coverImage && (
@@ -465,7 +481,7 @@ export default function PublicSitePage({ slug }) {
                 )}
 
                 <div className="msl-modal-footer">
-                  {isMember ? (
+                  {isOrgMember ? (
                     <button
                       className="msl-modal-btn msl-modal-btn--primary"
                       onClick={() => handleViewSite(selectedOrgDetail)}

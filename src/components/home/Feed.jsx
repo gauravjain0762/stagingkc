@@ -30,6 +30,7 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
   const [groupsLoading,  setGroupsLoading]  = useState(false);
   const [selectedOrgDetail, setSelectedOrgDetail] = useState(null);
   const [orgDetailLoading, setOrgDetailLoading] = useState(false);
+  const [isOrgMember, setIsOrgMember] = useState(false);
   const clickTimer = useRef(null);
   const feedRef = useRef(null);
   const authToken = user?.token ?? useSelector(s => s.auth.token);
@@ -82,6 +83,20 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
       const data = await apiRequest(`/api/organizations/${orgId}`, { token: authToken });
       if (data?.data) {
         setSelectedOrgDetail(data.data);
+
+        // Check if user is a member of this organization
+        if (authToken && user) {
+          try {
+            const membersData = await apiRequest(`/api/organizations/${orgId}/members`, {
+              token: authToken
+            });
+            const isUserMember = membersData?.data?.some(member => member._id === user._id || member.id === user._id || member.userId === user._id);
+            setIsOrgMember(isUserMember || false);
+          } catch (err) {
+            console.error('Failed to check organization membership:', err);
+            setIsOrgMember(false);
+          }
+        }
       }
     } catch (err) {
       console.error('Failed to fetch organization details:', err);
@@ -95,6 +110,20 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
       // Construct local dev URL with site parameter format: ?site=slug
       // Get the site slug from the organization - it's typically organization-slug or we need to know which site
       window.location.href = `/?site=${org.slug}`;
+    }
+  }
+
+  const handleJoinOrgFromModal = async (org) => {
+    try {
+      await apiRequest(`/api/organizations/${org.id}/join`, {
+        method: 'POST',
+        token: authToken
+      });
+      // Update membership status and close modal
+      setIsOrgMember(true);
+      setSelectedOrgDetail(null);
+    } catch (err) {
+      console.error('Failed to join organization:', err);
     }
   }
 
@@ -196,9 +225,9 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
 
       {/* Organization Detail Modal for Join Flow */}
       {selectedOrgDetail && (
-        <div className="msl-modal-overlay" onClick={() => setSelectedOrgDetail(null)}>
+        <div className="msl-modal-overlay" onClick={() => { setSelectedOrgDetail(null); setIsOrgMember(false); }}>
           <div className="msl-modal-content msl-modal-content--large" onClick={(e) => e.stopPropagation()}>
-            <button className="msl-modal-close" onClick={() => setSelectedOrgDetail(null)}>✕</button>
+            <button className="msl-modal-close" onClick={() => { setSelectedOrgDetail(null); setIsOrgMember(false); }}>✕</button>
 
             {/* Cover Image */}
             {selectedOrgDetail.coverImage && (
@@ -240,17 +269,35 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
                 )}
 
                 <div className="msl-modal-footer">
-                  {selectedOrgDetail.miniSitesCount > 0 ? (
-                    <button
-                      className="msl-modal-btn msl-modal-btn--primary"
-                      onClick={() => handleViewSite(selectedOrgDetail)}
-                    >
-                      View Site
-                    </button>
+                  {isOrgMember ? (
+                    selectedOrgDetail.miniSitesCount > 0 ? (
+                      <button
+                        className="msl-modal-btn msl-modal-btn--primary"
+                        onClick={() => handleViewSite(selectedOrgDetail)}
+                      >
+                        View Site
+                      </button>
+                    ) : (
+                      <div className="msl-modal-message">
+                        📋 This organization doesn't have a mini site yet.
+                      </div>
+                    )
                   ) : (
-                    <div className="msl-modal-message">
-                      📋 This organization doesn't have a mini site yet.
-                    </div>
+                    <>
+                      <button
+                        className="msl-modal-btn"
+                        style={{ background: 'rgba(255,255,255,0.1)', color: '#c8d0e0' }}
+                        onClick={() => setSelectedOrgDetail(null)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="msl-modal-btn msl-modal-btn--primary"
+                        onClick={() => handleJoinOrgFromModal(selectedOrgDetail)}
+                      >
+                        Join
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
