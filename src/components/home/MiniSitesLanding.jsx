@@ -107,7 +107,7 @@ function OrganizationDetailModal({ org, onClose, onJoin, authToken }) {
             )}
             <div>
               <h2 className="msl-modal-title">{displayData.name}</h2>
-              <p className="msl-modal-meta">{displayData.memberCount || 0} members • {displayData.miniSitesCount || 0} sites</p>
+              <p className="msl-modal-meta">{displayData.memberCount || 0} member{(displayData.memberCount || 0) !== 1 ? 's' : ''} • {displayData.miniSitesCount || 0} site{(displayData.miniSitesCount || 0) !== 1 ? 's' : ''}</p>
             </div>
           </div>
         </div>
@@ -364,7 +364,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                       <div className="msl-org-header">
                         <div className="msl-org-info">
                           <h3 className="msl-org-name">{org.name}</h3>
-                          <p className="msl-org-members">{org.memberCount || 0} members</p>
+                          <p className="msl-org-members">{org.memberCount || 0} member{(org.memberCount || 0) !== 1 ? 's' : ''}</p>
                         </div>
                         <div className={`msl-visibility-badge msl-visibility-${org.visibility || 'public'}`}>
                           {org.visibility === 'private' ? (
@@ -440,7 +440,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                       <div className="msl-org-header">
                         <div className="msl-org-info">
                           <h3 className="msl-org-name">{org.name}</h3>
-                          <p className="msl-org-members">{org.memberCount || 0} members</p>
+                          <p className="msl-org-members">{org.memberCount || 0} member{(org.memberCount || 0) !== 1 ? 's' : ''}</p>
                         </div>
                         <div className={`msl-visibility-badge msl-visibility-${org.visibility || 'public'}`}>
                           {org.visibility === 'private' ? (
@@ -519,7 +519,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                       <div className="msl-org-header">
                         <div className="msl-org-info">
                           <h3 className="msl-org-name">{org.name}</h3>
-                          <p className="msl-org-members">{org.memberCount || 0} members</p>
+                          <p className="msl-org-members">{org.memberCount || 0} member{(org.memberCount || 0) !== 1 ? 's' : ''}</p>
                         </div>
                         <div className={`msl-visibility-badge msl-visibility-${org.visibility || 'public'}`}>
                           {org.visibility === 'private' ? (
@@ -608,7 +608,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                       <div className="msl-org-header">
                         <div className="msl-org-info">
                           <h3 className="msl-org-name">{org.name}</h3>
-                          <p className="msl-org-members">{org.memberCount || 0} members</p>
+                          <p className="msl-org-members">{org.memberCount || 0} member{(org.memberCount || 0) !== 1 ? 's' : ''}</p>
                         </div>
                         <div className={`msl-visibility-badge msl-visibility-${org.visibility || 'public'}`}>
                           {org.visibility === 'private' ? (
