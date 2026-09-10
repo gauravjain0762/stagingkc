@@ -137,9 +137,10 @@ export default function PublicSitePage({ slug }) {
     console.log('📊 View tracked for site:', slug);
   }, [status, slug]);
 
-  // Check if user is a member of the organization
+  // Check if user is a member of the organization (after site is loaded)
   useEffect(() => {
     console.log('🔐 Membership check effect triggered:', {
+      status,
       hasOrgId: !!site?.organizationId,
       orgId: site?.organizationId,
       hasToken: !!token,
@@ -147,14 +148,15 @@ export default function PublicSitePage({ slug }) {
       userName: user?.fullName
     });
 
-    if (!site?.organizationId || !token || !user) {
-      console.log('❌ Missing required data for membership check');
+    if (status !== 'ready' || !site?.organizationId || !token || !user) {
+      console.log('❌ Missing required data for membership check - status:', status);
       setIsMember(false);
       return;
     }
 
     const checkMembership = async () => {
       try {
+        console.log('🔎 Fetching members for org:', site.organizationId);
         const data = await apiRequest(`/api/organizations/${site.organizationId}/members`, {
           token
         });
@@ -173,7 +175,7 @@ export default function PublicSitePage({ slug }) {
     };
 
     checkMembership();
-  }, [site?.organizationId, token, user?.id, user?._id]);
+  }, [status, site?.organizationId, token, user?.id, user?._id]);
 
   // Listen for navigation link clicks
   useEffect(() => {
