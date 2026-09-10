@@ -33,12 +33,20 @@ export default function App() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const inviteToken = readInviteToken();
 
-  // Show invite modal if token is present
+  // Show invite modal if token is present (from URL or localStorage)
   useEffect(() => {
     if (inviteToken) {
       setShowInviteModal(true);
+    } else if (isAuthenticated) {
+      // Check if user just logged in with a pending invite
+      const pendingToken = localStorage.getItem('pendingInviteToken');
+      if (pendingToken) {
+        setShowInviteModal(true);
+        // Update URL to include the token
+        window.history.replaceState({}, document.title, `${window.location.pathname}?invite=${pendingToken}`);
+      }
     }
-  }, [inviteToken]);
+  }, [inviteToken, isAuthenticated]);
 
   const publicSiteSlug = readPublicSiteSlug();
   if (publicSiteSlug) return <><Toast /><PublicSitePage slug={publicSiteSlug} /></>;

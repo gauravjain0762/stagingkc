@@ -25,6 +25,11 @@ export default function InviteJoinPage({ token, onClose }) {
   const [organization, setOrganization] = useState(null);
   const [error, setError] = useState(null);
 
+  const handleClose = () => {
+    localStorage.removeItem('pendingInviteToken');
+    onClose?.();
+  };
+
   // Fetch organization details from token metadata
   useEffect(() => {
     if (!token) {
@@ -40,12 +45,15 @@ export default function InviteJoinPage({ token, onClose }) {
 
   const handleJoinViaInvite = async () => {
     if (!authToken || !user) {
+      // Save invite token to localStorage for after login
+      localStorage.setItem('pendingInviteToken', token);
+
       dispatch(showToast({
-        message: '❌ You must be logged in to join',
-        type: 'error'
+        message: 'ℹ️ Please login first to join this organization',
+        type: 'info'
       }));
-      // Redirect to login with return URL
-      const returnUrl = encodeURIComponent(`${window.location.href}`);
+
+      // Redirect to login
       dispatch(setPage('login'));
       return;
     }
@@ -66,6 +74,9 @@ export default function InviteJoinPage({ token, onClose }) {
           message: `✅ Successfully joined ${orgName}!`,
           type: 'success'
         }));
+
+        // Clear pending invite token
+        localStorage.removeItem('pendingInviteToken');
 
         // Redirect to mini sites page after 1.5 seconds
         setTimeout(() => {
@@ -110,7 +121,7 @@ export default function InviteJoinPage({ token, onClose }) {
   return (
     <div className="invite-join-overlay" onClick={onClose}>
       <div className="invite-join-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="invite-join-close" onClick={onClose}>
+        <button className="invite-join-close" onClick={handleClose}>
           <CloseIcon />
         </button>
 
