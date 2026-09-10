@@ -139,7 +139,16 @@ export default function PublicSitePage({ slug }) {
 
   // Check if user is a member of the organization
   useEffect(() => {
+    console.log('🔐 Membership check effect triggered:', {
+      hasOrgId: !!site?.organizationId,
+      orgId: site?.organizationId,
+      hasToken: !!token,
+      hasUser: !!user,
+      userName: user?.fullName
+    });
+
     if (!site?.organizationId || !token || !user) {
+      console.log('❌ Missing required data for membership check');
       setIsMember(false);
       return;
     }
