@@ -374,9 +374,22 @@
   text-align: center;
 }
 
+.csp-option-compact.display-only {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: default;
+  gap: 4px;
+}
+
 .csp-option-compact:hover {
   border-color: rgba(75, 85, 99, 0.4);
   background: rgba(255, 255, 255, 0.04);
+}
+
+.csp-option-compact.display-only:hover {
+  border-color: transparent;
+  background: transparent;
 }
 
 .csp-option-compact input[type="radio"]:checked + .csp-option-content {

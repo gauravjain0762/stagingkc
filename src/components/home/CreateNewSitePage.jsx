@@ -393,7 +393,7 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
                 {[
                   { value: 'public', label: 'Public', Icon: GlobeIcon, description: 'Anyone can see' },
                 ].map(option => (
-                  <label key={option.value} className="csp-visibility-option">
+                  <label key={option.value} className="csp-visibility-option display-only">
                     <input
                       type="radio"
                       name="visibility"
@@ -423,7 +423,7 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
                 {[
                   { value: 'anyone', label: 'Anyone can join', description: 'No approval needed' },
                 ].map(option => (
-                  <label key={option.value} className="csp-option-compact">
+                  <label key={option.value} className="csp-option-compact display-only">
                     <input
                       type="radio"
                       name="joinPolicy"
@@ -451,7 +451,7 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
                 {[
                   { value: 'everyone', label: 'Everyone', description: 'All members visible to all' },
                 ].map(option => (
-                  <label key={option.value} className="csp-option-compact">
+                  <label key={option.value} className="csp-option-compact display-only">
                     <input
                       type="radio"
                       name="memberListVisibility"
