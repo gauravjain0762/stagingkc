@@ -453,7 +453,9 @@ export default function PublicSitePage({ slug }) {
       ) : showGroups ? (
         <>
           {renderNavbarOnly()}
-          <MiniSiteGroupsPage siteName={site.name} />
+          <div className="pub-site-view-inline">
+            <MiniSiteGroupsPage siteName={site.name} siteId={site.id} />
+          </div>
           <MiniSiteFooter section={footerSection} />
         </>
       ) : (
