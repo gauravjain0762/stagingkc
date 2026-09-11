@@ -275,9 +275,10 @@
 
 .csp-visibility-card.display-only {
   border: none;
-  background: transparent;
-  padding: 0;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 12px;
   gap: 4px;
+  border-radius: 12px;
 }
 
 .csp-visibility-option input:checked + .csp-visibility-card {
@@ -375,10 +376,11 @@
 
 .csp-option-compact.display-only {
   border: none;
-  background: transparent;
-  padding: 0;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 12px;
   cursor: default;
   gap: 4px;
+  border-radius: 10px;
 }
 
 .csp-option-compact:hover {
