@@ -4,8 +4,8 @@ import { apiRequest } from '../../services/api';
 import { showToast } from '../../store/slices/toastSlice';
 import './MiniSiteGroupsDiscovery.css';
 
-function EyeIcon() {
-  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>;
+function GlobeIcon() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
 }
 
 function JoinIcon() {
@@ -167,7 +167,7 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
         <div className="msg-group-meta">
           <span className="msg-badge" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{group.category}</span>
           <span className="msg-privacy">
-            {group.privacy === 'public' && '🌍 Public'}
+            {group.privacy === 'public' && <><GlobeIcon /> Public</>}
             {group.privacy === 'private' && '🔒 Private'}
             {group.privacy === 'vetted' && '✓ Vetted'}
           </span>
@@ -180,7 +180,7 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
 
         <div className="msg-group-actions">
           <button className="msg-view-btn" onClick={() => { fetchGroupDetail(group._id); onView(group); }} title="View details">
-            <EyeIcon />
+            View
           </button>
           {group.joined ? (
             <button
@@ -229,7 +229,7 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
             <div className="msg-modal-meta">
               <span className="msg-badge" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{group.category}</span>
               <span className="msg-privacy">
-                {group.privacy === 'public' && '🌍 Public'}
+                {group.privacy === 'public' && <><GlobeIcon /> Public</>}
                 {group.privacy === 'private' && '🔒 Private'}
                 {group.privacy === 'vetted' && '✓ Vetted'}
               </span>

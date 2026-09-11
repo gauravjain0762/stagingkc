@@ -161,7 +161,7 @@
 
 .msg-badge {
   display: inline-block;
-  padding: 4px 10px;
+  padding: 17px 10px;
   background: rgba(59, 130, 246, 0.15);
   color: #60a5fa;
   border-radius: 6px;
@@ -186,7 +186,7 @@
 
 .msg-group-stats {
   display: flex;
-  gap: 12px;
+  gap: 12p7;
   font-size: 12px;
   color: #5c6a8c;
 }
