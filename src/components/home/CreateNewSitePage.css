@@ -274,7 +274,7 @@
 }
 
 .csp-visibility-card.display-only {
-  border: none;
+  border: 1px solid rgba(75, 85, 99, 0.2);
   background: rgba(255, 255, 255, 0.02);
   padding: 12px;
   gap: 4px;
@@ -297,7 +297,7 @@
 }
 
 .csp-visibility-option.display-only .csp-visibility-card:hover {
-  border-color: transparent;
+  border-color: rgba(75, 85, 99, 0.2);
   background: rgba(255, 255, 255, 0.02);
 }
 
@@ -375,7 +375,7 @@
 }
 
 .csp-option-compact.display-only {
-  border: none;
+  border: 1px solid rgba(75, 85, 99, 0.2);
   background: rgba(255, 255, 255, 0.02);
   padding: 12px;
   cursor: default;
@@ -389,7 +389,7 @@
 }
 
 .csp-option-compact.display-only:hover {
-  border-color: transparent;
+  border-color: rgba(75, 85, 99, 0.2);
   background: rgba(255, 255, 255, 0.02);
 }
 
