@@ -3408,9 +3408,24 @@ function GroupHubCard({ group, onManage, onView, isOwned }) {
       <div className="hub-card-body">
         <p className="hub-card-name">{group.name}</p>
         <div className="hub-card-privacy">
-          {group.privacy === 'public' && <span className="hub-card-privacy-badge hub-card-privacy-badge--public">🌍 Public</span>}
-          {group.privacy === 'private' && <span className="hub-card-privacy-badge hub-card-privacy-badge--private">🔒 Private</span>}
-          {group.privacy === 'vetted' && <span className="hub-card-privacy-badge hub-card-privacy-badge--vetted">✓ Vetted</span>}
+          {group.privacy === 'public' && (
+            <span className="hub-card-privacy-badge hub-card-privacy-badge--public">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              <span>Public</span>
+            </span>
+          )}
+          {group.privacy === 'private' && (
+            <span className="hub-card-privacy-badge hub-card-privacy-badge--private">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+              <span>Private</span>
+            </span>
+          )}
+          {group.privacy === 'vetted' && (
+            <span className="hub-card-privacy-badge hub-card-privacy-badge--vetted">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Vetted</span>
+            </span>
+          )}
         </div>
 
         {isOwned ? (
