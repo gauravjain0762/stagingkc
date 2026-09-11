@@ -161,24 +161,24 @@
 
 .msg-badge {
   display: inline-block;
-  padding: 4px 10px;
-  background: rgba(93, 106, 139, 0.25);
-  color: #b0b8cd;
-  border-radius: 6px;
-  font-size: 11px;
+  padding: 6px 12px;
+  background: rgba(93, 106, 139, 0.4);
+  color: #c8d0e0;
+  border-radius: 8px;
+  font-size: 12px;
   font-weight: 600;
-  border: 1px solid rgba(93, 106, 139, 0.3);
+  border: 1px solid rgba(93, 106, 139, 0.5);
 }
 
 .msg-privacy {
   display: inline-block;
-  padding: 4px 10px;
-  background: rgba(93, 106, 139, 0.25);
-  color: #b0b8cd;
-  border-radius: 6px;
-  font-size: 11px;
+  padding: 6px 12px;
+  background: rgba(93, 106, 139, 0.4);
+  color: #c8d0e0;
+  border-radius: 8px;
+  font-size: 12px;
   font-weight: 600;
-  border: 1px solid rgba(93, 106, 139, 0.3);
+  border: 1px solid rgba(93, 106, 139, 0.5);
 }
 
 .msg-group-stats {
