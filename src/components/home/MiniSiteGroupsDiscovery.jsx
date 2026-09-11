@@ -165,7 +165,7 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
         {group.mission && <p className="msg-group-mission">{group.mission}</p>}
 
         <div className="msg-group-meta">
-          <span className="msg-badge">{group.category}</span>
+          <span className="msg-badge" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{group.category}</span>
           <span className="msg-privacy">
             {group.privacy === 'public' && '🌍 Public'}
             {group.privacy === 'private' && '🔒 Private'}
@@ -227,7 +227,7 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
             {group.mission && <p className="msg-modal-mission">{group.mission}</p>}
 
             <div className="msg-modal-meta">
-              <span className="msg-badge">{group.category}</span>
+              <span className="msg-badge" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{group.category}</span>
               <span className="msg-privacy">
                 {group.privacy === 'public' && '🌍 Public'}
                 {group.privacy === 'private' && '🔒 Private'}
