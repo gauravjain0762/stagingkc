@@ -273,7 +273,7 @@
   text-align: center;
 }
 
-.csp-visibility-card.display-only {
+.csp-visibility-option.display-only .csp-visibility-card {
   border: 1px solid rgba(75, 85, 99, 0.2);
   background: rgba(255, 255, 255, 0.02);
   padding: 12px;
