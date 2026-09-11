@@ -48,10 +48,19 @@ export const fetchGroups = createAsyncThunk(
       if (search) params.set('search', search);
       const data = await apiRequest(`/api/groups?${params}`, { token });
       // Handle multiple possible API response shapes
-      const groups = Array.isArray(data)
-        ? data
-        : (data.groups ?? data.data ?? data.items ?? data.results ?? []);
-      const total = data.total ?? data.count ?? data.totalCount ?? groups.length;
+      let groups = [];
+      if (Array.isArray(data)) {
+        groups = data;
+      } else if (data?.data?.groups && Array.isArray(data.data.groups)) {
+        groups = data.data.groups;
+      } else if (data?.groups && Array.isArray(data.groups)) {
+        groups = data.groups;
+      } else if (data?.items && Array.isArray(data.items)) {
+        groups = data.items;
+      } else if (data?.results && Array.isArray(data.results)) {
+        groups = data.results;
+      }
+      const total = data?.data?.pagination?.total ?? data?.total ?? data?.count ?? data?.totalCount ?? groups.length;
       return { groups, total, tab };
     } catch (err) { return rejectWithValue(err.message); }
   }
