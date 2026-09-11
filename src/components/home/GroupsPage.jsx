@@ -3410,37 +3410,22 @@ function GroupHubCard({ group, onManage, onView, isOwned }) {
 
         {isOwned ? (
           <>
-            <div className="hub-card-stats">
-              <div className="hub-card-stat">
-                <span className="hub-card-stat-value">{(group.memberCount ?? 0).toLocaleString()}</span>
-                <span className="hub-card-stat-label">Active Members</span>
+            {group.privacy === 'private' && (
+              <div className="hub-card-stats">
+                <div className="hub-card-stat">
+                  <span className={`hub-card-stat-value${pendingReqs > 0 ? ' hub-card-stat-value--alert' : ''}`}>
+                    {pendingReqs}
+                  </span>
+                  <span className="hub-card-stat-label">Pending Requests</span>
+                </div>
               </div>
-              {group.privacy === 'private' && (
-                <>
-                  <div className="hub-card-stat-div" />
-                  <div className="hub-card-stat">
-                    <span className={`hub-card-stat-value${pendingReqs > 0 ? ' hub-card-stat-value--alert' : ''}`}>
-                      {pendingReqs}
-                    </span>
-                    <span className="hub-card-stat-label">Pending Requests</span>
-                  </div>
-                </>
-              )}
-            </div>
+            )}
             <button className="hub-card-manage" onClick={e => { e.stopPropagation(); onManage?.(); }}>
               Manage Group
             </button>
           </>
         ) : (
           <>
-            <div className="hub-card-conn-members">
-              <div className="prof-conn-shared-avatars">
-                {(group.memberAvatars || []).map((src, i) => (
-                  <img key={i} src={src} alt="" className="prof-conn-shared-dot" />
-                ))}
-              </div>
-              <span className="prof-conn-shared-text">{group.members ?? group.memberCount?.toLocaleString()}</span>
-            </div>
             <button
               className={`hub-card-join${(joined || pending) ? ' hub-card-join--joined' : ''}`}
               onClick={handleJoin}
