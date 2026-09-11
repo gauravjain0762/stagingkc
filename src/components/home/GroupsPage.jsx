@@ -3761,10 +3761,10 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
   }
 
   // Show API groups only when they belong to the current tab
-  let displayGroups = (groupsTab === hubTab) ? groups : [];
+  let displayGroups = (groupsTab === hubTab && Array.isArray(groups)) ? groups : [];
 
   // Filter by search query when on joined tab
-  if (hubTab === 'joined' && joinedSearch.trim()) {
+  if (hubTab === 'joined' && joinedSearch.trim() && Array.isArray(displayGroups)) {
     displayGroups = displayGroups.filter(g =>
       g.name.toLowerCase().includes(joinedSearch.toLowerCase()) ||
       (g.category && g.category.toLowerCase().includes(joinedSearch.toLowerCase())) ||
@@ -3773,7 +3773,7 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
   }
 
   // Filter by search query when on suggested tab
-  if (hubTab === 'suggested' && suggestedSearch.trim()) {
+  if (hubTab === 'suggested' && suggestedSearch.trim() && Array.isArray(displayGroups)) {
     displayGroups = displayGroups.filter(g =>
       g.name.toLowerCase().includes(suggestedSearch.toLowerCase()) ||
       (g.category && g.category.toLowerCase().includes(suggestedSearch.toLowerCase())) ||
