@@ -253,6 +253,10 @@
   cursor: pointer;
 }
 
+.csp-visibility-option.display-only {
+  cursor: default;
+}
+
 .csp-radio-input {
   display: none;
 }
@@ -270,14 +274,31 @@
   text-align: center;
 }
 
+.csp-visibility-card.display-only {
+  border: none;
+  background: transparent;
+  padding: 0;
+  gap: 4px;
+}
+
 .csp-visibility-option input:checked + .csp-visibility-card {
   border-color: #3b82f6;
   background: rgba(59, 130, 246, 0.1);
 }
 
+.csp-visibility-option.display-only input:checked + .csp-visibility-card {
+  border-color: transparent;
+  background: transparent;
+}
+
 .csp-visibility-card:hover {
   border-color: rgba(75, 85, 99, 0.4);
   background: rgba(255, 255, 255, 0.04);
+}
+
+.csp-visibility-option.display-only .csp-visibility-card:hover {
+  border-color: transparent;
+  background: transparent;
 }
 
 .csp-visibility-icon {
@@ -310,11 +331,21 @@
   line-height: 1.3;
 }
 
+.csp-visibility-option.display-only .csp-visibility-label {
+  font-weight: 500;
+  font-size: 13px;
+}
+
 .csp-visibility-desc {
   font-size: 11px;
   color: #8b95a5;
   margin: 2px 0 0;
   line-height: 1.3;
+}
+
+.csp-visibility-option.display-only .csp-visibility-desc {
+  font-size: 12px;
+  color: #94a3b8;
 }
 
 .csp-visibility-check {
