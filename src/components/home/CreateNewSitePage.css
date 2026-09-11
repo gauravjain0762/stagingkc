@@ -109,11 +109,11 @@
   margin-bottom: 32px;
 }
 
-/* Settings Row - Display three settings in one line */
+/* Settings Row - Display three settings vertically */
 .csp-settings-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
   margin-bottom: 40px;
   width: 100%;
 }
@@ -131,7 +131,6 @@
 
 .csp-settings-row .csp-visibility-options,
 .csp-settings-row .csp-options-compact {
-  min-height: 100px;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -243,9 +242,10 @@
 
 /* Visibility Options */
 .csp-visibility-options {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  align-items: flex-start;
 }
 
 .csp-visibility-option {
@@ -278,7 +278,9 @@
   border: none;
   background: transparent;
   padding: 0;
-  gap: 4px;
+  gap: 2px;
+  text-align: left;
+  align-items: flex-start;
 }
 
 .csp-visibility-option input:checked + .csp-visibility-card {
@@ -355,9 +357,10 @@
 
 /* Compact Options (Who can join, Member List Visibility) */
 .csp-options-compact {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  align-items: flex-start;
 }
 
 .csp-option-compact {
@@ -379,7 +382,9 @@
   background: transparent;
   padding: 0;
   cursor: default;
-  gap: 4px;
+  gap: 2px;
+  text-align: left;
+  align-items: flex-start;
 }
 
 .csp-option-compact:hover {
