@@ -3407,6 +3407,11 @@ function GroupHubCard({ group, onManage, onView, isOwned }) {
       </div>
       <div className="hub-card-body">
         <p className="hub-card-name">{group.name}</p>
+        <div className="hub-card-privacy">
+          {group.privacy === 'public' && <span className="hub-card-privacy-badge hub-card-privacy-badge--public">🌍 Public</span>}
+          {group.privacy === 'private' && <span className="hub-card-privacy-badge hub-card-privacy-badge--private">🔒 Private</span>}
+          {group.privacy === 'vetted' && <span className="hub-card-privacy-badge hub-card-privacy-badge--vetted">✓ Vetted</span>}
+        </div>
 
         {isOwned ? (
           <>
