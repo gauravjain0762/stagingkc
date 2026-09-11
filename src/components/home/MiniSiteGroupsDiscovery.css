@@ -161,14 +161,13 @@
 
 .msg-badge {
   display: inline-block;
-  padding: 4px 10px;
-  background: rgba(15, 23, 42, 0.55);
-  color: #8b94a5;
+  padding: 5px 12px;
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 700;
-  border: 1px solid rgba(139, 148, 165, 0.25);
-  backdrop-filter: blur(2px);
+  border: 1px solid rgba(96, 165, 250, 0.3);
 }
 
 .msg-privacy {
