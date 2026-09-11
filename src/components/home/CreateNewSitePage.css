@@ -298,7 +298,7 @@
 
 .csp-visibility-option.display-only .csp-visibility-card:hover {
   border-color: transparent;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .csp-visibility-icon {
@@ -390,7 +390,7 @@
 
 .csp-option-compact.display-only:hover {
   border-color: transparent;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .csp-option-compact input[type="radio"]:checked + .csp-option-content {
