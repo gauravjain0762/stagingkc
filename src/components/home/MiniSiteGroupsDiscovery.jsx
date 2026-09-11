@@ -43,11 +43,15 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
         token ? apiRequest(`/api/mini-sites/${siteId}/groups/joined?page=1&limit=20`, { token }) : Promise.resolve(null),
       ]);
 
-      if (suggestedRes?.data?.groups) {
+      if (suggestedRes?.data?.groups && Array.isArray(suggestedRes.data.groups)) {
         setSuggestedGroups(suggestedRes.data.groups);
+      } else {
+        setSuggestedGroups([]);
       }
-      if (joinedRes?.data?.groups) {
+      if (joinedRes?.data?.groups && Array.isArray(joinedRes.data.groups)) {
         setJoinedGroups(joinedRes.data.groups);
+      } else {
+        setJoinedGroups([]);
       }
       setLoading(false);
     } catch (error) {
@@ -318,8 +322,8 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
     );
   };
 
-  const displayGroups = activeTab === 'suggested' ? suggestedGroups : joinedGroups;
-  const isEmpty = displayGroups.length === 0;
+  const displayGroups = activeTab === 'suggested' ? (suggestedGroups || []) : (joinedGroups || []);
+  const isEmpty = !displayGroups || displayGroups.length === 0;
 
   return (
     <div className="msg-groups-discovery">
