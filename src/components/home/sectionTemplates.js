@@ -22,11 +22,11 @@ export const createId = () =>
 
 export function defaultStyle() {
   return {
-    background: '#f5f1e8',
+    background: '#070b14',
     backgroundImage: '',
     overlayOpacity: 0.4,
-    textColor: '#042d5d',
-    accentColor: '#3b82f6',
+    textColor: '#e2e8f0',
+    accentColor: '#1d4ed8',
     paddingTop: 20,
     paddingBottom: 20,
     align: 'center',
@@ -52,52 +52,52 @@ export const SPACING_PRESETS = [
 function defaultStyleForType(type) {
   const style = defaultStyle();
   if (type === 'navbar') {
-    style.background = '#f5f1e8';
-    style.textColor = '#042d5d';
+    style.background = '#0f1419';
+    style.textColor = '#e2e8f0';
     style.align = 'center';
   }
   if (type === 'hero') {
-    style.background = '#f5f1e8';
-    style.textColor = '#042d5d';
-    style.accentColor = '#3b82f6';
+    style.background = '#070b14';
+    style.textColor = '#e2e8f0';
+    style.accentColor = '#1d4ed8';
     style.align = 'center';
   }
   if (type === 'text') {
-    style.background = '#f5f1e8';
-    style.textColor = '#042d5d';
+    style.background = '#0a0e18';
+    style.textColor = '#e2e8f0';
     style.align = 'center';
   }
   if (type === 'gallery') {
-    style.background = '#f5f1e8';
-    style.textColor = '#042d5d';
+    style.background = '#0a0e18';
+    style.textColor = '#e2e8f0';
   }
   if (type === 'grid') {
-    style.background = '#f5f1e8';
-    style.textColor = '#042d5d';
+    style.background = '#0a0e18';
+    style.textColor = '#e2e8f0';
   }
   if (type === 'form') {
-    style.background = '#f5f1e8';
-    style.textColor = '#042d5d';
+    style.background = '#0a0e18';
+    style.textColor = '#e2e8f0';
   }
   if (type === 'cta') {
-    style.background = '#f5f1e8';
-    style.textColor = '#042d5d';
+    style.background = '#0a0e18';
+    style.textColor = '#e2e8f0';
   }
   if (type === 'testimonial') {
-    style.background = '#f5f1e8';
-    style.textColor = '#042d5d';
+    style.background = '#0a0e18';
+    style.textColor = '#e2e8f0';
   }
   if (type === 'members') {
-    style.background = '#f5f1e8';
-    style.textColor = '#042d5d';
+    style.background = '#0a0e18';
+    style.textColor = '#e2e8f0';
   }
   if (type === 'calendar') {
-    style.background = '#f5f1e8';
-    style.textColor = '#042d5d';
+    style.background = '#0a0e18';
+    style.textColor = '#e2e8f0';
   }
   if (type === 'footer') {
-    style.background = '#f5f1e8';
-    style.textColor = '#042d5d';
+    style.background = '#0f1419';
+    style.textColor = '#e2e8f0';
   }
   return style;
 }
@@ -108,6 +108,7 @@ function defaultContent(type) {
       return {
         logoText: 'Logo',
         links: [
+          { label: 'Home', url: '#home' },
           { label: 'Feed', url: '#feed' },
           { label: 'Members', url: '#members' },
           { label: 'Calendar', url: '#calendar' },
@@ -241,14 +242,16 @@ export function createStarterSections() {
   const footer = { ...createSection('footer'), name: 'Footer' };
 
   const navbar = { ...createSection('navbar'), name: 'Navbar' };
-  // Navbar links are fixed: Feed, Members, Calendar
+  // Navbar links are fixed: Home, Feed, Members, Calendar, Groups
   // Users cannot change these - they can add other sections via "Add Section"
   navbar.content = {
     ...navbar.content,
     links: [
+      { label: 'Home', url: `#${hero.id}` },
       { label: 'Feed', url: '#feed' },
       { label: 'Members', url: '#members' },
       { label: 'Calendar', url: '#calendar' },
+      { label: 'Groups', url: '#groups' },
     ],
   };
 

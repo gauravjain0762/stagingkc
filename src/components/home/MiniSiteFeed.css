@@ -2,101 +2,101 @@
 .minisite-feed-container {
   width: 100%;
   padding: 24px 16px;
-  background: #fafbfc !important;
+  background: #070b14 !important;
 }
 
 /* Override home-feed styles for mini sites */
 .minisite-feed-container {
-  background: #fafbfc !important;
-  scrollbar-color: #d1d5db transparent !important;
+  background: #070b14 !important;
+  scrollbar-color: #2a3f5f transparent !important;
 }
 
-/* White-blue theme overrides for PostCard elements in mini sites */
+/* Dark theme overrides for PostCard elements in mini sites */
 .minisite-feed-container .post-menu-dropdown {
-  background: #ffffff !important;
-  border-color: #e5e7eb !important;
-  scrollbar-color: #d1d5db transparent !important;
+  background: #1a1f2e !important;
+  border-color: #2a3f5f !important;
+  scrollbar-color: #2a3f5f transparent !important;
 }
 
 .minisite-feed-container .post-menu-item:hover {
-  background: #f3f4f6 !important;
+  background: #2a3f5f !important;
 }
 
 .minisite-feed-container .post-menu-item-title {
-  color: #1f2937 !important;
+  color: #e2e8f0 !important;
 }
 
 .minisite-feed-container .post-menu-item-sub {
-  color: #6b7280 !important;
+  color: #8b94a5 !important;
 }
 
 .minisite-feed-container .post-menu-divider {
-  background: #e5e7eb !important;
+  background: #2a3f5f !important;
 }
 
 .minisite-feed-container .report-modal {
-  background: #ffffff !important;
-  border-color: #e5e7eb !important;
+  background: #1a1f2e !important;
+  border-color: #2a3f5f !important;
 }
 
 .minisite-feed-container .report-modal-header {
-  border-bottom-color: #e5e7eb !important;
+  border-bottom-color: #2a3f5f !important;
 }
 
 .minisite-feed-container .report-modal-title {
-  color: #1f2937 !important;
+  color: #e2e8f0 !important;
 }
 
 .minisite-feed-container .report-close-btn {
-  background: #f3f4f6 !important;
-  border-color: #e5e7eb !important;
-  color: #6b7280 !important;
+  background: #2a3f5f !important;
+  border-color: #2a3f5f !important;
+  color: #8b94a5 !important;
 }
 
 .minisite-feed-container .report-close-btn:hover {
-  background: #e5e7eb !important;
-  color: #1f2937 !important;
+  background: #3a5080 !important;
+  color: #e2e8f0 !important;
 }
 
 .minisite-feed-container .report-modal-body {
-  scrollbar-color: #e5e7eb transparent !important;
+  scrollbar-color: #2a3f5f transparent !important;
 }
 
 .minisite-feed-container .report-question {
-  color: #1f2937 !important;
+  color: #e2e8f0 !important;
 }
 
 .minisite-feed-container .report-subtitle {
-  color: #6b7280 !important;
+  color: #8b94a5 !important;
 }
 
 .minisite-feed-container .report-reason-label:hover {
-  background: #f3f4f6 !important;
+  background: #2a3f5f !important;
 }
 
 .minisite-feed-container .report-reason-text {
-  color: #6b7280 !important;
+  color: #8b94a5 !important;
 }
 
 .minisite-feed-container .report-radio {
-  border-color: #d1d5db !important;
+  border-color: #2a3f5f !important;
 }
 
 .minisite-feed-container .report-modal-footer {
-  border-top-color: #e5e7eb !important;
+  border-top-color: #2a3f5f !important;
 }
 
 .minisite-feed-container .post-card {
-  background: #ffffff !important;
-  border: 1px solid #e5e7eb !important;
+  background: #1a1f2e !important;
+  border: 1px solid #2a3f5f !important;
   border-radius: 12px !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .minisite-feed-container .post-card:hover {
-  border-color: #3b82f6 !important;
-  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.12) !important;
+  border-color: #1d4ed8 !important;
+  box-shadow: 0 8px 24px rgba(29, 78, 216, 0.15) !important;
   transform: translateY(-2px) !important;
 }
 
@@ -110,26 +110,26 @@
 }
 
 .minisite-feed-container .post-author {
-  color: #1f2937 !important;
+  color: #e2e8f0 !important;
 }
 
 .minisite-feed-container .post-header:hover .post-author {
-  color: #0d9488 !important;
+  color: #1d4ed8 !important;
 }
 
 .minisite-feed-container .post-image {
-  background: #f9fafb !important;
+  background: #0f1419 !important;
 }
 
 .minisite-feed-container .post-action-btn {
-  color: #6b7280 !important;
+  color: #8b94a5 !important;
   transition: all 0.2s ease !important;
   border-radius: 8px !important;
 }
 
 .minisite-feed-container .post-action-btn:hover {
-  color: #0d9488 !important;
-  background: rgba(13, 148, 136, 0.08) !important;
+  color: #1d4ed8 !important;
+  background: rgba(29, 78, 216, 0.08) !important;
 }
 
 .minisite-feed-container .post-action-sep {
@@ -140,114 +140,114 @@
 
 /* Post Creator Styling */
 .minisite-feed-container .post-creator {
-  background: #ffffff !important;
-  border: 1px solid #e5e7eb !important;
+  background: #1a1f2e !important;
+  border: 1px solid #2a3f5f !important;
   border-radius: 12px !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
   transition: all 0.2s ease !important;
 }
 
 .minisite-feed-container .post-creator:hover {
-  border-color: #d1d5db !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  border-color: #2a3f5f !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
 
 .minisite-feed-container .creator-avatar {
-  background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%) !important;
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
   color: white !important;
   font-weight: 600 !important;
 }
 
 .minisite-feed-container .creator-input {
-  background: #f9fafb !important;
-  border: 1px solid #e5e7eb !important;
-  color: #1f2937 !important;
+  background: #0f1419 !important;
+  border: 1px solid #2a3f5f !important;
+  color: #e2e8f0 !important;
   transition: all 0.2s ease !important;
 }
 
 .minisite-feed-container .creator-input:hover {
-  background: #f3f4f6 !important;
-  border-color: #d1d5db !important;
+  background: #151a25 !important;
+  border-color: #3a5080 !important;
 }
 
 .minisite-feed-container .creator-input:focus {
-  background: #ffffff !important;
-  border-color: #0d9488 !important;
+  background: #1a1f2e !important;
+  border-color: #1d4ed8 !important;
   outline: none !important;
 }
 
 .minisite-feed-container .creator-input::placeholder {
-  color: #9ca3af !important;
+  color: #5c6a8c !important;
 }
 
 /* Override any other placeholder styles */
 .minisite-feed-container textarea::placeholder {
-  color: #9ca3af !important;
+  color: #5c6a8c !important;
 }
 
 .minisite-feed-container .creator-media-btn {
-  background: #f9fafb !important;
-  border: 1px solid #e5e7eb !important;
-  color: #6b7280 !important;
+  background: #0f1419 !important;
+  border: 1px solid #2a3f5f !important;
+  color: #8b94a5 !important;
   transition: all 0.2s ease !important;
 }
 
 .minisite-feed-container .creator-media-btn:hover {
-  background: #f3f4f6 !important;
-  border-color: #d1d5db !important;
-  color: #0d9488 !important;
+  background: #151a25 !important;
+  border-color: #3a5080 !important;
+  color: #1d4ed8 !important;
 }
 
 .minisite-feed-container .creator-post-btn {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
   transition: all 0.3s ease !important;
 }
 
 .minisite-feed-container .creator-post-btn:hover {
   transform: translateY(-2px) !important;
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4) !important;
+  box-shadow: 0 6px 16px rgba(29, 78, 216, 0.4) !important;
 }
 
 .minisite-feed-container .pc-comment-text {
-  color: #1f2937 !important;
+  color: #e2e8f0 !important;
 }
 
 .minisite-feed-container .pc-comment-author {
-  color: #1f2937 !important;
+  color: #e2e8f0 !important;
 }
 
 .minisite-feed-container .pc-comment-time {
-  color: #6b7280 !important;
+  color: #8b94a5 !important;
 }
 
 .minisite-feed-container .pc-comment-input {
-  background: #ffffff !important;
-  border-color: #e5e7eb !important;
-  color: #1f2937 !important;
+  background: #0f1419 !important;
+  border-color: #2a3f5f !important;
+  color: #e2e8f0 !important;
 }
 
 .minisite-feed-container .pc-comment-input::placeholder {
-  color: #9ca3af !important;
+  color: #5c6a8c !important;
 }
 
 .minisite-feed-container .pc-comment-input:focus {
-  border-color: #3b82f6 !important;
-  background: #ffffff !important;
+  border-color: #1d4ed8 !important;
+  background: #1a1f2e !important;
 }
 
 .minisite-feed-container textarea {
-  background: #ffffff !important;
-  border-color: #e5e7eb !important;
-  color: #1f2937 !important;
+  background: #0f1419 !important;
+  border-color: #2a3f5f !important;
+  color: #e2e8f0 !important;
 }
 
 .minisite-feed-container textarea::placeholder {
-  color: #9ca3af !important;
+  color: #5c6a8c !important;
 }
 
 .minisite-feed-container textarea:focus {
-  border-color: #3b82f6 !important;
-  background: #ffffff !important;
+  border-color: #1d4ed8 !important;
+  background: #1a1f2e !important;
 }
 
 /* Comment input field overrides */
@@ -256,9 +256,9 @@
 .minisite-feed-container input[placeholder*="Write"],
 .minisite-feed-container [class*="comment"] input,
 .minisite-feed-container [class*="comment"] textarea {
-  background: #ffffff !important;
-  border: 1px solid #e5e7eb !important;
-  color: #1f2937 !important;
+  background: #0f1419 !important;
+  border: 1px solid #2a3f5f !important;
+  color: #e2e8f0 !important;
 }
 
 .minisite-feed-container input[type="text"]::placeholder,
@@ -266,7 +266,7 @@
 .minisite-feed-container input[placeholder*="Write"]::placeholder,
 .minisite-feed-container [class*="comment"] input::placeholder,
 .minisite-feed-container [class*="comment"] textarea::placeholder {
-  color: #9ca3af !important;
+  color: #5c6a8c !important;
 }
 
 .minisite-feed-container input[type="text"]:focus,
@@ -274,8 +274,8 @@
 .minisite-feed-container input[placeholder*="Write"]:focus,
 .minisite-feed-container [class*="comment"] input:focus,
 .minisite-feed-container [class*="comment"] textarea:focus {
-  border-color: #3b82f6 !important;
-  background: #ffffff !important;
+  border-color: #1d4ed8 !important;
+  background: #1a1f2e !important;
   outline: none !important;
 }
 
@@ -286,9 +286,9 @@
 .minisite-feed-container .pc-comment-box textarea,
 .minisite-feed-container .comment-input-wrapper input,
 .minisite-feed-container .comment-input-wrapper textarea {
-  background: #ffffff !important;
-  border-color: #e5e7eb !important;
-  color: #1f2937 !important;
+  background: #0f1419 !important;
+  border-color: #2a3f5f !important;
+  color: #e2e8f0 !important;
 }
 
 .minisite-feed-container .post-card input::placeholder,
@@ -297,26 +297,26 @@
 .minisite-feed-container .pc-comment-box textarea::placeholder,
 .minisite-feed-container .comment-input-wrapper input::placeholder,
 .minisite-feed-container .comment-input-wrapper textarea::placeholder {
-  color: #9ca3af !important;
+  color: #5c6a8c !important;
 }
 
 /* Specific overrides for PostCard comment input */
 .minisite-feed-container .comment-input {
-  background: #ffffff !important;
-  border: 1px solid #e5e7eb !important;
-  color: #1f2937 !important;
-  caret-color: #1f2937 !important;
+  background: #0f1419 !important;
+  border: 1px solid #2a3f5f !important;
+  color: #e2e8f0 !important;
+  caret-color: #e2e8f0 !important;
 }
 
 .minisite-feed-container .comment-input::placeholder {
-  color: #9ca3af !important;
+  color: #5c6a8c !important;
 }
 
 .minisite-feed-container .comment-input:focus {
-  border-color: #3b82f6 !important;
-  background: #ffffff !important;
+  border-color: #1d4ed8 !important;
+  background: #1a1f2e !important;
   outline: none !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15) !important;
 }
 
 .minisite-feed-container .comment-input-wrap {

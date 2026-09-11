@@ -121,8 +121,8 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
     const dataUrl = await fileToDataUrl(croppedFile);
     setFormData(prev => ({
       ...prev,
-      coverImages: [...prev.coverImages, croppedFile],
-      coverImagePreviews: [...prev.coverImagePreviews, dataUrl],
+      coverImages: [croppedFile],
+      coverImagePreviews: [dataUrl],
     }));
   };
 
@@ -393,7 +393,7 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
                 {[
                   { value: 'public', label: 'Public', Icon: GlobeIcon, description: 'Anyone can see' },
                 ].map(option => (
-                  <label key={option.value} className="csp-visibility-option display-only">
+                  <label key={option.value} className="csp-visibility-option">
                     <input
                       type="radio"
                       name="visibility"
@@ -423,7 +423,7 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
                 {[
                   { value: 'anyone', label: 'Anyone can join', description: 'No approval needed' },
                 ].map(option => (
-                  <label key={option.value} className="csp-option-compact display-only">
+                  <label key={option.value} className="csp-option-compact">
                     <input
                       type="radio"
                       name="joinPolicy"
@@ -451,7 +451,7 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
                 {[
                   { value: 'everyone', label: 'Everyone', description: 'All members visible to all' },
                 ].map(option => (
-                  <label key={option.value} className="csp-option-compact display-only">
+                  <label key={option.value} className="csp-option-compact">
                     <input
                       type="radio"
                       name="memberListVisibility"
@@ -473,115 +473,84 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
             </div>
           </div>
 
-          {/* Logo Upload */}
-          <div className="csp-form-group">
-            <label className="csp-label">Logo (Optional)</label>
-            <div className="csp-logo-upload">
-              {formData.logoPreview ? (
-                <div className="csp-logo-preview">
-                  <img src={formData.logoPreview} alt="Logo" className="csp-logo-img" />
+          {/* Logo and Cover Images Row */}
+          <div className="csp-logo-cover-row">
+            {/* Logo Upload */}
+            <div className="csp-form-group">
+              <label className="csp-label">Logo (Optional)</label>
+              <div className="csp-logo-upload">
+                {formData.logoPreview ? (
+                  <div className="csp-logo-preview">
+                    <img src={formData.logoPreview} alt="Logo" className="csp-logo-img" />
+                    <button
+                      type="button"
+                      className="csp-remove-logo-btn"
+                      onClick={removeLogo}
+                      title="Remove logo"
+                    >
+                      <CloseIcon />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="csp-logo-upload-area">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="csp-file-input"
+                    />
+                    <div className="csp-upload-content">
+                      <div className="csp-upload-icon"><UploadIcon /></div>
+                      <p className="csp-upload-text">Upload Logo</p>
+                      <p className="csp-upload-hint">PNG, JPG up to 2MB</p>
+                    </div>
+                  </label>
+                )}
+                {errors.logo && <p className="csp-error">{errors.logo}</p>}
+                <p className="csp-helper">Use this logo for branding. Recommended: 200x200px.</p>
+              </div>
+            </div>
+
+            {/* Cover Image Upload */}
+            <div className="csp-form-group">
+              <label className="csp-label">Cover Image (Optional)</label>
+            <div className="csp-image-upload">
+              {/* Single Image Preview */}
+              {formData.coverImagePreviews.length > 0 && (
+                <div className="csp-image-preview">
+                  <img src={formData.coverImagePreviews[0]} alt="Cover" className="csp-preview-img" />
                   <button
                     type="button"
-                    className="csp-remove-logo-btn"
-                    onClick={removeLogo}
-                    title="Remove logo"
+                    className="csp-remove-image-btn"
+                    onClick={() => removeImage(0)}
+                    title="Remove image"
                   >
                     <CloseIcon />
                   </button>
                 </div>
-              ) : (
-                <label className="csp-logo-upload-area">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoUpload}
-                    className="csp-file-input"
-                  />
-                  <div className="csp-upload-content">
-                    <div className="csp-upload-icon"><UploadIcon /></div>
-                    <p className="csp-upload-text">Upload Logo</p>
-                    <p className="csp-upload-hint">PNG, JPG up to 2MB</p>
-                  </div>
-                </label>
               )}
-              {errors.logo && <p className="csp-error">{errors.logo}</p>}
-              <p className="csp-helper">Use this logo for branding. Recommended: 200x200px.</p>
-            </div>
-          </div>
 
-          {/* Cover Images Upload */}
-          <div className="csp-form-group">
-            <label className="csp-label">Cover Images</label>
-            <div className="csp-image-upload">
-              {/* Image Grid - Show all uploaded images */}
-              {formData.coverImagePreviews.length > 0 && (
-                <div className="csp-images-grid">
-                  {formData.coverImagePreviews.map((preview, index) => (
-                    <div key={index} className="csp-image-preview">
-                      <img src={preview} alt={`Preview ${index + 1}`} className="csp-preview-img" />
-                      <button
-                        type="button"
-                        className="csp-remove-image-btn"
-                        onClick={() => removeImage(index)}
-                        title="Remove image"
-                      >
-                        <CloseIcon />
-                      </button>
+              {/* Upload Area - Show only when no image */}
+              {formData.coverImagePreviews.length === 0 && (
+                <>
+                  <label className="csp-upload-area">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="csp-file-input"
+                    />
+                    <div className="csp-upload-content">
+                      <div className="csp-upload-icon"><UploadIcon /></div>
+                      <p className="csp-upload-text">Click to upload or drag and drop</p>
+                      <p className="csp-upload-hint">PNG, JPG, GIF up to 5MB</p>
                     </div>
-                  ))}
-                </div>
+                  </label>
+                </>
               )}
-
-              {/* Upload Area - Always visible */}
-              <>
-                <label className="csp-upload-area">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="csp-file-input"
-                  />
-                  <div className="csp-upload-content">
-                    <div className="csp-upload-icon"><UploadIcon /></div>
-                    <p className="csp-upload-text">Click to upload or drag and drop</p>
-                    <p className="csp-upload-hint">PNG, JPG, GIF up to 5MB</p>
-                  </div>
-                </label>
-                <div className="csp-cover-url-fallback">
-                  <span className="csp-cover-url-divider">or paste an image URL</span>
-                  <input
-                    type="text"
-                    className="csp-input"
-                    placeholder="https://example.com/image.jpg"
-                    onKeyDown={(e) => {
-                      if (e.key !== 'Enter') return;
-                      e.preventDefault();
-                      const url = e.target.value.trim();
-                      if (url) {
-                        setFormData(prev => ({
-                          ...prev,
-                          coverImages: [...prev.coverImages, url],
-                          coverImagePreviews: [...prev.coverImagePreviews, url]
-                        }));
-                        e.target.value = '';
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const url = e.target.value.trim();
-                      if (url) {
-                        setFormData(prev => ({
-                          ...prev,
-                          coverImages: [...prev.coverImages, url],
-                          coverImagePreviews: [...prev.coverImagePreviews, url]
-                        }));
-                        e.target.value = '';
-                      }
-                    }}
-                  />
-                </div>
-              </>
               {errors.coverImages && <p className="csp-error">{errors.coverImages}</p>}
-              <p className="csp-helper">Upload multiple images. Recommended: 1200x600px for best results. Uploading a file currently fails on the server (known backend bug) — pasting a direct image URL works reliably in the meantime.</p>
+              <p className="csp-helper">Recommended: 1200x600px for best results.</p>
+            </div>
             </div>
           </div>
 

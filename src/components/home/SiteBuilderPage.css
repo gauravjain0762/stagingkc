@@ -206,7 +206,7 @@
   display: flex;
   flex: 1;
   overflow: hidden;
-  background: white;
+  background: #070b14;
   gap: 0;
   height: 100%;
   width: 100%;
@@ -217,7 +217,7 @@
   flex: 1 1 100%;
   display: flex;
   flex-direction: column;
-  background: white;
+  background: #070b14;
   overflow: hidden;
   width: 100%;
   height: 100%;
@@ -237,19 +237,20 @@
 
 .wp-preview-container--interactive {
   align-items: center;
-  background: #e9edf3;
+  background: #0a0e18;
 }
 
 .wp-canvas {
   width: 100%;
   max-width: 100%;
   min-height: 100%;
-  background: white;
+  background: #070b14;
+  color: #e2e8f0;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   transition: width 0.25s ease;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
 }
 
 .wp-empty-state {
@@ -301,10 +302,12 @@
   align-items: center;
   justify-content: center;
   gap: 24px;
-  padding: 0;
+  padding: 16px 40px;
   flex-wrap: wrap;
   width: 100%;
   position: relative;
+  background: #0f1419;
+  border-bottom: 1px solid #2a3f5f;
 }
 
 .wp-navbar-brand {
@@ -413,24 +416,24 @@
 .wp-placeholder-img {
   width: 100%;
   height: 300px;
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  background: linear-gradient(135deg, #1a1f2e 0%, #151a25 100%);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 16px;
-  border: 2px dashed #d1d5db;
-  color: #9ca3af;
+  border: 2px dashed #2a3f5f;
+  color: #8b94a5;
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
 }
 
 .wp-placeholder-img:hover {
-  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-  border-color: #0d9488;
-  color: #0d9488;
+  background: linear-gradient(135deg, #1e2537 0%, #1a1f2e 100%);
+  border-color: #1d4ed8;
+  color: #1d4ed8;
 }
 
 .wp-placeholder-img-icon {
@@ -461,23 +464,23 @@
 }
 
 .wp-btn-primary {
-  background: var(--wp-accent, #3b82f6);
+  background: #1d4ed8;
   color: white;
 }
 
 .wp-btn-primary:hover {
-  filter: brightness(0.9);
+  filter: brightness(1.1);
   transform: translateY(-2px);
 }
 
 .wp-btn-secondary {
-  background: white;
-  color: var(--wp-accent, #3b82f6);
-  border: 1.5px solid var(--wp-accent, #3b82f6);
+  background: transparent;
+  color: #1d4ed8;
+  border: 1.5px solid #1d4ed8;
 }
 
 .wp-btn-secondary:hover {
-  background: #f0f4f8;
+  background: rgba(29, 78, 216, 0.1);
 }
 
 /* Text Section */
@@ -488,6 +491,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  background: #0a0e18;
 }
 
 .wp-text-section > * {
@@ -538,6 +542,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  background: #0a0e18;
 }
 
 .wp-gallery-section h2 {
@@ -559,7 +564,7 @@
 
 .wp-gallery-item {
   aspect-ratio: 1;
-  background: #f3f4f6;
+  background: #1a1f2e;
   border-radius: 12px;
   overflow: hidden;
 }
@@ -572,9 +577,9 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-  color: #9ca3af;
-  border: 2px dashed #d1d5db;
+  background: linear-gradient(135deg, #1a1f2e 0%, #151a25 100%);
+  color: #8b94a5;
+  border: 2px dashed #2a3f5f;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -582,9 +587,9 @@
 }
 
 .wp-gallery-placeholder:hover {
-  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-  border-color: #0d9488;
-  color: #0d9488;
+  background: linear-gradient(135deg, #1e2537 0%, #1a1f2e 100%);
+  border-color: #1d4ed8;
+  color: #1d4ed8;
 }
 
 .wp-gallery-placeholder-icon {
@@ -608,6 +613,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  background: #0a0e18;
 }
 
 .wp-grid-section h2 {
@@ -628,11 +634,11 @@
 }
 
 .wp-grid-item {
-  background: white;
+  background: #1a1f2e;
   padding: 30px;
   border-radius: 12px;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .wp-grid-icon {
@@ -643,13 +649,13 @@
 .wp-grid-item h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #1f2937;
+  color: #e2e8f0;
   margin: 0 0 8px 0;
 }
 
 .wp-grid-item p {
   font-size: 14px;
-  color: #6b7280;
+  color: #8b94a5;
   margin: 0;
 }
 
@@ -661,6 +667,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  background: #0a0e18;
 }
 
 .wp-form-section h2 {
@@ -683,25 +690,25 @@
 .wp-form input,
 .wp-form textarea {
   padding: 12px 16px;
-  border: 1px solid #d0d5dd;
+  border: 1px solid #2a3f5f;
   border-radius: 8px;
   font-size: 14px;
   font-family: inherit;
   transition: all 0.2s;
-  background: var(--wp-form-bg, #ffffff);
-  color: var(--wp-form-text, #1f2937);
+  background: var(--wp-form-bg, #0f1419);
+  color: var(--wp-form-text, #e2e8f0);
 }
 
 .wp-form input::placeholder,
 .wp-form textarea::placeholder {
-  color: var(--wp-form-placeholder, #9ca3af);
+  color: var(--wp-form-placeholder, #5c6a8c);
 }
 
 .wp-form input:focus,
 .wp-form textarea:focus {
   outline: none;
-  border-color: var(--wp-accent, #3b82f6);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--wp-accent, #3b82f6) 15%, transparent);
+  border-color: var(--wp-accent, #1d4ed8);
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15);
 }
 
 .wp-form textarea {
@@ -784,6 +791,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
+  background: #0a0e18;
 }
 
 .wp-cta-section h2 {
@@ -811,6 +819,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  background: #0a0e18;
 }
 
 .wp-testimonial-section h2 {
@@ -831,15 +840,15 @@
 }
 
 .wp-testimonial-card {
-  background: white;
+  background: #1a1f2e;
   border-radius: 12px;
   padding: 26px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .wp-testimonial-quote {
   font-size: 15px;
-  color: #374151;
+  color: #c8d0e0;
   margin: 0 0 16px 0;
   line-height: 1.5;
 }
@@ -847,19 +856,21 @@
 .wp-testimonial-author {
   font-size: 14px;
   font-weight: 700;
-  color: #1f2937;
+  color: #e2e8f0;
   margin: 0;
 }
 
 .wp-testimonial-role {
   font-size: 13px;
-  color: #9ca3af;
+  color: #8b94a5;
   margin: 2px 0 0 0;
 }
 
 /* Footer Section */
 .wp-footer-section {
   padding: 0 40px;
+  background: #0f1419;
+  border-top: 1px solid #2a3f5f;
 }
 
 .wp-footer-social {
@@ -1323,15 +1334,15 @@
   gap: 0;
   flex: 1;
   overflow-y: auto;
-  background: #fff;
+  background: #0f1419;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid rgba(75, 85, 99, 0.2);
+  border: 1px solid rgba(29, 78, 216, 0.2);
 }
 
 .sbp-preview-block {
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
+  background: #0f1419;
+  border-bottom: 1px solid #2a3f5f;
   padding: 32px 20px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1347,12 +1358,12 @@
 }
 
 .sbp-preview-block:hover {
-  background: #f9fafb;
+  background: #151a25;
 }
 
 .sbp-preview-block--selected {
-  background: rgba(59, 130, 246, 0.08);
-  border-left: 4px solid #3b82f6;
+  background: rgba(29, 78, 216, 0.1);
+  border-left: 4px solid #1d4ed8;
   padding-left: 16px;
 }
 
@@ -1360,7 +1371,7 @@
   flex-shrink: 0;
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.1) 0%, rgba(29, 78, 216, 0.05) 100%);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -1376,13 +1387,13 @@
 .sbp-block-content h4 {
   font-size: 14px;
   font-weight: 600;
-  color: #1f2937;
+  color: #e2e8f0;
   margin: 0 0 4px 0;
 }
 
 .sbp-block-type {
   font-size: 12px;
-  color: #6b7280;
+  color: #8b94a5;
   margin: 0;
 }
 
@@ -2188,9 +2199,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px;
-  background: #f3f4f6;
+  background: #0f1419;
   gap: 16px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #2a3f5f;
   flex-shrink: 0;
 }
 
@@ -2198,8 +2209,8 @@
   display: flex;
   gap: 4px;
   padding: 4px;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: #1a1f2e;
+  border: 1px solid #2a3f5f;
   border-radius: 10px;
 }
 
@@ -2212,18 +2223,18 @@
   border: none;
   border-radius: 7px;
   background: none;
-  color: #6b7280;
+  color: #8b94a5;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .sbp-device-btn:hover {
-  background: #f3f4f6;
-  color: #374151;
+  background: #2a3f5f;
+  color: #e2e8f0;
 }
 
 .sbp-device-btn--active {
-  background: #3b82f6;
+  background: #1d4ed8;
   color: white;
 }
 

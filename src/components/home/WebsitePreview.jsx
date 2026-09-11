@@ -354,9 +354,9 @@ export default function WebsitePreview({
               '--wp-btn-radius': `${style.buttonRadius ?? 8}px`,
               ...(section.type === 'form'
                 ? {
-                    '--wp-form-bg': style.formFieldBackground || '#ffffff',
-                    '--wp-form-text': style.formFieldTextColor || '#1f2937',
-                    '--wp-form-placeholder': style.formPlaceholderColor || '#9ca3af',
+                    '--wp-form-bg': style.formFieldBackground || '#0f1419',
+                    '--wp-form-text': style.formFieldTextColor || '#e2e8f0',
+                    '--wp-form-placeholder': style.formPlaceholderColor || '#5c6a8c',
                   }
                 : null),
               ...(style.contentWidth === 'boxed' ? { maxWidth: 1100, marginLeft: 'auto', marginRight: 'auto' } : null),
