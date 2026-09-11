@@ -3761,7 +3761,7 @@ export default function GroupsPage({ onBack, onEventsClick, onCalendarClick, onM
   }
 
   // Show API groups only when they belong to the current tab
-  let displayGroups = (groupsTab === hubTab) ? groups : [];
+  let displayGroups = (groupsTab === hubTab && Array.isArray(groups)) ? groups : [];
 
   // Filter by search query when on joined tab
   if (hubTab === 'joined' && joinedSearch.trim()) {
