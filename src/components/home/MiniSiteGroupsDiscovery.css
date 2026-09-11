@@ -162,21 +162,23 @@
 .msg-badge {
   display: inline-block;
   padding: 4px 10px;
-  background: rgba(29, 78, 216, 0.15);
-  color: #60a5fa;
+  background: rgba(93, 106, 139, 0.25);
+  color: #b0b8cd;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 600;
+  border: 1px solid rgba(93, 106, 139, 0.3);
 }
 
 .msg-privacy {
   display: inline-block;
   padding: 4px 10px;
-  background: rgba(139, 148, 165, 0.15);
-  color: #8b94a5;
+  background: rgba(93, 106, 139, 0.25);
+  color: #b0b8cd;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 600;
+  border: 1px solid rgba(93, 106, 139, 0.3);
 }
 
 .msg-group-stats {
