@@ -69,7 +69,13 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
     setGroupsLoading(true);
     try {
       const data = await apiRequest('/api/groups?tab=suggested&page=1&limit=12', { token: authToken });
-      setGroups(data.groups ?? data.data ?? []);
+      let groups = [];
+      if (Array.isArray(data.groups)) {
+        groups = data.groups;
+      } else if (data?.data?.groups && Array.isArray(data.data.groups)) {
+        groups = data.data.groups;
+      }
+      setGroups(groups);
     } catch (err) {
       console.error('Failed to load feed groups:', err);
     } finally {
@@ -174,9 +180,9 @@ export default function Feed({ onEventsClick, onProfileClick, onCreateEvent, onU
   // Combine posts, events, and groups, sort by creation time
   const combinedFeed = () => {
     const combined = [
-      ...posts.map(p => ({ ...p, type: 'post', createdAt: p.createdAt })),
-      ...events.map(e => ({ ...e, type: 'event', createdAt: e.createdAt })),
-      ...groups.map(g => ({ ...g, type: 'group', createdAt: g.createdAt || new Date() })),
+      ...(Array.isArray(posts) ? posts : []).map(p => ({ ...p, type: 'post', createdAt: p.createdAt })),
+      ...(Array.isArray(events) ? events : []).map(e => ({ ...e, type: 'event', createdAt: e.createdAt })),
+      ...(Array.isArray(groups) ? groups : []).map(g => ({ ...g, type: 'group', createdAt: g.createdAt || new Date() })),
     ];
     return combined.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   };
