@@ -2171,9 +2171,13 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
   const dispatch = useDispatch();
   const groupId = group?._id ?? group?.id;
   const { user: authUser } = useSelector(s => s.auth);
-  const { joiningIds, leavingIds, friendRequestIds } = useSelector(s => s.groups);
+  const { joiningIds, leavingIds, friendRequestIds, groups: rdxGroups } = useSelector(s => s.groups);
   const rdxPosts   = useSelector(s => s.groups.groupPosts[groupId]   ?? null);
   const rdxMembers = useSelector(s => s.groups.groupMembers[groupId] ?? null);
+
+  // Read updated group from Redux after fetchGroupDetail completes
+  const rdxGroup = rdxGroups.find(g => g._id === groupId || g.id === groupId);
+  const displayGroup = rdxGroup || group;
 
   const { pinnedPosts, deletingPostIds, editingPostIds, pinningPostIds } = useSelector(s => s.comments);
   const [detailTab,        setDetailTab]        = useState('about');
@@ -2571,7 +2575,7 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
       {/* Cover */}
       <div className="gd-cover-section">
         <div className="gd-cover">
-          <img src={group.coverImg || `https://picsum.photos/seed/gd-${group._id ?? group.id}/1200/300`} alt={group.name} className="gd-cover-img" />
+          <img src={displayGroup.coverImg || `https://picsum.photos/seed/gd-${displayGroup._id ?? displayGroup.id}/1200/300`} alt={displayGroup.name} className="gd-cover-img" />
           <button className="gd-cover-back-btn" onClick={onBack} title="Back to Groups">
             <BackArrowIcon />
           </button>
@@ -2579,14 +2583,14 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
 
         {/* Profile row */}
         <div className="gd-profile-row">
-          {group.groupImg
-            ? <img src={group.groupImg} alt={group.name} className="gd-group-icon gd-group-icon--img" />
+          {displayGroup.groupImg
+            ? <img src={displayGroup.groupImg} alt={displayGroup.name} className="gd-group-icon gd-group-icon--img" />
             : <div className="gd-group-icon" style={{ background: group.color }}>{group.iconText}</div>
           }
           <div className="gd-group-info">
             <h1 className="gd-title">{group.name}</h1>
             <p className="gd-meta">
-              Created {fmtDate(group.createdAt)}
+              Created {fmtDate(displayGroup.createdAt)}
             </p>
           </div>
           <div className="gd-header-actions">
@@ -2684,11 +2688,11 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
                     <span className="adm-about-card-title">About this Group</span>
                   </div>
                   <p className="adm-about-body">
-                    {aboutExpanded || (group.description ?? '').length <= 300
-                      ? group.description
-                      : (group.description ?? '').slice(0, 300) + '…'
+                    {aboutExpanded || (displayGroup.description ?? '').length <= 300
+                      ? displayGroup.description
+                      : (displayGroup.description ?? '').slice(0, 300) + '…'
                     }
-                    {(group.description ?? '').length > 300 && (
+                    {(displayGroup.description ?? '').length > 300 && (
                       <>
                         {' '}
                         <button
@@ -2716,7 +2720,7 @@ function GroupDetailPage({ group, onBack, onManage, onUserClick, onFeedClick, on
                     <span className="adm-about-icon adm-about-icon--purple"><TrendingUpIcon /></span>
                     <span className="adm-about-card-title">Group Mission</span>
                   </div>
-                  <p className="adm-about-body">{group.mission || 'No mission statement defined.'}</p>
+                  <p className="adm-about-body">{displayGroup.mission || 'No mission statement defined.'}</p>
                 </div>
 
                 <div className="adm-about-meta-grid">
@@ -3327,8 +3331,8 @@ function GroupHubCard({ group, onManage, onView, isOwned }) {
   }
 
   const btnLabel = isJoining ? 'Joining...' : pending ? 'Pending' : joined ? 'Joined' : 'Join Group';
-  const hasCoverImg = !!(group.coverImg || group.coverUrl);
-  const coverSrc = group.coverImg || group.coverUrl;
+  const hasCoverImg = !!(displayGroup.coverImg || displayGroup.coverUrl);
+  const coverSrc = displayGroup.coverImg || displayGroup.coverUrl;
   const pendingReqs = group.pendingReqs ?? group.pendingCount ?? 0;
 
   return (

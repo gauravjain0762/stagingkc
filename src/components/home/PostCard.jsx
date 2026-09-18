@@ -545,7 +545,7 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
   }
 
   const likeCount    = isStatic ? post.likes    : (post.likesCount ?? post.likes?.length ?? 0);
-  const commentCount = groupId ? groupComments.length : (isStatic ? post.comments : (post.commentsCount ?? post.comments?.length ?? 0));
+  const commentCount = groupId ? (Array.isArray(groupComments) ? groupComments.length : 0) : (isStatic ? post.comments : (post.commentsCount ?? post.comments?.length ?? 0));
   const shareCount   = isStatic ? post.shares   : (post.shares?.length   ?? 0);
   const recentReactors = isStatic ? [] : (post.recentReactors ?? []);
 
@@ -559,7 +559,7 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
   const isCommenting = isStatic ? false : commentingId === post._id;
   const commentsLoading = !isStatic && commentsLoadingIds.includes(post._id);
 
-  const realComments = (groupId ? groupComments : (post.comments ?? []))
+  const realComments = (groupId ? (Array.isArray(groupComments) ? groupComments : []) : (post.comments ?? []))
     .map(normalizeComment)
     .filter(Boolean)
     .filter(c => !c.deleted);
