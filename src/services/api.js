@@ -4,7 +4,7 @@ import { showToast } from '../store/slices/toastSlice';
 import { showLogin } from '../store/slices/uiSlice';
 import { disconnectSocket } from './socket';
 
-const BASE_URL = 'https://kick-analyst-backend-production.jay886631.workers.dev';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 let suspensionHandled = false;
 let sessionExpiredHandled = false;
