@@ -40,11 +40,6 @@ function handleNavLinkClick(e, url, interactive, siteId) {
     window.dispatchEvent(new CustomEvent('openMembers', { detail: { siteId } }));
     return;
   }
-  if (url === '#calendar') {
-    window.location.hash = 'calendar';
-    window.dispatchEvent(new CustomEvent('openCalendar', { detail: { siteId } }));
-    return;
-  }
   if (url === '#groups') {
     window.location.hash = 'groups';
     window.dispatchEvent(new CustomEvent('openGroups', { detail: { siteId } }));

@@ -5,7 +5,6 @@ import WebsitePreview from './WebsitePreview';
 import MiniSiteFeed from './MiniSiteFeed';
 import MiniSiteFooter from './MiniSiteFooter';
 import MiniSiteGroupsPage from './MiniSiteGroupsPage';
-import MiniSiteCalendarPage from './MiniSiteCalendarPage';
 import MiniSiteMembersPage from './MiniSiteMembersPage';
 import Loader from '../Loader';
 import { normalizeSite } from './miniSiteUtils';
@@ -35,7 +34,6 @@ export default function PublicSitePage({ slug }) {
   const [passwordError, setPasswordError] = useState('');
   const [showFeed, setShowFeed] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
-  const [showCalendar, setShowCalendar] = useState(false);
   const [showGroups, setShowGroups] = useState(false);
   const [isMember, setIsMember] = useState(false);
   const [isOrgMember, setIsOrgMember] = useState(false);
@@ -200,31 +198,21 @@ export default function PublicSitePage({ slug }) {
     const handleOpenMembers = (e) => {
       setShowFeed(false);
       setShowMembers(true);
-      setShowCalendar(false);
-      setShowGroups(false);
-    };
-    const handleOpenCalendar = (e) => {
-      setShowFeed(false);
-      setShowMembers(false);
-      setShowCalendar(true);
       setShowGroups(false);
     };
     const handleOpenGroups = (e) => {
       setShowFeed(false);
       setShowMembers(false);
-      setShowCalendar(false);
       setShowGroups(true);
     };
 
     window.addEventListener('openFeed', handleOpenFeed);
     window.addEventListener('openMembers', handleOpenMembers);
-    window.addEventListener('openCalendar', handleOpenCalendar);
     window.addEventListener('openGroups', handleOpenGroups);
 
     return () => {
       window.removeEventListener('openFeed', handleOpenFeed);
       window.removeEventListener('openMembers', handleOpenMembers);
-      window.removeEventListener('openCalendar', handleOpenCalendar);
       window.removeEventListener('openGroups', handleOpenGroups);
     };
   }, []);
@@ -442,12 +430,6 @@ export default function PublicSitePage({ slug }) {
               onBack={() => setShowMembers(false)}
             />
           </div>
-          <MiniSiteFooter section={footerSection} />
-        </>
-      ) : showCalendar ? (
-        <>
-          {renderNavbarOnly()}
-          <MiniSiteCalendarPage siteName={site.name} />
           <MiniSiteFooter section={footerSection} />
         </>
       ) : showGroups ? (

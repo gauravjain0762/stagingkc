@@ -318,11 +318,12 @@ export default function MiniSiteFeed({ siteId, siteName }) {
         <div style={{
           textAlign: 'center',
           padding: '16px',
-          backgroundColor: '#dbeafe',
+          backgroundColor: '#111422',
           borderRadius: '8px',
-          marginBottom: '16px'
+          marginBottom: '16px',
+          border: '1px solid #1a1f35'
         }}>
-          <p style={{ margin: '0', color: '#1e40af', fontSize: '14px', fontWeight: '500' }}>
+          <p style={{ margin: '0', color: '#e2e8f0', fontSize: '14px', fontWeight: '500' }}>
             You can view posts but need to join this organization to post
           </p>
         </div>

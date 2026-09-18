@@ -8,7 +8,6 @@ export const SECTION_TYPES = [
   { type: 'grid',        label: 'Features',     description: 'Grid of features or services with icons' },
   { type: 'gallery',     label: 'Gallery',      description: 'Image grid for portfolio or work samples' },
   { type: 'members',     label: 'Members',      description: 'Display community members list' },
-  { type: 'calendar',    label: 'Calendar',     description: 'Events calendar for scheduling' },
   { type: 'form',        label: 'Contact Form', description: 'Contact form with customizable fields' },
   { type: 'cta',         label: 'Call to Action', description: 'Focused banner driving a single action' },
   { type: 'testimonial', label: 'Testimonials', description: 'Quotes and reviews from customers' },
@@ -91,10 +90,6 @@ function defaultStyleForType(type) {
     style.background = '#0a0e18';
     style.textColor = '#e2e8f0';
   }
-  if (type === 'calendar') {
-    style.background = '#0a0e18';
-    style.textColor = '#e2e8f0';
-  }
   if (type === 'footer') {
     style.background = '#0f1419';
     style.textColor = '#e2e8f0';
@@ -111,7 +106,6 @@ function defaultContent(type) {
           { label: 'Home', url: '#home' },
           { label: 'Feed', url: '#feed' },
           { label: 'Members', url: '#members' },
-          { label: 'Calendar', url: '#calendar' },
           { label: 'Groups', url: '#groups' },
         ],
         secondaryCtaText: 'Join Community',
@@ -163,16 +157,6 @@ function defaultContent(type) {
           { name: 'Member One', role: 'Founder', avatar: '👤' },
           { name: 'Member Two', role: 'Contributor', avatar: '👤' },
           { name: 'Member Three', role: 'Moderator', avatar: '👤' },
-        ],
-      };
-    case 'calendar':
-      return {
-        headline: 'Events',
-        subheadline: 'Upcoming events and meetings',
-        items: [
-          { title: 'Community Meetup', date: '2026-09-15', time: '6:00 PM' },
-          { title: 'Workshop', date: '2026-09-22', time: '10:00 AM' },
-          { title: 'Weekly Call', date: '2026-09-29', time: '3:00 PM' },
         ],
       };
     case 'form':
@@ -242,7 +226,7 @@ export function createStarterSections() {
   const footer = { ...createSection('footer'), name: 'Footer' };
 
   const navbar = { ...createSection('navbar'), name: 'Navbar' };
-  // Navbar links are fixed: Home, Feed, Members, Calendar, Groups
+  // Navbar links are fixed: Home, Feed, Members, Groups
   // Users cannot change these - they can add other sections via "Add Section"
   navbar.content = {
     ...navbar.content,
@@ -250,7 +234,6 @@ export function createStarterSections() {
       { label: 'Home', url: `#${hero.id}` },
       { label: 'Feed', url: '#feed' },
       { label: 'Members', url: '#members' },
-      { label: 'Calendar', url: '#calendar' },
       { label: 'Groups', url: '#groups' },
     ],
   };
