@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import {
   getMiniSiteEvents, getMiniSiteEventDetail, getMiniSiteEventTickets,
-  joinMiniSiteEvent, leaveMiniSiteEvent, getMiniSiteEventAttendees
+  joinMiniSiteEvent, leaveMiniSiteEvent, getMiniSiteEventAttendees,
+  createMiniSiteEventDiscussion, getMiniSiteEventDiscussions,
+  deleteMiniSiteEventDiscussion
 } from '../../services/api';
+import ImageCropper from './ImageCropper';
 import './MiniSiteEventsPage.css';
 
 function BackIcon() {
@@ -27,7 +30,7 @@ function TicketIcon() {
 }
 
 export default function MiniSiteEventsPage({ siteId, siteName }) {
-  const { token } = useSelector(s => s.auth);
+  const { token, user } = useSelector(s => s.auth);
   const [view, setView] = useState('list'); // 'list' or 'detail'
   const [activeTab, setActiveTab] = useState('all'); // 'all' or 'joined'
   const [detailTab, setDetailTab] = useState('about'); // 'about' or 'discussion' in detail view
@@ -44,10 +47,24 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState('');
   const [joinSuccess, setJoinSuccess] = useState(false);
+  const [discComposerOpen, setDiscComposerOpen] = useState(false);
+  const [discPostCaption, setDiscPostCaption] = useState('');
+  const [cropQueue, setCropQueue] = useState([]);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [postingDiscussion, setPostingDiscussion] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     loadEvents();
   }, [siteId, token]);
+
+  useEffect(() => {
+    if (detailTab === 'discussion' && view === 'detail' && selectedEvent && token) {
+      loadDiscussions();
+    }
+  }, [detailTab, selectedEvent, token]);
 
   const loadEvents = async () => {
     if (!siteId || !token) return;
@@ -180,6 +197,123 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
       alert('❌ Failed to join event: ' + (err.message || 'Unknown error'));
     } finally {
       setJoinFlow(prev => prev ? { ...prev, submitting: false } : prev);
+    }
+  };
+
+  const handleFileSelection = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setCropQueue(files);
+  };
+
+  const handleCropSave = (croppedFile) => {
+    setUploadedFiles(prev => [...prev, croppedFile]);
+    // Move to next file in queue
+    setCropQueue(prev => prev.slice(1));
+  };
+
+  const handleCropSkip = () => {
+    if (cropQueue.length > 0) {
+      setUploadedFiles(prev => [...prev, cropQueue[0]]);
+    }
+    // Move to next file in queue
+    setCropQueue(prev => prev.slice(1));
+  };
+
+  const handleCropCancel = () => {
+    setCropQueue([]);
+    setUploadedFiles([]);
+  };
+
+  const loadDiscussions = async () => {
+    if (!selectedEvent || !token) return;
+    try {
+      const eventId = selectedEvent._id || selectedEvent.id;
+      const data = await getMiniSiteEventDiscussions(siteId, eventId, { limit: 50 }, token);
+
+      // Map API response to comments format
+      let discussionsList = [];
+      if (data?.data?.discussions) {
+        discussionsList = data.data.discussions;
+      } else if (data?.discussions) {
+        discussionsList = data.discussions;
+      } else if (Array.isArray(data?.data)) {
+        discussionsList = data.data;
+      } else if (Array.isArray(data)) {
+        discussionsList = data;
+      }
+
+      // Transform to comment format
+      const formattedComments = discussionsList.map(disc => ({
+        id: disc._id || disc.id,
+        author: disc.author?.fullName || 'User',
+        text: disc.caption || '',
+        time: disc.time ? new Date(disc.time).toLocaleString() : 'Just now',
+        media: disc.media || [],
+        likeCount: disc.likeCount || 0,
+        commentCount: disc.commentCount || 0,
+        raw: disc
+      }));
+
+      setComments(formattedComments);
+    } catch (err) {
+      console.error('Failed to load discussions:', err);
+    }
+  };
+
+  const handlePostDiscussion = async () => {
+    if (!selectedEvent || !token) return;
+    if (!discPostCaption.trim() && uploadedFiles.length === 0) {
+      alert('Please add a caption or upload photos/videos');
+      return;
+    }
+
+    setPostingDiscussion(true);
+    try {
+      const eventId = selectedEvent._id || selectedEvent.id;
+      const result = await createMiniSiteEventDiscussion(
+        siteId,
+        eventId,
+        {
+          caption: discPostCaption,
+          mediaFiles: uploadedFiles.length > 0 ? uploadedFiles : null
+        },
+        token
+      );
+
+      // Reset form
+      setDiscPostCaption('');
+      setUploadedFiles([]);
+      setDiscComposerOpen(false);
+
+      // Fetch updated discussions
+      await loadDiscussions();
+    } catch (err) {
+      console.error('Failed to post discussion:', err);
+      alert('❌ Failed to post: ' + (err.message || 'Unknown error'));
+    } finally {
+      setPostingDiscussion(false);
+    }
+  };
+
+  const handleDeleteDiscussion = async (discussionId) => {
+    if (!selectedEvent || !token) return;
+
+    if (!window.confirm('Are you sure you want to delete this post?')) return;
+
+    setDeletingId(discussionId);
+    try {
+      const eventId = selectedEvent._id || selectedEvent.id;
+      await deleteMiniSiteEventDiscussion(siteId, eventId, discussionId, token);
+
+      // Remove from comments
+      setComments(prev => prev.filter(c => c.id !== discussionId));
+      setOpenMenuId(null);
+    } catch (err) {
+      console.error('Failed to delete discussion:', err);
+      alert('❌ Failed to delete: ' + (err.message || 'Unknown error'));
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -360,7 +494,7 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
               <input
                 type="text"
                 placeholder="Share something with attendees…"
-                onClick={() => setCommentText('open-modal')}
+                onClick={() => setDiscComposerOpen(true)}
                 readOnly
                 style={{
                   width: '100%',
@@ -381,7 +515,7 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
             )}
 
             {/* Composer Modal */}
-            {commentText === 'open-modal' && isJoined && (
+            {discComposerOpen && isJoined && (
               <div style={{
                 position: 'fixed',
                 top: 0,
@@ -393,7 +527,7 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
                 alignItems: 'center',
                 justifyContent: 'center',
                 zIndex: 2000
-              }} onClick={() => setCommentText('')}>
+              }} onClick={() => setDiscComposerOpen(false)}>
                 <div style={{
                   background: '#0b0d17',
                   borderRadius: '12px',
@@ -408,14 +542,17 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
                       <h2 style={{ margin: '0', fontSize: '18px', fontWeight: '700', color: '#e2e8f0' }}>New Discussion Post</h2>
                       <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#94a3b8' }}>Share an update, photo, or video with attendees.</p>
                     </div>
-                    <button onClick={() => setCommentText('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '24px' }}>✕</button>
+                    <button onClick={() => {
+                      setDiscComposerOpen(false);
+                      setDiscPostCaption('');
+                    }} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '24px' }}>✕</button>
                   </div>
 
                   {/* Textarea */}
                   <textarea
                     placeholder="Share something with attendees…"
-                    value={commentText === 'open-modal' ? '' : commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
+                    value={discPostCaption}
+                    onChange={(e) => setDiscPostCaption(e.target.value)}
                     autoFocus
                     style={{
                       width: '100%',
@@ -428,20 +565,67 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
                       marginBottom: '16px',
                       fontFamily: 'inherit',
                       resize: 'vertical',
-                      minHeight: '100px'
+                      minHeight: '100px',
+                      boxSizing: 'border-box'
                     }}
                   />
 
+                  {/* Uploaded Files Preview */}
+                  {uploadedFiles.length > 0 && (
+                    <div style={{ marginBottom: '16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '8px' }}>
+                      {uploadedFiles.map((file, idx) => (
+                        <div key={idx} style={{
+                          position: 'relative',
+                          width: '100%',
+                          aspectRatio: '1',
+                          background: '#111422',
+                          borderRadius: '6px',
+                          overflow: 'hidden',
+                          border: '1px solid #1a1f35'
+                        }}>
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt="uploaded"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                          <button
+                            onClick={() => setUploadedFiles(prev => prev.filter((_, i) => i !== idx))}
+                            style={{
+                              position: 'absolute',
+                              top: '2px',
+                              right: '2px',
+                              width: '20px',
+                              height: '20px',
+                              background: 'rgba(0, 0, 0, 0.6)',
+                              border: 'none',
+                              color: '#fff',
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Upload Zone */}
-                  <div style={{
-                    border: '2px dashed #1a1f35',
-                    borderRadius: '8px',
-                    padding: '40px',
-                    textAlign: 'center',
-                    marginBottom: '16px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
+                  <div
+                    onClick={() => document.getElementById('disc-file-input')?.click()}
+                    style={{
+                      border: '2px dashed #1a1f35',
+                      borderRadius: '8px',
+                      padding: '40px',
+                      textAlign: 'center',
+                      marginBottom: '16px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
                     onMouseEnter={(e) => e.currentTarget.style.borderColor = '#2563eb'}
                     onMouseLeave={(e) => e.currentTarget.style.borderColor = '#1a1f35'}
                   >
@@ -450,12 +634,23 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
                     </div>
                     <p style={{ margin: '0 0 4px', color: '#e2e8f0', fontSize: '14px', fontWeight: '600' }}>Add photos or a video</p>
                     <p style={{ margin: '0', color: '#94a3b8', fontSize: '12px' }}>JPG, PNG, GIF or MP4 — pick multiple at once</p>
+                    <input
+                      id="disc-file-input"
+                      type="file"
+                      multiple
+                      accept="image/*,video/*"
+                      style={{ display: 'none' }}
+                      onChange={handleFileSelection}
+                    />
                   </div>
 
                   {/* Footer */}
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                     <button
-                      onClick={() => setCommentText('')}
+                      onClick={() => {
+                        setDiscComposerOpen(false);
+                        setDiscPostCaption('');
+                      }}
                       style={{
                         padding: '10px 20px',
                         background: 'transparent',
@@ -470,10 +665,8 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
                       Cancel
                     </button>
                     <button
-                      onClick={() => {
-                        setComments(prev => [...prev, { author: 'You', text: commentText, time: 'Just now' }]);
-                        setCommentText('');
-                      }}
+                      onClick={handlePostDiscussion}
+                      disabled={(!discPostCaption.trim() && uploadedFiles.length === 0) || postingDiscussion}
                       style={{
                         padding: '10px 20px',
                         background: '#1d4ed8',
@@ -482,14 +675,29 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
                         borderRadius: '6px',
                         cursor: 'pointer',
                         fontSize: '14px',
-                        fontWeight: '600'
+                        fontWeight: '600',
+                        opacity: (discPostCaption.trim() || uploadedFiles.length > 0) && !postingDiscussion ? 1 : 0.5
                       }}
                     >
-                      Post
+                      {postingDiscussion ? 'Posting...' : 'Post'}
                     </button>
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* Image Cropper Modal */}
+            {cropQueue.length > 0 && (
+              <ImageCropper
+                file={cropQueue[0]}
+                index={uploadedFiles.length}
+                total={uploadedFiles.length + cropQueue.length}
+                defaultAspect="original"
+                cropShape="rect"
+                onSave={handleCropSave}
+                onSkip={handleCropSkip}
+                onCancel={handleCropCancel}
+              />
             )}
 
             {/* Discussion Posts Feed */}
@@ -506,39 +714,191 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
                 </p>
               )}
 
-              {comments.map((comment, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: '12px', paddingBottom: '16px', borderBottom: '1px solid #1a1f35' }}>
-                  {/* Avatar */}
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    background: '#1d4ed8',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#fff',
-                    fontWeight: '600',
-                    flexShrink: 0,
-                    fontSize: '14px'
-                  }}>
-                    {comment.author ? comment.author[0]?.toUpperCase() : '?'}
+              {comments.map((comment, idx) => {
+                const isAuthor = user && comment.raw?.author?._id === user._id;
+                return (
+                <div key={idx} style={{ paddingBottom: '16px', borderBottom: '1px solid #1a1f35' }}>
+                  <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', position: 'relative' }}>
+                    {/* Avatar */}
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      background: '#1d4ed8',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#fff',
+                      fontWeight: '600',
+                      flexShrink: 0,
+                      fontSize: '14px'
+                    }}>
+                      {comment.author ? comment.author[0]?.toUpperCase() : '?'}
+                    </div>
+
+                    {/* Post Header */}
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: '0 0 4px', color: '#e2e8f0', fontWeight: '600', fontSize: '14px' }}>
+                        {comment.author || 'Anonymous'}
+                      </p>
+                      <p style={{ margin: '0', color: '#94a3b8', fontSize: '12px' }}>
+                        {comment.time || 'Just now'}
+                      </p>
+                    </div>
+
+                    {/* Three Dot Menu - Only for Author */}
+                    {isAuthor && (
+                      <div style={{ position: 'relative' }}>
+                        <button
+                          onClick={() => setOpenMenuId(openMenuId === comment.id ? null : comment.id)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#94a3b8',
+                            cursor: 'pointer',
+                            fontSize: '20px',
+                            padding: '4px 8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'color 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.color = '#e2e8f0'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}
+                        >
+                          ⋮
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {openMenuId === comment.id && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '100%',
+                            right: '0',
+                            background: '#0b0d17',
+                            border: '1px solid #1a1f35',
+                            borderRadius: '6px',
+                            minWidth: '150px',
+                            zIndex: 100,
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)'
+                          }}>
+                            <button
+                              onClick={() => handleDeleteDiscussion(comment.id)}
+                              disabled={deletingId === comment.id}
+                              style={{
+                                width: '100%',
+                                padding: '12px 16px',
+                                background: 'none',
+                                border: 'none',
+                                color: '#ef4444',
+                                cursor: deletingId === comment.id ? 'not-allowed' : 'pointer',
+                                textAlign: 'left',
+                                fontSize: '14px',
+                                transition: 'all 0.2s',
+                                opacity: deletingId === comment.id ? 0.6 : 1
+                              }}
+                              onMouseEnter={(e) => !deletingId && (e.currentTarget.style.background = '#111422')}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                            >
+                              {deletingId === comment.id ? 'Deleting...' : 'Delete'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Post Content */}
-                  <div style={{ flex: 1 }}>
-                    <p style={{ margin: '0 0 4px', color: '#e2e8f0', fontWeight: '600', fontSize: '14px' }}>
-                      {comment.author || 'Anonymous'}
-                    </p>
-                    <p style={{ margin: '0 0 8px', color: '#94a3b8', fontSize: '12px' }}>
-                      {comment.time || 'Just now'}
-                    </p>
-                    <p style={{ color: '#94a3b8', fontSize: '14px', lineHeight: '1.5', margin: '0' }}>
+                  {/* Post Caption */}
+                  {comment.text && (
+                    <p style={{ color: '#94a3b8', fontSize: '14px', lineHeight: '1.5', margin: '0 0 12px', paddingLeft: '52px' }}>
                       {comment.text}
                     </p>
-                  </div>
+                  )}
+
+                  {/* Media Grid */}
+                  {comment.media && comment.media.length > 0 && (
+                    <div
+                      style={{
+                        display: 'grid',
+                        gap: '4px',
+                        borderRadius: '10px',
+                        overflow: 'hidden',
+                        marginBottom: '12px',
+                        marginLeft: '52px',
+                        gridTemplateColumns: comment.media.length === 1 ? '1fr' :
+                                            comment.media.length === 2 ? '1fr 1fr' :
+                                            'repeat(2, 1fr)'
+                      }}
+                    >
+                      {comment.media.map((media, i) => (
+                        media.type === 'video' || media.mediaType?.includes('video') ? (
+                          <video
+                            key={i}
+                            src={media.url}
+                            controls
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              maxHeight: '360px',
+                              objectFit: 'cover',
+                              display: 'block',
+                              background: '#0d1022'
+                            }}
+                          />
+                        ) : (
+                          <img
+                            key={i}
+                            src={media.url}
+                            alt="discussion media"
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              maxHeight: '360px',
+                              objectFit: 'cover',
+                              display: 'block',
+                              background: '#0d1022'
+                            }}
+                          />
+                        )
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Reactions */}
+                  {comment.raw?.reactions && Object.keys(comment.raw.reactions).length > 0 && (
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', paddingLeft: '52px', fontSize: '12px' }}>
+                      {Object.entries(comment.raw.reactions).filter(([_, count]) => count > 0).map(([reactionId, count]) => {
+                        const reactionEmoji = { like: '👍', celebrate: '👏', support: '🫶', love: '❤️', insightful: '💡', funny: '😄' }[reactionId];
+                        return reactionEmoji ? (
+                          <button
+                            key={reactionId}
+                            style={{
+                              background: 'rgba(29, 78, 216, 0.1)',
+                              border: '1px solid rgba(29, 78, 216, 0.2)',
+                              borderRadius: '20px',
+                              padding: '4px 10px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '13px',
+                              color: '#60a5fa',
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(29, 78, 216, 0.15)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(29, 78, 216, 0.1)'}
+                          >
+                            <span style={{ fontSize: '15px' }}>{reactionEmoji}</span>
+                            {count > 1 && <span>{count}</span>}
+                          </button>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
                 </div>
-              ))}
+              );
+              }
+              )}
             </div>
           </div>
         )}

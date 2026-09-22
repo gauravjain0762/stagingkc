@@ -169,3 +169,36 @@ export async function leaveMiniSiteEvent(siteId, eventId, token) {
 export async function getMiniSiteEventAttendees(siteId, eventId, { page = 1, limit = 50 } = {}, token) {
   return apiRequest(`/api/mini-sites/${siteId}/events/${eventId}/attendees?page=${page}&limit=${limit}`, { token });
 }
+
+// Mini-Site Event Discussion APIs
+export async function createMiniSiteEventDiscussion(siteId, eventId, { caption, mediaFiles }, token) {
+  if (mediaFiles && mediaFiles.length > 0) {
+    const form = new FormData();
+    form.append('caption', caption);
+    Array.from(mediaFiles).forEach(file => form.append('media', file));
+    return apiRequest(`/api/mini-sites/${siteId}/events/${eventId}/discussions`, {
+      method: 'POST',
+      token,
+      body: form,
+      isFormData: true
+    });
+  }
+  return apiRequest(`/api/mini-sites/${siteId}/events/${eventId}/discussions`, {
+    method: 'POST',
+    body: { caption },
+    token
+  });
+}
+
+export async function getMiniSiteEventDiscussions(siteId, eventId, { page = 1, limit = 20 } = {}, token) {
+  return apiRequest(`/api/mini-sites/${siteId}/events/${eventId}/discussions?page=${page}&limit=${limit}`, {
+    token
+  });
+}
+
+export async function deleteMiniSiteEventDiscussion(siteId, eventId, discussionId, token) {
+  return apiRequest(`/api/mini-sites/${siteId}/events/${eventId}/discussions/${discussionId}`, {
+    method: 'DELETE',
+    token
+  });
+}
