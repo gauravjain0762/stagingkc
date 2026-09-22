@@ -589,7 +589,7 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate, or
             <div style={{ marginTop: '16px', marginBottom: '16px' }}>
               <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#9ca3af', marginBottom: '8px', textTransform: 'uppercase' }}>Quick Sections</label>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {['Feed', 'Members', 'Groups', 'Calendar'].map(section => {
+                {['Feed', 'Events', 'Members', 'Groups'].map(section => {
                   const existingLinks = c.links || [];
                   const isActive = existingLinks.some(l => l.url === `#${section.toLowerCase()}`);
 
