@@ -14,6 +14,10 @@ function CalendarIcon() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
 }
 
+function ImageIcon() {
+  return <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>;
+}
+
 function MapPinIcon() {
   return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
 }
@@ -25,6 +29,8 @@ function TicketIcon() {
 export default function MiniSiteEventsPage({ siteId, siteName }) {
   const { token } = useSelector(s => s.auth);
   const [view, setView] = useState('list'); // 'list' or 'detail'
+  const [activeTab, setActiveTab] = useState('all'); // 'all' or 'joined'
+  const [detailTab, setDetailTab] = useState('about'); // 'about' or 'discussion' in detail view
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -35,6 +41,9 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [members, setMembers] = useState([{ name: '', age: '' }]);
+  const [comments, setComments] = useState([]);
+  const [commentText, setCommentText] = useState('');
+  const [joinSuccess, setJoinSuccess] = useState(false);
 
   useEffect(() => {
     loadEvents();
@@ -74,21 +83,36 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
     setJoiningId(eventId);
 
     try {
-      // Fetch tickets for this event
-      const ticketData = await getMiniSiteEventTickets(siteId, eventId, token);
-      const ticketsList = Array.isArray(ticketData) ? ticketData : ticketData?.tickets || [];
+      // Use tickets from event object if available, otherwise fetch
+      let ticketsList = event.tickets || [];
+
+      if (ticketsList.length === 0) {
+        try {
+          const ticketData = await getMiniSiteEventTickets(siteId, eventId, token);
+          ticketsList = Array.isArray(ticketData) ? ticketData : ticketData?.data || ticketData?.tickets || [];
+        } catch (err) {
+          console.warn('Failed to fetch tickets:', err);
+        }
+      }
 
       setTickets(ticketsList);
+      // Pre-select first ticket if available
+      if (ticketsList.length > 0) {
+        setSelectedTicket(ticketsList[0]);
+      }
+      // Just show the join modal, don't navigate to detail view
+      setSelectedEvent(event);
       setJoinFlow({
         eventId,
         step: ticketsList.length > 0 ? 'ticket' : 'members',
-        ticketId: null,
+        ticketId: ticketsList.length > 0 ? (ticketsList[0]._id || ticketsList[0].id) : null,
         quantity: 1,
         members: [{ name: '', age: '' }],
         submitting: false
       });
     } catch (err) {
-      console.error('Failed to load tickets:', err);
+      console.error('Failed to load event:', err);
+      alert('Failed to load event. Please try again.');
     } finally {
       setJoiningId(null);
     }
@@ -124,22 +148,36 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
     setJoinFlow(prev => prev ? { ...prev, submitting: true } : prev);
 
     try {
-      await joinMiniSiteEvent(siteId, joinFlow.eventId, {
+      const result = await joinMiniSiteEvent(siteId, joinFlow.eventId, {
         ticketId: joinFlow.ticketId,
         quantity: joinFlow.quantity,
         attendeeDetails: joinFlow.members
       }, token);
 
+      // Update the joined status
       setJoinedEventIds(prev => new Set([...prev, joinFlow.eventId]));
+
+      // Update events list to reflect joined status
       setEvents(prev => prev.map(ev =>
         (ev._id === joinFlow.eventId || ev.id === joinFlow.eventId)
-          ? { ...ev, joined: true, isJoined: true }
+          ? { ...ev, joined: true, isJoined: true, hasJoined: true }
           : ev
       ));
 
-      setJoinFlow(null);
+      // Update selected event if viewing details
+      if (selectedEvent && (selectedEvent._id === joinFlow.eventId || selectedEvent.id === joinFlow.eventId)) {
+        setSelectedEvent(prev => ({ ...prev, joined: true, isJoined: true, hasJoined: true }));
+      }
+
+      // Show success message
+      setJoinSuccess(true);
+      setTimeout(() => {
+        setJoinFlow(null);
+        setJoinSuccess(false);
+      }, 2000);
     } catch (err) {
       console.error('Failed to join event:', err);
+      alert('❌ Failed to join event: ' + (err.message || 'Unknown error'));
     } finally {
       setJoinFlow(prev => prev ? { ...prev, submitting: false } : prev);
     }
@@ -156,10 +194,10 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
     return (
       <div className="mini-site-events-detail">
         <div className="msev-detail-header" style={{
-          background: `linear-gradient(135deg, #1a1f2e 0%, #0d1720 100%), url(${selectedEvent.image})`,
+          background: selectedEvent.image ? `url(${selectedEvent.image})` : 'linear-gradient(135deg, #1a1f2e 0%, #0d1720 100%)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          height: '240px',
+          height: '400px',
           position: 'relative'
         }}>
           <button
@@ -187,90 +225,370 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
         </div>
 
         <div className="msev-detail-content" style={{ padding: '32px', background: '#0b0d17', borderBottom: '1px solid #1a1f35' }}>
-          <h1 style={{ margin: '0 0 8px', fontSize: '28px', fontWeight: '700', color: '#e2e8f0' }}>
-            {selectedEvent.title || selectedEvent.name}
-          </h1>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '24px' }}>
+            <div style={{ flex: 1 }}>
+              <h1 style={{ margin: '0 0 8px', fontSize: '28px', fontWeight: '700', color: '#e2e8f0' }}>
+                {selectedEvent.title || selectedEvent.name}
+              </h1>
 
-          <div style={{ display: 'flex', gap: '24px', marginTop: '20px', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8' }}>
-              <CalendarIcon />
-              <span>{selectedEvent.fullDate || selectedEvent.date || 'TBA'}</span>
+              <div style={{ display: 'flex', gap: '24px', marginTop: '20px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8' }}>
+                  <CalendarIcon />
+                  <span>{selectedEvent.fullDate || selectedEvent.date || 'TBA'}</span>
+                </div>
+                {selectedEvent.location && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8' }}>
+                    <MapPinIcon />
+                    <span>{selectedEvent.location}</span>
+                  </div>
+                )}
+                {selectedEvent.eventType && (
+                  <div style={{ display: 'inline-block', padding: '6px 14px', background: 'transparent', borderRadius: '20px', color: '#94a3b8', fontSize: '12px', fontWeight: '500', border: '1px solid #1a1f35' }}>
+                    {selectedEvent.eventType}
+                  </div>
+                )}
+              </div>
             </div>
-            {selectedEvent.location && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8' }}>
-                <MapPinIcon />
-                <span>{selectedEvent.location}</span>
-              </div>
-            )}
-            {selectedEvent.eventType && (
-              <div style={{ display: 'inline-block', padding: '4px 12px', background: '#111422', borderRadius: '4px', color: '#94a3b8', fontSize: '12px', fontWeight: '500' }}>
-                {selectedEvent.eventType}
-              </div>
-            )}
-          </div>
 
-          <div style={{ marginTop: '24px', display: 'flex', gap: '12px' }}>
-            {isJoined ? (
-              <button
-                onClick={() => handleLeaveEvent(eventId)}
-                disabled={joiningId === eventId}
-                style={{
-                  padding: '10px 24px',
-                  background: 'rgba(239,68,68,0.1)',
-                  color: '#f87171',
-                  border: '1px solid rgba(239,68,68,0.3)',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  transition: 'all 0.2s'
-                }}
-              >
-                {joiningId === eventId ? 'Leaving...' : 'Leave Event'}
-              </button>
-            ) : (
-              <button
-                onClick={() => handleJoinEvent(selectedEvent)}
-                disabled={joiningId === eventId}
-                style={{
-                  padding: '10px 24px',
-                  background: '#1d4ed8',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  transition: 'all 0.2s'
-                }}
-              >
-                {joiningId === eventId ? 'Joining...' : '+ Join Event'}
-              </button>
-            )}
+            <button
+              onClick={() => isJoined ? handleLeaveEvent(eventId) : handleJoinEvent(selectedEvent)}
+              disabled={joiningId === eventId}
+              style={{
+                padding: isJoined ? '10px 20px' : '10px 24px',
+                background: isJoined ? 'rgba(239,68,68,0.1)' : '#1d4ed8',
+                color: isJoined ? '#f87171' : '#fff',
+                border: isJoined ? '1px solid rgba(239,68,68,0.3)' : '1px solid #2563eb',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {joiningId === eventId ? (isJoined ? 'Leaving...' : 'Joining...') : (isJoined ? 'Leave Event' : '+ Join')}
+            </button>
           </div>
         </div>
 
-        {selectedEvent.description && (
-          <div style={{ padding: '32px', borderBottom: '1px solid #1a1f35' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#e2e8f0', marginBottom: '12px' }}>About</h2>
-            <p style={{ color: '#94a3b8', lineHeight: '1.6', margin: '0' }}>{selectedEvent.description}</p>
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: '32px', padding: '0 32px', borderBottom: '1px solid #1a1f35', background: '#070b14' }}>
+          <button
+            onClick={() => setDetailTab('about')}
+            style={{
+              padding: '16px 0',
+              background: 'none',
+              border: 'none',
+              color: detailTab === 'about' ? '#1d4ed8' : '#64748b',
+              fontSize: '14px',
+              fontWeight: detailTab === 'about' ? '700' : '500',
+              cursor: 'pointer',
+              borderBottom: detailTab === 'about' ? '2px solid #1d4ed8' : 'none',
+              transition: 'all 0.2s'
+            }}
+          >
+            About
+          </button>
+          <button
+            onClick={() => setDetailTab('discussion')}
+            style={{
+              padding: '16px 0',
+              background: 'none',
+              border: 'none',
+              color: detailTab === 'discussion' ? '#1d4ed8' : '#64748b',
+              fontSize: '14px',
+              fontWeight: detailTab === 'discussion' ? '700' : '500',
+              cursor: 'pointer',
+              borderBottom: detailTab === 'discussion' ? '2px solid #1d4ed8' : 'none',
+              transition: 'all 0.2s'
+            }}
+          >
+            Discussion
+          </button>
+        </div>
+
+        {/* About Tab */}
+        {detailTab === 'about' && (
+          <div style={{ padding: '32px', display: 'grid', gap: '20px' }}>
+            {/* DETAILS Card */}
+            {selectedEvent.memberCount > 0 && (
+              <div style={{ background: '#111422', border: '1px solid #1a1f35', borderRadius: '8px', padding: '20px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', margin: '0 0 12px' }}>DETAILS</h3>
+                <p style={{ color: '#94a3b8', fontSize: '14px', margin: '0' }}>{selectedEvent.memberCount || 0} people responded</p>
+              </div>
+            )}
+
+            {/* About the Event Card */}
+            {selectedEvent.description && (
+              <div style={{ background: '#111422', border: '1px solid #1a1f35', borderRadius: '8px', padding: '20px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', margin: '0 0 12px' }}>ABOUT THE EVENT</h3>
+                <p style={{ color: '#94a3b8', lineHeight: '1.6', margin: '0', fontSize: '14px' }}>{selectedEvent.description}</p>
+              </div>
+            )}
+
+            {/* Event Info Card */}
+            {selectedEvent.fullDate && (
+              <div style={{ background: '#111422', border: '1px solid #1a1f35', borderRadius: '8px', padding: '20px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', margin: '0 0 12px' }}>EVENT INFO</h3>
+                <div style={{ display: 'grid', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', fontSize: '14px' }}>
+                    <CalendarIcon />
+                    <span>{selectedEvent.fullDate}</span>
+                  </div>
+                  {selectedEvent.location && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', fontSize: '14px' }}>
+                      <MapPinIcon />
+                      <span>{selectedEvent.location}</span>
+                    </div>
+                  )}
+                  {selectedEvent.eventType && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', padding: '6px 14px', background: 'transparent', borderRadius: '20px', color: '#94a3b8', fontSize: '12px', fontWeight: '500', width: 'fit-content', border: '1px solid #1a1f35' }}>
+                      {selectedEvent.eventType}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {joinFlow && (
-          <div className="msev-join-flow" style={{ padding: '32px', borderTop: '1px solid #1a1f35' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#e2e8f0', marginBottom: '20px' }}>
-              {joinFlow.step === 'ticket' ? 'Select Ticket' : 'Attendee Details'}
-            </h2>
+        {/* Discussion Tab */}
+        {detailTab === 'discussion' && (
+          <div style={{ padding: '32px' }}>
+            {/* Comment Composer Trigger */}
+            {isJoined && (
+              <input
+                type="text"
+                placeholder="Share something with attendees…"
+                onClick={() => setCommentText('open-modal')}
+                readOnly
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  background: '#111422',
+                  border: '1px solid #1a1f35',
+                  borderRadius: '8px',
+                  color: '#94a3b8',
+                  fontSize: '14px',
+                  marginBottom: '24px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  fontFamily: 'inherit'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = '#2563eb'}
+                onMouseLeave={(e) => e.currentTarget.style.borderColor = '#1a1f35'}
+              />
+            )}
 
-            {joinFlow.step === 'ticket' && tickets.length > 0 && (
-              <div style={{ display: 'grid', gap: '12px', marginBottom: '24px' }}>
+            {/* Composer Modal */}
+            {commentText === 'open-modal' && isJoined && (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0, 0, 0, 0.7)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 2000
+              }} onClick={() => setCommentText('')}>
+                <div style={{
+                  background: '#0b0d17',
+                  borderRadius: '12px',
+                  padding: '24px',
+                  maxWidth: '600px',
+                  width: '90%',
+                  border: '1px solid #1a1f35'
+                }} onClick={(e) => e.stopPropagation()}>
+                  {/* Modal Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <div>
+                      <h2 style={{ margin: '0', fontSize: '18px', fontWeight: '700', color: '#e2e8f0' }}>New Discussion Post</h2>
+                      <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#94a3b8' }}>Share an update, photo, or video with attendees.</p>
+                    </div>
+                    <button onClick={() => setCommentText('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '24px' }}>✕</button>
+                  </div>
+
+                  {/* Textarea */}
+                  <textarea
+                    placeholder="Share something with attendees…"
+                    value={commentText === 'open-modal' ? '' : commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    autoFocus
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      background: '#111422',
+                      border: '1px solid #1a1f35',
+                      borderRadius: '6px',
+                      color: '#e2e8f0',
+                      fontSize: '14px',
+                      marginBottom: '16px',
+                      fontFamily: 'inherit',
+                      resize: 'vertical',
+                      minHeight: '100px'
+                    }}
+                  />
+
+                  {/* Upload Zone */}
+                  <div style={{
+                    border: '2px dashed #1a1f35',
+                    borderRadius: '8px',
+                    padding: '40px',
+                    textAlign: 'center',
+                    marginBottom: '16px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                    onMouseEnter={(e) => e.currentTarget.style.borderColor = '#2563eb'}
+                    onMouseLeave={(e) => e.currentTarget.style.borderColor = '#1a1f35'}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px', color: '#2563eb' }}>
+                      <ImageIcon />
+                    </div>
+                    <p style={{ margin: '0 0 4px', color: '#e2e8f0', fontSize: '14px', fontWeight: '600' }}>Add photos or a video</p>
+                    <p style={{ margin: '0', color: '#94a3b8', fontSize: '12px' }}>JPG, PNG, GIF or MP4 — pick multiple at once</p>
+                  </div>
+
+                  {/* Footer */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                    <button
+                      onClick={() => setCommentText('')}
+                      style={{
+                        padding: '10px 20px',
+                        background: 'transparent',
+                        color: '#94a3b8',
+                        border: '1px solid #1a1f35',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        setComments(prev => [...prev, { author: 'You', text: commentText, time: 'Just now' }]);
+                        setCommentText('');
+                      }}
+                      style={{
+                        padding: '10px 20px',
+                        background: '#1d4ed8',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Post
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Discussion Posts Feed */}
+            <div style={{ display: 'grid', gap: '16px' }}>
+              {!isJoined && (
+                <p style={{ color: '#64748b', textAlign: 'center', padding: '32px 0', fontSize: '14px' }}>
+                  Join this event to see discussions
+                </p>
+              )}
+
+              {isJoined && comments.length === 0 && (
+                <p style={{ color: '#64748b', textAlign: 'center', padding: '32px 0', fontSize: '14px' }}>
+                  No posts yet — be the first to share something.
+                </p>
+              )}
+
+              {comments.map((comment, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '12px', paddingBottom: '16px', borderBottom: '1px solid #1a1f35' }}>
+                  {/* Avatar */}
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    background: '#1d4ed8',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff',
+                    fontWeight: '600',
+                    flexShrink: 0,
+                    fontSize: '14px'
+                  }}>
+                    {comment.author ? comment.author[0]?.toUpperCase() : '?'}
+                  </div>
+
+                  {/* Post Content */}
+                  <div style={{ flex: 1 }}>
+                    <p style={{ margin: '0 0 4px', color: '#e2e8f0', fontWeight: '600', fontSize: '14px' }}>
+                      {comment.author || 'Anonymous'}
+                    </p>
+                    <p style={{ margin: '0 0 8px', color: '#94a3b8', fontSize: '12px' }}>
+                      {comment.time || 'Just now'}
+                    </p>
+                    <p style={{ color: '#94a3b8', fontSize: '14px', lineHeight: '1.5', margin: '0' }}>
+                      {comment.text}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // List View
+  const filteredEvents = activeTab === 'joined'
+    ? events.filter(ev => joinedEventIds.has(ev._id || ev.id))
+    : events.filter(ev => !joinedEventIds.has(ev._id || ev.id));
+
+  return (
+    <div className="mini-site-events-list">
+      {/* Join Modal */}
+      {joinFlow && selectedEvent && (
+        <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000
+    }} onClick={() => setJoinFlow(null)}>
+      <div style={{
+        background: '#0b0d17',
+        borderRadius: '12px',
+        padding: '32px',
+        maxWidth: '550px',
+        width: '90%',
+        maxHeight: '85vh',
+        overflow: 'auto',
+        border: '1px solid #1a1f35'
+      }} onClick={(e) => e.stopPropagation()}>
+        <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#e2e8f0', marginBottom: '20px' }}>
+          {joinFlow.step === 'ticket' ? 'Select Ticket' : joinFlow.step === 'members' ? 'Your Details' : 'Confirm & Join'}
+        </h2>
+
+        {joinFlow.step === 'ticket' && tickets.length > 0 && (
+          <div style={{ display: 'grid', gap: '12px', marginBottom: '24px' }}>
                 {tickets.map(ticket => (
                   <label key={ticket._id || ticket.id} style={{
                     padding: '16px',
-                    border: `2px solid ${selectedTicket?.id === (ticket._id || ticket.id) ? '#1d4ed8' : '#1a1f35'}`,
+                    border: `2px solid ${(selectedTicket?._id === (ticket._id || ticket.id) || selectedTicket?.id === (ticket._id || ticket.id)) ? '#1d4ed8' : '#1a1f35'}`,
                     borderRadius: '8px',
-                    background: selectedTicket?.id === (ticket._id || ticket.id) ? 'rgba(29, 78, 216, 0.1)' : '#111422',
+                    background: (selectedTicket?._id === (ticket._id || ticket.id) || selectedTicket?.id === (ticket._id || ticket.id)) ? 'rgba(29, 78, 216, 0.1)' : '#111422',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                     display: 'flex',
@@ -280,7 +598,7 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
                     <input
                       type="radio"
                       name="ticket"
-                      checked={selectedTicket?.id === (ticket._id || ticket.id)}
+                      checked={selectedTicket?._id === (ticket._id || ticket.id) || selectedTicket?.id === (ticket._id || ticket.id)}
                       onChange={() => {
                         setSelectedTicket(ticket);
                         setJoinFlow(prev => prev ? { ...prev, ticketId: ticket._id || ticket.id } : prev);
@@ -289,10 +607,7 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
                     />
                     <div style={{ flex: 1 }}>
                       <p style={{ margin: '0 0 4px', color: '#e2e8f0', fontWeight: '600' }}>
-                        {ticket.name || ticket.type || 'Standard Ticket'}
-                      </p>
-                      <p style={{ margin: '0', color: '#94a3b8', fontSize: '12px' }}>
-                        ${ticket.price || 0} • {ticket.available || 0} available
+                        {ticket.name || ticket.type || 'Standard Ticket'} {ticket.price ? `- $${ticket.price}` : '(Free)'}
                       </p>
                     </div>
                   </label>
@@ -300,31 +615,112 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
               </div>
             )}
 
-            {(joinFlow.step === 'members' || joinFlow.step === 'ticket') && (
-              <div style={{ display: 'grid', gap: '12px', marginBottom: '24px' }}>
-                <label style={{ display: 'block', color: '#94a3b8', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>
-                  Quantity
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={joinFlow.quantity}
-                  onChange={(e) => setJoinFlow(prev => prev ? { ...prev, quantity: parseInt(e.target.value) || 1 } : prev)}
-                  style={{
-                    padding: '10px',
-                    background: '#111422',
-                    border: '1px solid #1a1f35',
-                    borderRadius: '6px',
-                    color: '#e2e8f0',
-                    fontSize: '14px'
-                  }}
-                />
+            {joinFlow.step === 'confirm' && (
+              <div style={{ display: 'grid', gap: '16px', marginBottom: '24px' }}>
+                <div style={{ padding: '16px', background: '#111422', borderRadius: '8px', borderLeft: '3px solid #1d4ed8' }}>
+                  <h3 style={{ margin: '0 0 12px', fontSize: '14px', fontWeight: '600', color: '#e2e8f0' }}>Order Summary</h3>
+
+                  <div style={{ display: 'grid', gap: '8px', fontSize: '13px', color: '#94a3b8' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #1a1f35' }}>
+                      <span>Ticket:</span>
+                      <span style={{ color: '#e2e8f0', fontWeight: '500' }}>{selectedTicket?.name || 'Standard'}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #1a1f35' }}>
+                      <span>Attendee:</span>
+                      <span style={{ color: '#e2e8f0', fontWeight: '500' }}>{joinFlow.members[0]?.name}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #1a1f35' }}>
+                      <span>Quantity:</span>
+                      <span style={{ color: '#e2e8f0', fontWeight: '500' }}>{joinFlow.quantity}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: '600' }}>Price per Ticket:</span>
+                      <span style={{ color: '#86efac', fontWeight: '600', fontSize: '14px' }}>${selectedTicket?.price || 0}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '12px', borderTop: '2px solid #1a1f35', marginTop: '12px' }}>
+                      <span style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0' }}>Total Amount:</span>
+                      <span style={{ color: '#fbbf24', fontWeight: '700', fontSize: '16px' }}>${(selectedTicket?.price || 0) * (joinFlow.quantity || 1)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <p style={{ color: '#64748b', fontSize: '12px', margin: '0', textAlign: 'center' }}>
+                  You'll be charged after confirming this purchase
+                </p>
+              </div>
+            )}
+
+            {joinFlow.step === 'members' && (
+              <div style={{ display: 'grid', gap: '16px', marginBottom: '24px' }}>
+                <div>
+                  <label style={{ display: 'block', color: '#94a3b8', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>
+                    Number of Attendees
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={joinFlow.quantity}
+                    onChange={(e) => setJoinFlow(prev => prev ? { ...prev, quantity: parseInt(e.target.value) || 1 } : prev)}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      background: '#111422',
+                      border: '1px solid #1a1f35',
+                      borderRadius: '6px',
+                      color: '#e2e8f0',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <h3 style={{ margin: '0 0 12px', fontSize: '14px', fontWeight: '600', color: '#e2e8f0' }}>Your Details</h3>
+                  <div style={{ display: 'grid', gap: '12px' }}>
+                    <input
+                      type="text"
+                      placeholder="Your Name"
+                      value={joinFlow.members[0]?.name || ''}
+                      onChange={(e) => setJoinFlow(prev => prev ? { ...prev, members: [{ ...prev.members[0], name: e.target.value }] } : prev)}
+                      style={{
+                        padding: '10px',
+                        background: '#111422',
+                        border: '1px solid #1a1f35',
+                        borderRadius: '6px',
+                        color: '#e2e8f0',
+                        fontSize: '14px'
+                      }}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Your Age"
+                      min="1"
+                      max="120"
+                      value={joinFlow.members[0]?.age || ''}
+                      onChange={(e) => setJoinFlow(prev => prev ? { ...prev, members: [{ ...prev.members[0], age: parseInt(e.target.value) || '' }] } : prev)}
+                      style={{
+                        padding: '10px',
+                        background: '#111422',
+                        border: '1px solid #1a1f35',
+                        borderRadius: '6px',
+                        color: '#e2e8f0',
+                        fontSize: '14px'
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
             )}
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
               <button
-                onClick={() => setJoinFlow(null)}
+                onClick={() => {
+                  if (joinFlow.step !== 'ticket') {
+                    setJoinFlow(prev => prev ? { ...prev, step: 'ticket' } : prev);
+                  } else {
+                    setJoinFlow(null);
+                  }
+                }}
                 style={{
                   flex: 1,
                   padding: '10px',
@@ -337,48 +733,91 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
                   fontWeight: '600'
                 }}
               >
-                Cancel
+                {joinFlow.step !== 'ticket' ? 'Back' : 'Cancel'}
               </button>
               <button
-                onClick={handleSubmitJoin}
-                disabled={joinFlow.submitting || (joinFlow.step === 'ticket' && !selectedTicket)}
+                onClick={() => {
+                  if (joinFlow.step === 'ticket') {
+                    setJoinFlow(prev => prev ? { ...prev, step: 'members' } : prev);
+                  } else if (joinFlow.step === 'members') {
+                    setJoinFlow(prev => prev ? { ...prev, step: 'confirm' } : prev);
+                  } else {
+                    handleSubmitJoin();
+                  }
+                }}
+                disabled={joinFlow.submitting || (joinFlow.step === 'ticket' && !selectedTicket) || (joinFlow.step === 'members' && !joinFlow.members[0]?.name)}
                 style={{
                   flex: 1,
                   padding: '10px',
                   background: '#1d4ed8',
                   color: '#fff',
-                  border: 'none',
+                  border: '1px solid #2563eb',
                   borderRadius: '6px',
                   cursor: 'pointer',
                   fontSize: '14px',
                   fontWeight: '600',
-                  opacity: joinFlow.submitting || (joinFlow.step === 'ticket' && !selectedTicket) ? 0.5 : 1
+                  opacity: (joinFlow.submitting || (joinFlow.step === 'ticket' && !selectedTicket) || (joinFlow.step === 'members' && !joinFlow.members[0]?.name)) ? 0.5 : 1,
+                  transition: 'all 0.2s'
                 }}
               >
-                {joinFlow.submitting ? 'Confirming...' : 'Confirm & Join'}
+                {joinFlow.submitting ? 'Processing...' : joinFlow.step === 'ticket' ? 'Next' : joinFlow.step === 'members' ? 'Review' : 'Pay & Join'}
               </button>
             </div>
           </div>
+        </div>
         )}
-      </div>
-    );
-  }
 
-  return (
-    <div className="mini-site-events-list">
       <div style={{ padding: '32px', background: '#0b0d17', borderBottom: '1px solid #1a1f35' }}>
         <h1 style={{ margin: '0', fontSize: '28px', fontWeight: '700', color: '#e2e8f0' }}>Events</h1>
         <p style={{ margin: '8px 0 0', color: '#94a3b8' }}>Join events and buy tickets</p>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: '24px', marginTop: '24px', borderBottom: '1px solid #1a1f35', paddingBottom: '16px' }}>
+          <button
+            onClick={() => setActiveTab('all')}
+            style={{
+              padding: '0',
+              background: 'none',
+              border: 'none',
+              color: activeTab === 'all' ? '#1d4ed8' : '#64748b',
+              fontSize: '14px',
+              fontWeight: activeTab === 'all' ? '700' : '500',
+              cursor: 'pointer',
+              borderBottom: activeTab === 'all' ? '2px solid #1d4ed8' : 'none',
+              paddingBottom: '8px',
+              transition: 'all 0.2s'
+            }}
+          >
+            All Events
+          </button>
+          <button
+            onClick={() => setActiveTab('joined')}
+            style={{
+              padding: '0',
+              background: 'none',
+              border: 'none',
+              color: activeTab === 'joined' ? '#1d4ed8' : '#64748b',
+              fontSize: '14px',
+              fontWeight: activeTab === 'joined' ? '700' : '500',
+              cursor: 'pointer',
+              borderBottom: activeTab === 'joined' ? '2px solid #1d4ed8' : 'none',
+              paddingBottom: '8px',
+              transition: 'all 0.2s'
+            }}
+          >
+            Joined Events
+          </button>
+        </div>
       </div>
 
       <div style={{ padding: '32px' }}>
-        {events.length === 0 ? (
+        {filteredEvents.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3rem 0', color: '#6b7280' }}>
-            No events yet. Check back soon!
+            {activeTab === 'joined' ? 'You haven\'t joined any events yet.' : 'No events yet. Check back soon!'}
           </div>
         ) : (
           <div className="msev-grid">
-            {events.map(event => {
+            {filteredEvents.map(event => {
               const isJoined = joinedEventIds.has(event._id || event.id);
               const eventId = event._id || event.id;
 
@@ -386,7 +825,8 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
                 <div
                   key={eventId}
                   className="msev-card msev-card--clickable"
-                  onClick={() => handleSelectEvent(event)}
+                  onClick={() => isJoined && handleSelectEvent(event)}
+                  style={{ cursor: isJoined ? 'pointer' : 'not-allowed', opacity: isJoined ? 1 : 0.7 }}
                 >
                   <div className="msev-card-img-wrap">
                     {event.image ? (
@@ -404,7 +844,22 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
                   </div>
 
                   <div className="msev-card-body">
-                    <h3 className="msev-card-title">{event.title || event.name}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '4px' }}>
+                      <h3 className="msev-card-title" style={{ margin: 0, flex: 1 }}>{event.title || event.name}</h3>
+                      <span style={{
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        whiteSpace: 'nowrap',
+                        background: (event.pricingType === 'paid' || event.isPaid) ? 'rgba(249, 115, 22, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+                        color: (event.pricingType === 'paid' || event.isPaid) ? '#fb923c' : '#86efac',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                      }}>
+                        {(event.pricingType === 'paid' || event.isPaid) ? 'PAID' : 'FREE'}
+                      </span>
+                    </div>
 
                     {event.description && (
                       <p className="msev-card-desc">{event.description}</p>
