@@ -3331,8 +3331,8 @@ function GroupHubCard({ group, onManage, onView, isOwned }) {
   }
 
   const btnLabel = isJoining ? 'Joining...' : pending ? 'Pending' : joined ? 'Joined' : 'Join Group';
-  const hasCoverImg = !!(displayGroup.coverImg || displayGroup.coverUrl);
-  const coverSrc = displayGroup.coverImg || displayGroup.coverUrl;
+  const hasCoverImg = !!(group.coverImg || group.coverUrl);
+  const coverSrc = group.coverImg || group.coverUrl;
   const pendingReqs = group.pendingReqs ?? group.pendingCount ?? 0;
 
   return (

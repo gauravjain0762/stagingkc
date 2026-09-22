@@ -105,6 +105,7 @@ function defaultContent(type) {
         links: [
           { label: 'Home', url: '#home' },
           { label: 'Feed', url: '#feed' },
+          { label: 'Events', url: '#events' },
           { label: 'Members', url: '#members' },
           { label: 'Groups', url: '#groups' },
         ],
@@ -226,13 +227,14 @@ export function createStarterSections() {
   const footer = { ...createSection('footer'), name: 'Footer' };
 
   const navbar = { ...createSection('navbar'), name: 'Navbar' };
-  // Navbar links are fixed: Home, Feed, Members, Groups
+  // Navbar links are fixed: Home, Feed, Events, Members, Groups
   // Users cannot change these - they can add other sections via "Add Section"
   navbar.content = {
     ...navbar.content,
     links: [
       { label: 'Home', url: `#${hero.id}` },
       { label: 'Feed', url: '#feed' },
+      { label: 'Events', url: '#events' },
       { label: 'Members', url: '#members' },
       { label: 'Groups', url: '#groups' },
     ],

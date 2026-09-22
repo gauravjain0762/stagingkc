@@ -677,3 +677,149 @@
     padding: 24px;
   }
 }
+
+/* Dark theme for mini-site - override ALL white backgrounds */
+.pub-site-view-inline {
+  background: #070b14 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Force dark background on all containers */
+.pub-site-view-inline,
+.pub-site-view-inline > * {
+  background-color: #070b14 !important;
+}
+
+/* Home Feed Specific */
+.pub-site-view-inline .home-feed {
+  background: #070b14 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Post Creator Box */
+.pub-site-view-inline .post-creator {
+  background: #0d1526 !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #1a2540 !important;
+}
+
+.pub-site-view-inline .creator-top {
+  background: #0d1526 !important;
+}
+
+.pub-site-view-inline .creator-avatar {
+  background: #0f1720 !important;
+  border-color: #1a2540 !important;
+}
+
+.pub-site-view-inline .creator-input,
+.pub-site-view-inline textarea {
+  background: #0f1720 !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #1a2540 !important;
+  caret-color: #e2e8f0 !important;
+}
+
+.pub-site-view-inline .creator-input::placeholder,
+.pub-site-view-inline textarea::placeholder {
+  color: #7c8aab !important;
+}
+
+.pub-site-view-inline .creator-actions {
+  background: #0d1526 !important;
+  border-top: 1px solid #1a2540 !important;
+}
+
+.pub-site-view-inline .creator-media-btn {
+  background: transparent !important;
+  color: #8b94a5 !important;
+  border: none !important;
+}
+
+.pub-site-view-inline .creator-media-btn:hover {
+  background: rgba(29, 78, 216, 0.1) !important;
+  color: #1d4ed8 !important;
+}
+
+.pub-site-view-inline .creator-post-btn {
+  background: #1d4ed8 !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+.pub-site-view-inline .creator-post-btn:hover {
+  background: #1e40af !important;
+}
+
+/* Feed Posts Container */
+.pub-site-view-inline .feed-posts {
+  background: #070b14 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Post Cards */
+.pub-site-view-inline .post-card {
+  background: #0d1526 !important;
+  border-color: #1a2540 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Empty State Messages */
+.pub-site-view-inline div[style*="textAlign: center"],
+.pub-site-view-inline div[style*="text-align: center"] {
+  background: #070b14 !important;
+  color: #b3bcc4 !important;
+}
+
+/* Members Section */
+.pub-site-view-inline .members-section {
+  background: #070b14 !important;
+  color: #e2e8f0 !important;
+}
+
+.pub-site-view-inline .member-item,
+.pub-site-view-inline .member-card {
+  background: #0d1526 !important;
+  border-color: #1a2540 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Calendar & Events */
+.pub-site-view-inline .calendar-container {
+  background: #070b14 !important;
+  color: #e2e8f0 !important;
+}
+
+.pub-site-view-inline .event-card {
+  background: #0d1526 !important;
+  border-color: #1a2540 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Groups Section */
+.pub-site-view-inline .msg-groups-discovery,
+.pub-site-view-inline .msg-groups-container {
+  background: #070b14 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Override inline styles with dark theme */
+.pub-site-view-inline p {
+  color: #e2e8f0 !important;
+}
+
+.pub-site-view-inline span {
+  color: #e2e8f0 !important;
+}
+
+.pub-site-view-inline button {
+  color: inherit !important;
+}
+
+/* Last resort - catch all divs and ensure dark bg */
+.pub-site-view-inline [style*="background: rgb"],
+.pub-site-view-inline [style*="background: white"],
+.pub-site-view-inline [style*="backgroundColor: white"] {
+  background-color: #070b14 !important;
+  color: #e2e8f0 !important;
+}

@@ -196,7 +196,11 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
   const { user, token } = useSelector(s => s.auth);
   const { likingIds, commentingId, commentsLoadingIds, deletingId, sharingId, deletingCommentId } = useSelector(s => s.posts);
   const { connections, profile } = useSelector(s => s.profile);
-  const groupComments = groupId ? useSelector(s => s.comments.commentsByPost[post._id] ?? []) : [];
+  const allGroupComments = useSelector(s => {
+    const comments = s.comments?.commentsByPost?.[post._id];
+    return Array.isArray(comments) ? comments : [];
+  });
+  const groupComments = groupId ? allGroupComments : [];
   // Logged-in user's avatar for the comment composer (profile is the freshest
   // source; auth.user is the fallback right after login).
   const rawMyAvatar = profile?.avatar ?? user?.avatar ?? '';
@@ -559,7 +563,8 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
   const isCommenting = isStatic ? false : commentingId === post._id;
   const commentsLoading = !isStatic && commentsLoadingIds.includes(post._id);
 
-  const realComments = (groupId ? (Array.isArray(groupComments) ? groupComments : []) : (post.comments ?? []))
+  const commentsArray = groupId ? groupComments : (Array.isArray(post.comments) ? post.comments : []);
+  const realComments = (Array.isArray(commentsArray) ? commentsArray : [])
     .map(normalizeComment)
     .filter(Boolean)
     .filter(c => !c.deleted);

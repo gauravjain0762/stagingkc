@@ -38,7 +38,7 @@ function WarningIcon() {
 
 const TOAST_THEME = {
   success: { bg: '#0f2718', border: '#16a34a', iconBg: '#16a34a22', iconColor: '#4ade80', bar: '#16a34a' },
-  info:    { bg: '#0d1b2e', border: '#2563eb', iconBg: '#2563eb22', iconColor: '#60a5fa', bar: '#2563eb' },
+  info:    { bg: '#0d1720', border: '#1d4ed8', iconBg: '#1d4ed822', iconColor: '#60a5fa', bar: '#1d4ed8' },
   error:   { bg: '#2a0d0d', border: '#dc2626', iconBg: '#dc262622', iconColor: '#f87171', bar: '#dc2626' },
   warning: { bg: '#2a1f0d', border: '#d97706', iconBg: '#d9770622', iconColor: '#fbbf24', bar: '#d97706' },
 };

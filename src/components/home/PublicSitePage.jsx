@@ -4,6 +4,7 @@ import { apiRequest } from '../../services/api';
 import WebsitePreview from './WebsitePreview';
 import MiniSiteFeed from './MiniSiteFeed';
 import MiniSiteFooter from './MiniSiteFooter';
+import MiniSiteEventsPage from './MiniSiteEventsPage';
 import MiniSiteGroupsPage from './MiniSiteGroupsPage';
 import MiniSiteMembersPage from './MiniSiteMembersPage';
 import Loader from '../Loader';
@@ -34,6 +35,7 @@ export default function PublicSitePage({ slug }) {
   const [passwordError, setPasswordError] = useState('');
   const [showFeed, setShowFeed] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
+  const [showEvents, setShowEvents] = useState(false);
   const [showGroups, setShowGroups] = useState(false);
   const [isMember, setIsMember] = useState(false);
   const [isOrgMember, setIsOrgMember] = useState(false);
@@ -192,27 +194,37 @@ export default function PublicSitePage({ slug }) {
     const handleOpenFeed = (e) => {
       setShowFeed(true);
       setShowMembers(false);
-      setShowCalendar(false);
+      setShowEvents(false);
       setShowGroups(false);
     };
     const handleOpenMembers = (e) => {
       setShowFeed(false);
       setShowMembers(true);
+      setShowEvents(false);
+      setShowGroups(false);
+    };
+    const handleOpenEvents = (e) => {
+      setShowFeed(false);
+      setShowMembers(false);
+      setShowEvents(true);
       setShowGroups(false);
     };
     const handleOpenGroups = (e) => {
       setShowFeed(false);
       setShowMembers(false);
+      setShowEvents(false);
       setShowGroups(true);
     };
 
     window.addEventListener('openFeed', handleOpenFeed);
     window.addEventListener('openMembers', handleOpenMembers);
+    window.addEventListener('openEvents', handleOpenEvents);
     window.addEventListener('openGroups', handleOpenGroups);
 
     return () => {
       window.removeEventListener('openFeed', handleOpenFeed);
       window.removeEventListener('openMembers', handleOpenMembers);
+      window.removeEventListener('openEvents', handleOpenEvents);
       window.removeEventListener('openGroups', handleOpenGroups);
     };
   }, []);
@@ -429,6 +441,14 @@ export default function PublicSitePage({ slug }) {
               siteName={site.name}
               onBack={() => setShowMembers(false)}
             />
+          </div>
+          <MiniSiteFooter section={footerSection} />
+        </>
+      ) : showEvents ? (
+        <>
+          {renderNavbarOnly()}
+          <div className="pub-site-view-inline">
+            <MiniSiteEventsPage siteId={site.id} siteName={site.name} />
           </div>
           <MiniSiteFooter section={footerSection} />
         </>
