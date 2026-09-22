@@ -377,7 +377,7 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
             No events yet. Check back soon!
           </div>
         ) : (
-          <div style={{ display: 'grid', gap: '20px' }}>
+          <div className="msev-grid">
             {events.map(event => {
               const isJoined = joinedEventIds.has(event._id || event.id);
               const eventId = event._id || event.id;
@@ -385,80 +385,58 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
               return (
                 <div
                   key={eventId}
+                  className="msev-card msev-card--clickable"
                   onClick={() => handleSelectEvent(event)}
-                  style={{
-                    padding: '20px',
-                    background: '#111422',
-                    border: '1px solid #1a1f35',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    display: 'grid',
-                    gridTemplateColumns: '120px 1fr 120px',
-                    gap: '20px',
-                    alignItems: 'center'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.borderColor = '#2a3f5f'}
-                  onMouseOut={(e) => e.currentTarget.style.borderColor = '#1a1f35'}
                 >
-                  {/* Date box */}
-                  <div style={{
-                    textAlign: 'center',
-                    padding: '12px',
-                    background: '#0d1720',
-                    borderRadius: '8px'
-                  }}>
-                    <div style={{ fontSize: '24px', fontWeight: '700', color: '#e2e8f0' }}>
-                      {event.day || '?'}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      {event.month || 'N/A'}
+                  <div className="msev-card-img-wrap">
+                    {event.image ? (
+                      <img src={event.image} alt={event.title} className="msev-card-img" />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #1a1f2e 0%, #0d1720 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <CalendarIcon />
+                      </div>
+                    )}
+
+                    <div className="msev-date-badge">
+                      <span className="msev-date-day">{event.day || '?'}</span>
+                      <span className="msev-date-month">{event.month || 'N/A'}</span>
                     </div>
                   </div>
 
-                  {/* Event info */}
-                  <div>
-                    <h3 style={{ margin: '0 0 8px', fontSize: '16px', fontWeight: '600', color: '#e2e8f0' }}>
-                      {event.title || event.name}
-                    </h3>
-                    <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '8px' }}>
-                      {event.location && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#94a3b8', fontSize: '13px' }}>
-                          <MapPinIcon />
-                          {event.location}
-                        </div>
-                      )}
-                      {event.eventType && (
-                        <div style={{ color: '#94a3b8', fontSize: '13px' }}>
-                          {event.eventType}
-                        </div>
-                      )}
+                  <div className="msev-card-body">
+                    <h3 className="msev-card-title">{event.title || event.name}</h3>
+
+                    {event.description && (
+                      <p className="msev-card-desc">{event.description}</p>
+                    )}
+
+                    <div className="msev-card-footer">
+                      <div className="msev-card-meta">
+                        {event.location && (
+                          <div className="msev-card-loc">
+                            <MapPinIcon />
+                            <span>{event.location}</span>
+                          </div>
+                        )}
+                        {event.memberCount && (
+                          <div style={{ fontSize: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            👥 {event.memberCount} attending
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        className={`msev-join-btn${isJoined ? ' msev-join-btn--joined' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          isJoined ? handleLeaveEvent(eventId) : handleJoinEvent(event);
+                        }}
+                        disabled={joiningId === eventId}
+                      >
+                        {joiningId === eventId ? '⟳' : (isJoined ? '✓ Joined' : '+ Join')}
+                      </button>
                     </div>
                   </div>
-
-                  {/* Action button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      isJoined ? handleLeaveEvent(eventId) : handleJoinEvent(event);
-                    }}
-                    disabled={joiningId === eventId}
-                    style={{
-                      padding: '9px 16px',
-                      background: isJoined ? 'rgba(239,68,68,0.1)' : '#1d4ed8',
-                      color: isJoined ? '#f87171' : '#fff',
-                      border: isJoined ? '1px solid rgba(239,68,68,0.3)' : 'none',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      whiteSpace: 'nowrap',
-                      transition: 'all 0.2s',
-                      opacity: joiningId === eventId ? 0.6 : 1
-                    }}
-                  >
-                    {joiningId === eventId ? '⟳' : (isJoined ? 'Leave' : '+ Join')}
-                  </button>
                 </div>
               );
             })}
