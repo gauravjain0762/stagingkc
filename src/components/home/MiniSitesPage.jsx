@@ -228,7 +228,7 @@ function TemplatePreview({ tpl, theme }) {
 function EditOrganizationModal({ org, onClose, onSave, loading }) {
   const [formData, setFormData] = useState({
     shortDescription: org?.shortDescription || '',
-    description: org?.description || '',
+    description: org?.fullDescription || '',
     logo: org?.logo || '',
     coverImage: org?.coverImage || '',
   });
