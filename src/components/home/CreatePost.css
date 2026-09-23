@@ -311,23 +311,23 @@
 }
 
 .ms-post-textarea::placeholder {
-  color: #0f1720;
+  color: #5c6a8c;
 }
 
 .ms-post-textarea::-webkit-input-placeholder {
-  color: #0f1720;
+  color: #5c6a8c;
 }
 
 .ms-post-textarea::-moz-placeholder {
-  color: #0f1720;
+  color: #5c6a8c;
 }
 
 .ms-post-textarea:-ms-input-placeholder {
-  color: #0f1720;
+  color: #5c6a8c;
 }
 
 .ms-post-textarea::-ms-input-placeholder {
-  color: #0f1720;
+  color: #5c6a8c;
 }
 
 /* ── Hashtag / mention highlight overlay ── */

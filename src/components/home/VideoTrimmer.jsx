@@ -108,19 +108,15 @@ export default function VideoTrimmer({ file, onCancel, onSave }) {
         {duration > 0 && (
           <div className="vtrim-controls">
             <div className="vtrim-range-row">
-              <span className="vtrim-label">Start</span>
+              <span className="vtrim-label">Start time</span>
               <input type="range" min={0} max={duration} step={0.1} value={start} onChange={(e) => handleStartChange(e.target.value)} className="vtrim-slider" disabled={processing} />
               <span className="vtrim-time">{formatTime(start)}</span>
             </div>
             <div className="vtrim-range-row">
-              <span className="vtrim-label">End</span>
+              <span className="vtrim-label">End time</span>
               <input type="range" min={0} max={duration} step={0.1} value={end} onChange={(e) => handleEndChange(e.target.value)} className="vtrim-slider" disabled={processing} />
               <span className="vtrim-time">{formatTime(end)}</span>
             </div>
-            <p className="vtrim-duration-label">
-              Selected: {formatTime(end - start)}
-              {(end - start) >= MAX_TRIM_SECONDS ? ` (max ${MAX_TRIM_SECONDS}s)` : ''}
-            </p>
           </div>
         )}
 

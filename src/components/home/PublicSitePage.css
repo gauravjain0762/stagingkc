@@ -113,7 +113,7 @@
 }
 
 .pub-site-feed-inline .creator-input,
-.pub-site-feed-inline textarea {
+.pub-site-feed-inline textarea:not(.ms-post-textarea) {
   background: #0f1720 !important;
   border-color: #1a2540 !important;
   color: #e2e8f0 !important;
@@ -121,13 +121,13 @@
 }
 
 .pub-site-feed-inline .creator-input:hover,
-.pub-site-feed-inline textarea:hover {
+.pub-site-feed-inline textarea:not(.ms-post-textarea):hover {
   border-color: #2a3f5f !important;
   background: #0f1720 !important;
 }
 
 .pub-site-feed-inline .creator-input:focus,
-.pub-site-feed-inline textarea:focus {
+.pub-site-feed-inline textarea:not(.ms-post-textarea):focus {
   background: #0f1720 !important;
   border-color: #1d4ed8 !important;
   box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1) !important;
@@ -136,7 +136,7 @@
 }
 
 .pub-site-feed-inline .creator-input::placeholder,
-.pub-site-feed-inline textarea::placeholder {
+.pub-site-feed-inline textarea:not(.ms-post-textarea)::placeholder {
   color: #7c8aab !important;
 }
 

@@ -181,7 +181,7 @@
 }
 
 /* Override any other placeholder styles */
-.minisite-feed-container textarea::placeholder {
+.minisite-feed-container textarea:not(.ms-post-textarea)::placeholder {
   color: #5c6a8c !important;
 }
 
@@ -235,17 +235,17 @@
   background: #1a1f2e !important;
 }
 
-.minisite-feed-container textarea {
+.minisite-feed-container textarea:not(.ms-post-textarea) {
   background: #0f1419 !important;
   border-color: #2a3f5f !important;
   color: #e2e8f0 !important;
 }
 
-.minisite-feed-container textarea::placeholder {
+.minisite-feed-container textarea:not(.ms-post-textarea)::placeholder {
   color: #5c6a8c !important;
 }
 
-.minisite-feed-container textarea:focus {
+.minisite-feed-container textarea:not(.ms-post-textarea):focus {
   border-color: #1d4ed8 !important;
   background: #1a1f2e !important;
 }

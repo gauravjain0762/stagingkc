@@ -508,6 +508,7 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
           caption: trimmedCaption,
           content: trimmedCaption,
           images: images,
+          video: tab === 'video' ? mediaFile : null,
           visibility: visibility,
           mentions: finalMentions
         });
@@ -605,10 +606,26 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
               <textarea
                 ref={textareaRef}
                 className="ms-post-textarea"
+                placeholder="What's on your mind?"
                 value={caption}
                 onChange={handleCaptionChange}
                 rows={3}
                 maxLength={CAPTION_MAX + 50}
+                style={{
+                  width: '100%',
+                  background: '#0f1720',
+                  border: 'none',
+                  borderRadius: 0,
+                  outline: 'none',
+                  boxShadow: 'none',
+                  color: '#e2e8f0',
+                  fontSize: 15,
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  lineHeight: 1.6,
+                  resize: 'none',
+                  minHeight: 72,
+                  padding: '12px 0',
+                }}
               />
             ) : (
               // Main feed textarea with highlighting

@@ -84,11 +84,12 @@
 }
 
 .vtrim-label {
-  width: 34px;
+  width: 62px;
   font-size: 12px;
   font-weight: 600;
   color: #5c6a8c;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .vtrim-slider {

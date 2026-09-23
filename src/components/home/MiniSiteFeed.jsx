@@ -153,6 +153,7 @@ export default function MiniSiteFeed({ siteId, siteName }) {
       // Extract data from the post creation modal
       const caption = postData?.caption || postData?.content || '';
       const images = postData?.images || [];
+      const video = postData?.video || null;
 
       // Create FormData for multipart upload
       const formData = new FormData();
@@ -167,6 +168,11 @@ export default function MiniSiteFeed({ siteId, siteName }) {
           formData.append('images', img);
         }
       });
+
+      // Add video file
+      if (video) {
+        formData.append('video', video);
+      }
 
       // Use ONLY mini-site feed endpoint - organization-specific posts
       const response = await apiRequest(`/api/mini-sites/${siteId}/feed`, {
