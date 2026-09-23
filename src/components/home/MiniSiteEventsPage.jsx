@@ -1127,43 +1127,17 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
         </div>
         )}
 
-      <div style={{ padding: '32px', background: '#0b0d17', borderBottom: '1px solid #1a1f35' }}>
-        <h1 style={{ margin: '0', fontSize: '28px', fontWeight: '700', color: '#e2e8f0' }}>Events</h1>
-        <p style={{ margin: '8px 0 0', color: '#94a3b8' }}>Join events and buy tickets</p>
-
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: '24px', marginTop: '24px', borderBottom: '1px solid #1a1f35', paddingBottom: '16px' }}>
+      <div className="msev-header">
+        <div className="msev-tabs">
           <button
+            className={`msev-tab ${activeTab === 'all' ? 'msev-tab--active' : ''}`}
             onClick={() => setActiveTab('all')}
-            style={{
-              padding: '0',
-              background: 'none',
-              border: 'none',
-              color: activeTab === 'all' ? '#1d4ed8' : '#64748b',
-              fontSize: '14px',
-              fontWeight: activeTab === 'all' ? '700' : '500',
-              cursor: 'pointer',
-              borderBottom: activeTab === 'all' ? '2px solid #1d4ed8' : 'none',
-              paddingBottom: '8px',
-              transition: 'all 0.2s'
-            }}
           >
             All Events
           </button>
           <button
+            className={`msev-tab ${activeTab === 'joined' ? 'msev-tab--active' : ''}`}
             onClick={() => setActiveTab('joined')}
-            style={{
-              padding: '0',
-              background: 'none',
-              border: 'none',
-              color: activeTab === 'joined' ? '#1d4ed8' : '#64748b',
-              fontSize: '14px',
-              fontWeight: activeTab === 'joined' ? '700' : '500',
-              cursor: 'pointer',
-              borderBottom: activeTab === 'joined' ? '2px solid #1d4ed8' : 'none',
-              paddingBottom: '8px',
-              transition: 'all 0.2s'
-            }}
           >
             Joined Events
           </button>

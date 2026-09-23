@@ -21,7 +21,7 @@ const DEMO_MEMBERS = [
   { _id: '6', fullName: 'James Wilson', avatar: 'https://picsum.photos/seed/user6/100/100', location: 'Boston, MA' },
 ];
 
-export default function MiniSiteMembersPage({ siteId, siteName, onBack }) {
+export default function MiniSiteMembersPage({ siteId, siteName }) {
   const dispatch = useDispatch();
   const { token, user } = useSelector(s => s.auth);
   const [members, setMembers] = useState([]);
@@ -107,16 +107,6 @@ export default function MiniSiteMembersPage({ siteId, siteName, onBack }) {
   return (
     <div className="msg-members-page">
       <div className="msg-members-header">
-        <div className="msg-members-title-wrap">
-          <button className="msg-members-back-btn" onClick={onBack}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12"></line>
-              <polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
-          </button>
-          <h1 className="msg-members-title">Members</h1>
-        </div>
-
         <div className="msg-members-search">
           <SearchIcon />
           <input
@@ -156,13 +146,15 @@ export default function MiniSiteMembersPage({ siteId, siteName, onBack }) {
         ) : (
           filteredMembers.map(member => {
             const hasAvatar = member.avatar && member.avatar.startsWith('http');
+            const memberId = member._id || member.userId || member.id;
             return (
-              <div key={member._id || member.userId || member.id} className="msg-member-card">
+              <div key={memberId} className="msg-member-card">
                 {hasAvatar ? (
                   <img
                     src={member.avatar}
                     alt={member.fullName || member.name}
                     className="msg-member-avatar"
+                    onClick={() => handleViewProfile(memberId)}
                     onError={(e) => {
                       e.target.style.display = 'none';
                       e.target.nextElementSibling.style.display = 'flex';
@@ -172,16 +164,17 @@ export default function MiniSiteMembersPage({ siteId, siteName, onBack }) {
                 <div
                   className="msg-member-avatar msg-member-avatar-fallback"
                   style={{ display: hasAvatar ? 'none' : 'flex' }}
+                  onClick={() => handleViewProfile(memberId)}
                 >
                   KA
                 </div>
                 <div className="msg-member-info">
-                  <h3 className="msg-member-name">{member.fullName || member.name}</h3>
+                  <h3 className="msg-member-name" onClick={() => handleViewProfile(memberId)}>{member.fullName || member.name}</h3>
                   <p className="msg-member-location">{member.location ? <><PinIcon />{member.location}</> : (member.email || 'Member')}</p>
                 </div>
                 <button
                   className="msg-member-profile-btn"
-                  onClick={() => handleViewProfile(member._id || member.userId || member.id)}
+                  onClick={() => handleViewProfile(memberId)}
                 >
                   View Profile
                 </button>

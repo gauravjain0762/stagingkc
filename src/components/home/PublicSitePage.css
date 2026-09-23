@@ -2,6 +2,17 @@
   min-height: 100vh;
   background: #070b14;
   color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Sub-pages (feed/members/events/groups) render as navbar + content + footer
+   siblings inside .pub-site-page. Without flex:1 here, a short-content state
+   (e.g. "Loading events...") leaves the footer sitting right under it
+   instead of pinned to the bottom of the viewport. */
+.pub-site-feed-inline,
+.pub-site-view-inline {
+  flex: 1;
 }
 
 .pub-site-state {
@@ -88,7 +99,6 @@
 .pub-site-feed-inline {
   background: #070b14 !important;
   color: #e2e8f0 !important;
-  min-height: calc(100vh - 200px);
 }
 
 /* Dark theme for feed */
@@ -231,7 +241,6 @@
 
 /* Mini Site Footer */
 .mini-site-footer {
-  border-top: 2px solid;
   padding: 32px 24px;
   display: flex;
   flex-direction: column;

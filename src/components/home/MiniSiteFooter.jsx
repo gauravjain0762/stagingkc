@@ -46,7 +46,7 @@ export default function MiniSiteFooter({ section }) {
   })();
 
   return (
-    <footer className="mini-site-footer" style={{ background, color: textColor, borderTopColor: accentColor }}>
+    <footer className="mini-site-footer" style={{ background, color: textColor }}>
       {hasSocial && (
         <div className="mini-site-footer-social">
           {content.social.linkedin && (

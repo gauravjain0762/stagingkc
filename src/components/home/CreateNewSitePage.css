@@ -13,6 +13,7 @@
   /* Fluid instead of snapping at a breakpoint — scales continuously with
      the viewport so it never depends on landing exactly on 600px/400px. */
   padding: clamp(16px, 4vw, 40px);
+  padding-bottom: clamp(40px, 8vw, 80px);
   display: flex;
   flex-direction: column;
   color: #e0e6ed;
@@ -22,7 +23,7 @@
 
 .csp-container {
   width: 100%;
-  height: 100%;
+  min-height: 100%;
   max-width: none;
   display: flex;
   flex-direction: column;
@@ -98,6 +99,7 @@
   padding: clamp(16px, 4vw, 32px);
   backdrop-filter: blur(10px);
   max-width: 100%;
+  margin-bottom: clamp(16px, 4vw, 40px);
 }
 
 /* Form Group */

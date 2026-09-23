@@ -1250,24 +1250,6 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                         {org.shortDescription || org.description || ''}
                       </p>
 
-                      {/* Full Description */}
-                      {org.fullDescription && (
-                        <p style={{
-                          fontSize: '11px',
-                          color: 'rgba(255, 255, 255, 0.5)',
-                          margin: '6px 0 0 0',
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          fontStyle: 'italic',
-                          lineHeight: '1.3'
-                        }}>
-                          {org.fullDescription}
-                        </p>
-                      )}
-
                       {/* Manage Button */}
                       <button
                         onClick={(e) => {

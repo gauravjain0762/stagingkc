@@ -13,7 +13,7 @@ const DEVICE_WIDTH = {
 // render (interactive=false), an in-page "#id" link smooth-scrolls to the
 // matching section; anything else (an external URL) is left to navigate
 // normally. For mini sites, special links like #feed navigate to pages.
-function handleNavLinkClick(e, url, interactive, siteId) {
+function handleNavLinkClick(e, url, interactive, siteId, label) {
   if (interactive) { e.preventDefault(); return; }
   if (!url) return;
 
@@ -61,6 +61,16 @@ function handleNavLinkClick(e, url, interactive, siteId) {
     const target = document.getElementById(url.slice(1));
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    // Legacy/broken data: some sites were saved with their "Home" link
+    // pointing at a hero-section id that only exists on the home view
+    // itself. If that target isn't on the page (we're on Feed/Members/
+    // Events/Groups) and the link is labeled Home, fall back to the same
+    // page-switch as the #home special case above.
+    if (label?.trim().toLowerCase() === 'home') {
+      window.location.hash = 'home';
+      window.dispatchEvent(new CustomEvent('openHome', { detail: { siteId } }));
     }
     return;
   }
@@ -99,7 +109,7 @@ function SectionContent({ section, interactive, siteId, contactEmail, isMember }
           </div>
           <nav className="wp-navbar-links">
             {(c.links || []).map((l, i) => (
-              <a key={i} href={l.url} onClick={(e) => handleNavLinkClick(e, l.url, interactive, siteId)}>{l.label}</a>
+              <a key={i} href={l.url} onClick={(e) => handleNavLinkClick(e, l.url, interactive, siteId, l.label)}>{l.label}</a>
             ))}
           </nav>
           <div className="wp-navbar-actions">
@@ -300,7 +310,7 @@ function SectionContent({ section, interactive, siteId, contactEmail, isMember }
           )}
           <div className="wp-footer-links">
             {(c.links || []).map((l, i) => (
-              <a key={i} href={l.url} onClick={(e) => handleNavLinkClick(e, l.url, interactive, siteId)}>{l.label}</a>
+              <a key={i} href={l.url} onClick={(e) => handleNavLinkClick(e, l.url, interactive, siteId, l.label)}>{l.label}</a>
             ))}
           </div>
           <p className="wp-footer-text">{c.text}</p>

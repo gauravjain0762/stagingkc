@@ -232,7 +232,7 @@ export function createStarterSections() {
   navbar.content = {
     ...navbar.content,
     links: [
-      { label: 'Home', url: `#${hero.id}` },
+      { label: 'Home', url: '#home' },
       { label: 'Feed', url: '#feed' },
       { label: 'Events', url: '#events' },
       { label: 'Members', url: '#members' },
@@ -243,7 +243,7 @@ export function createStarterSections() {
   footer.content = {
     ...footer.content,
     links: [
-      { label: 'Home', url: `#${hero.id}` },
+      { label: 'Home', url: '#home' },
       { label: 'About', url: `#${about.id}` },
       { label: 'Contact', url: `#${contact.id}` },
     ],

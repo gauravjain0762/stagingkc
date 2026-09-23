@@ -448,7 +448,6 @@ export default function PublicSitePage({ slug }) {
             <MiniSiteMembersPage
               siteId={site.id}
               siteName={site.name}
-              onBack={() => setShowMembers(false)}
             />
           </div>
           <MiniSiteFooter section={footerSection} />

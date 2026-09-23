@@ -405,11 +405,14 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '20px',
+                gap: '8px',
+                fontSize: '13px',
+                fontWeight: 600,
                 position: 'relative'
               }}
             >
-              <InfoIcon style={{ width: '20px', height: '20px' }} />
+              <InfoIcon style={{ width: '20px', height: '20px', flexShrink: 0 }} />
+              Check privacy settings
             </button>
             {activeTooltip === 'settings' && (
               <div className="csp-settings-tooltip">
@@ -535,6 +538,7 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
             </button>
           </div>
         </form>
+        <div aria-hidden="true" style={{ height: '60px', flexShrink: 0 }} />
       </div>
     </div>
 

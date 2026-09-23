@@ -5,6 +5,42 @@
   color: #e2e8f0;
 }
 
+/* ── Header & Tabs (matches the Groups page's box/pill style) ── */
+.msev-header {
+  padding: 20px;
+}
+
+.msev-tabs {
+  display: flex;
+  gap: 12px;
+  padding: 8px;
+  background: rgba(29, 78, 216, 0.05);
+  border: 2px solid rgba(29, 78, 216, 0.2);
+  border-radius: 8px;
+  width: fit-content;
+}
+
+.msev-tab {
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #8b94a5;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.msev-tab:hover {
+  color: #c8d0e0;
+}
+
+.msev-tab--active {
+  color: #fff;
+  background: #1d4ed8;
+}
+
 /* ── Grid Layout ── */
 .msev-grid {
   display: grid;
