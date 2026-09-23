@@ -294,7 +294,7 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: none;
 }
 
 /* Navbar Section */
@@ -372,7 +372,7 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  padding: 0 40px;
+  padding: 20px 40px 0 40px;
   gap: 40px;
   width: 100%;
 }
