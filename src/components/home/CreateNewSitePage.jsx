@@ -353,10 +353,10 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
               onChange={handleSiteNameChange}
               placeholder="Enter site name (e.g., My Portfolio)"
               className={`csp-input ${errors.siteName ? 'csp-input--error' : ''}`}
-              maxLength="50"
+              maxLength="30"
             />
             {errors.siteName && <p className="csp-error">{errors.siteName}</p>}
-            <p className="csp-helper">{formData.siteName.length}/50 characters</p>
+            <p className="csp-helper">{formData.siteName.length}/30 characters</p>
           </div>
 
           {/* Site URL (Slug preview - auto-generated) */}
