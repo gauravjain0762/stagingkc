@@ -108,7 +108,7 @@ const TABS = [
   { id: 'event', label: 'Event', icon: <EventTabIcon /> },
 ];
 
-export default function CreatePostModal({ onClose, initialTab = 'photo', onNavigateToEvents, onCreateEvent, groupId, siteId, editingPost, onPostCreate, onPostEdit }) {
+export default function CreatePostModal({ onClose, initialTab = 'photo', onNavigateToEvents, onCreateEvent, groupId, siteId, editingPost, onPostCreate, onPostEdit, isMinSiteFeed = false }) {
   const dispatch = useDispatch();
   const { user: authUser, token } = useSelector(s => s.auth);
   const { profile } = useSelector(s => s.profile);
@@ -540,7 +540,7 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
         <div className="cp-header">
           <div>
             <h2 className="cp-title" id="cp-title">{isEditMode ? 'Edit Post' : 'Create Post'}</h2>
-            <p className="cp-subtitle">{isEditMode ? 'Update your caption or audience.' : 'Share an update, photo, or event with your network.'}</p>
+            <p className="cp-subtitle">{isEditMode ? 'Update your caption or audience.' : isMinSiteFeed ? 'Share an update, photo or post with your organization' : 'Share an update, photo, or event with your network.'}</p>
           </div>
           <button className="cp-close-btn" onClick={onClose} aria-label="Close">✕</button>
         </div>
@@ -548,7 +548,7 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
         {/* Tabs */}
         {!isEditMode && (
           <div className="cp-tabs">
-            {TABS.map(t => (
+            {TABS.filter(t => !isMinSiteFeed || t.id !== 'event').map(t => (
               <button
                 key={t.id}
                 className={`cp-tab${tab === t.id ? ' cp-tab--active' : ''}`}
@@ -562,8 +562,8 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
 
         {/* Body */}
         <div className="cp-body">
-          {/* Audience row — only for feed posts, not group posts */}
-          {!groupId && (
+          {/* Audience row — only for feed posts, not group posts, not mini-site feed */}
+          {!groupId && !isMinSiteFeed && (
             <div className="cp-audience-row">
               <div className="cp-audience-wrap" ref={dropdownRef}>
                 <button
@@ -730,6 +730,7 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
 
         {/* Footer */}
         <div className="cp-footer">
+          {!isMinSiteFeed && (
           <div className="cp-footer-icons">
             <button className="cp-footer-icon-btn" type="button" title="Add hashtag" onClick={() => insertAtCursor('#')}><HashIcon /></button>
             <button
@@ -751,6 +752,7 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
               )}
             </div>
           </div>
+          )}
           {error && <p className="cp-error">{error}</p>}
           {isEditMode ? (
             <button className="cp-post-btn" onClick={handlePost} disabled={editingId === editingPost._id}>

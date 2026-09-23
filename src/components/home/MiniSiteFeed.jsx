@@ -334,6 +334,8 @@ export default function MiniSiteFeed({ siteId, siteName }) {
           initialTab={createTab}
           onClose={() => setCreateOpen(false)}
           onPostCreate={handlePostCreate}
+          isMinSiteFeed={true}
+          siteId={siteId}
         />
       )}
 

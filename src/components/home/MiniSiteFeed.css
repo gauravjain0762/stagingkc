@@ -332,9 +332,19 @@
 }
 
 /* Create Post Modal - Use exact main feed styling */
+.cp-modal {
+  background: #0d1526 !important;
+  border: 1px solid #1a2540 !important;
+}
+
 .minisite-feed-container .cp-modal {
   background: #0d1526 !important;
   border: 1px solid #1a2540 !important;
+}
+
+/* Remove placeholder color from textarea in mini-site feed modal */
+.cp-textarea::placeholder {
+  color: transparent !important;
 }
 
 .minisite-feed-container .cp-modal-header {
