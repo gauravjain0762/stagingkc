@@ -38,6 +38,10 @@ function CloseIcon() {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
 }
 
+function InfoIcon() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>;
+}
+
 function slugify(name) {
   return name
     .toLowerCase()
@@ -66,6 +70,7 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cropFile, setCropFile] = useState(null); // raw File pending crop for cover images
   const [cropLogoFile, setCropLogoFile] = useState(null); // raw File pending crop for logo
+  const [activeTooltip, setActiveTooltip] = useState(null); // track which tooltip is visible
 
   // Handle input changes
   const handleInputChange = (e) => {
@@ -388,7 +393,34 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
           <div className="csp-settings-row">
             {/* Visibility */}
             <div className="csp-form-group">
-              <label className="csp-label">Who can see this Mini-Site?</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <label className="csp-label" style={{ margin: 0 }}>Who can see this Mini-Site?</label>
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <button
+                    type="button"
+                    onMouseEnter={() => setActiveTooltip('visibility')}
+                    onMouseLeave={() => setActiveTooltip(null)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '2px',
+                      color: '#3b82f6',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <InfoIcon />
+                  </button>
+                  {activeTooltip === 'visibility' && (
+                    <div className="csp-tooltip">
+                      <p><strong>Public</strong></p>
+                      <p>Anyone can see</p>
+                    </div>
+                  )}
+                </div>
+              </div>
               <div className="csp-visibility-options">
                 {[
                   { value: 'public', label: 'Public', Icon: GlobeIcon, description: 'Anyone can see' },
@@ -418,7 +450,34 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
 
             {/* Who can join? */}
             <div className="csp-form-group">
-              <label className="csp-label">Who can join?</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <label className="csp-label" style={{ margin: 0 }}>Who can join?</label>
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <button
+                    type="button"
+                    onMouseEnter={() => setActiveTooltip('joinPolicy')}
+                    onMouseLeave={() => setActiveTooltip(null)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '2px',
+                      color: '#3b82f6',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <InfoIcon />
+                  </button>
+                  {activeTooltip === 'joinPolicy' && (
+                    <div className="csp-tooltip">
+                      <p><strong>Anyone can join</strong></p>
+                      <p>No approval needed</p>
+                    </div>
+                  )}
+                </div>
+              </div>
               <div className="csp-options-compact">
                 {[
                   { value: 'anyone', label: 'Anyone can join', description: 'No approval needed' },
@@ -446,7 +505,34 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
 
             {/* Member List Visibility */}
             <div className="csp-form-group">
-              <label className="csp-label">Member List Visibility</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <label className="csp-label" style={{ margin: 0 }}>Member List Visibility</label>
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <button
+                    type="button"
+                    onMouseEnter={() => setActiveTooltip('memberListVisibility')}
+                    onMouseLeave={() => setActiveTooltip(null)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '2px',
+                      color: '#3b82f6',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <InfoIcon />
+                  </button>
+                  {activeTooltip === 'memberListVisibility' && (
+                    <div className="csp-tooltip">
+                      <p><strong>Everyone</strong></p>
+                      <p>All members visible to all</p>
+                    </div>
+                  )}
+                </div>
+              </div>
               <div className="csp-options-compact">
                 {[
                   { value: 'everyone', label: 'Everyone', description: 'All members visible to all' },
