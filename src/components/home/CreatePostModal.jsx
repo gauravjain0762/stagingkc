@@ -607,7 +607,7 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
               <textarea
                 ref={textareaRef}
                 className={`cp-textarea cp-textarea--overlay${caption.length > CAPTION_MAX ? ' cp-textarea--error' : ''}`}
-                placeholder="What's on your mind?"
+                placeholder={isMinSiteFeed ? '' : "What's on your mind?"}
                 value={caption}
                 onChange={handleCaptionChange}
                 onScroll={e => { if (highlightRef.current) highlightRef.current.scrollTop = e.target.scrollTop; }}

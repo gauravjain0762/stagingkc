@@ -342,26 +342,6 @@
   border: 1px solid #1a2540 !important;
 }
 
-/* Remove placeholder color from textarea in mini-site feed modal */
-.cp-textarea::placeholder {
-  color: transparent !important;
-}
-
-.cp-textarea::-webkit-input-placeholder {
-  color: transparent !important;
-}
-
-.cp-textarea::-moz-placeholder {
-  color: transparent !important;
-}
-
-.cp-textarea:-ms-input-placeholder {
-  color: transparent !important;
-}
-
-.cp-textarea::-ms-input-placeholder {
-  color: transparent !important;
-}
 
 .minisite-feed-container .cp-modal-header {
   border-bottom: 1px solid #1a2540 !important;
