@@ -30,6 +30,11 @@ function handleNavLinkClick(e, url, interactive, siteId) {
   }
 
   // Handle special mini site links
+  if (url === '#home') {
+    window.location.hash = 'home';
+    window.dispatchEvent(new CustomEvent('openHome', { detail: { siteId } }));
+    return;
+  }
   if (url === '#feed') {
     window.location.hash = 'feed';
     window.dispatchEvent(new CustomEvent('openFeed', { detail: { siteId } }));

@@ -216,16 +216,25 @@ export default function PublicSitePage({ slug }) {
       setShowGroups(true);
     };
 
+    const handleOpenHome = (e) => {
+      setShowFeed(false);
+      setShowMembers(false);
+      setShowEvents(false);
+      setShowGroups(false);
+    };
+
     window.addEventListener('openFeed', handleOpenFeed);
     window.addEventListener('openMembers', handleOpenMembers);
     window.addEventListener('openEvents', handleOpenEvents);
     window.addEventListener('openGroups', handleOpenGroups);
+    window.addEventListener('openHome', handleOpenHome);
 
     return () => {
       window.removeEventListener('openFeed', handleOpenFeed);
       window.removeEventListener('openMembers', handleOpenMembers);
       window.removeEventListener('openEvents', handleOpenEvents);
       window.removeEventListener('openGroups', handleOpenGroups);
+      window.removeEventListener('openHome', handleOpenHome);
     };
   }, []);
 

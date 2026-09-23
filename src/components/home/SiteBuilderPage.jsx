@@ -579,7 +579,7 @@ export default function SiteBuilderPage({ siteId, onBack, site, onSiteUpdate, or
       case 'navbar':
         return (
           <>
-            <TextField label="Logo / Brand Text" value={c.logoText} onChange={(v) => setContent({ logoText: v })} />
+            <TextField label="Logo / Mini Site Name" value={c.logoText} onChange={(v) => setContent({ logoText: v })} />
             <NavbarLogoEditor
               logo={c.logo}
               onChange={(logo) => setContent({ logo })}
