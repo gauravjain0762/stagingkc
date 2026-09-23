@@ -876,7 +876,7 @@
 .wp-footer-section {
   padding: 0 40px;
   background: #0f1419;
-  border-top: 1px solid #2a3f5f;
+  border-top: none;
 }
 
 .wp-footer-social {
