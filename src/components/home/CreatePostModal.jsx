@@ -16,6 +16,13 @@ const EMOJI_LIST = [
   '🖤','💯','⭐','🌟','☀️','🌈','🍕','🍔','☕','🎂','🎁','📸',
 ];
 
+// Mini-site posts store photo + video URLs together in one flat array with
+// no type field, so detect video by extension / Cloudinary resource path —
+// same check used in PostCard.jsx for the feed renderer.
+function isVideoUrl(url) {
+  return /\.(mp4|webm|mov|ogg|m4v)(\?|$)/i.test(url) || /\/video\/upload\//.test(url);
+}
+
 function getInitials(name = '') {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
 }
@@ -116,6 +123,7 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
 
   const isEditMode = !!editingPost;
 
+  const [miniSitePosting, setMiniSitePosting] = useState(false);
   const [tab,           setTab]           = useState(initialTab);
   // Posts use 'content' field, not 'caption'
   const [caption,       setCaption]       = useState(editingPost?.content ?? editingPost?.caption ?? '');
@@ -128,11 +136,10 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
   const [images,        setImages]        = useState(() => {
     // Pre-populate with existing images if editing
     if (editingPost?.images && Array.isArray(editingPost.images)) {
-      return editingPost.images.map((img, idx) => ({
-        id: `existing-${idx}`,
-        url: typeof img === 'string' ? img : img.url,
-        file: null
-      }));
+      return editingPost.images.map((img, idx) => {
+        const url = typeof img === 'string' ? img : img.url;
+        return { id: `existing-${idx}`, url, file: null, type: isVideoUrl(url) ? 'video' : 'image' };
+      });
     }
     return [];
   });
@@ -503,6 +510,7 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
 
     // If onPostCreate callback is provided (from MiniSiteFeed), use it for mini-site posts
     if (onPostCreate && typeof onPostCreate === 'function') {
+      setMiniSitePosting(true);
       try {
         await onPostCreate({
           caption: trimmedCaption,
@@ -514,6 +522,8 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
         });
       } catch (err) {
         setError(err?.message || 'Failed to create post.');
+      } finally {
+        setMiniSitePosting(false);
       }
     } else {
       // Use Redux thunk for general posts or group posts
@@ -624,7 +634,7 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
                   lineHeight: 1.6,
                   resize: 'none',
                   minHeight: 72,
-                  padding: '12px 0',
+                  padding: '12px 14px',
                 }}
               />
             ) : (
@@ -699,7 +709,10 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
               <div className="cp-photo-grid">
                 {images.map(img => (
                   <div key={img.id} className="cp-photo-thumb">
-                    <img src={img.url} alt="" className="cp-photo-thumb-img" />
+                    {img.type === 'video'
+                      ? <video src={img.url} className="cp-photo-thumb-img" controls />
+                      : <img src={img.url} alt="" className="cp-photo-thumb-img" />
+                    }
                     <button className="cp-remove-media" onClick={() => removeImage(img.id)} aria-label="Remove photo">✕</button>
                   </div>
                 ))}
@@ -789,8 +802,8 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
               {editingId === editingPost._id ? 'Saving…' : <><span>Save</span><SendIcon /></>}
             </button>
           ) : (
-            <button className="cp-post-btn" onClick={handlePost} disabled={creating || tab === 'event'}>
-              {creating ? 'Posting…' : <><span>Post</span><SendIcon /></>}
+            <button className="cp-post-btn" onClick={handlePost} disabled={creating || miniSitePosting || tab === 'event'}>
+              {(creating || miniSitePosting) ? 'Posting…' : <><span>Post</span><SendIcon /></>}
             </button>
           )}
         </div>

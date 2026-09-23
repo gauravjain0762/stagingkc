@@ -95,7 +95,7 @@
 }
 
 .minisite-feed-container .post-card:hover {
-  border-color: #1d4ed8 !important;
+  border-color: rgba(29, 78, 216, 0.5) !important;
   box-shadow: 0 8px 24px rgba(29, 78, 216, 0.15) !important;
   transform: translateY(-2px) !important;
 }

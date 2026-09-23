@@ -54,7 +54,8 @@ const DEMO_POSTS = [
 
 export default function MiniSiteFeed({ siteId, siteName }) {
   const dispatch = useDispatch();
-  const { token } = useSelector(s => s.auth);
+  const { user, token } = useSelector(s => s.auth);
+  const { profile } = useSelector(s => s.profile);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isMember, setIsMember] = useState(false);
@@ -250,11 +251,27 @@ export default function MiniSiteFeed({ siteId, siteName }) {
     }
   };
 
-  const displayName = 'You';
-  const avatarUrl = '';
+  const displayName = user?.fullName || 'You';
+  const rawAvatarUrl = profile?.avatar ?? user?.avatar ?? '';
+  const avatarUrl = rawAvatarUrl?.startsWith?.('http') ? rawAvatarUrl : '';
 
-  // Handle post updates (likes, comments, etc)
+  // Clicking a post author's name/avatar opens their profile on the main site.
+  const handleUserClick = (userId) => {
+    if (!token || !user) {
+      dispatch(showToast({ message: 'ℹ️ Please login to view profiles', type: 'info' }));
+      window.location.href = `/login`;
+      return;
+    }
+    window.location.href = `/?section=userProfile&id=${userId}`;
+  };
+
+  // Handle post updates (likes, comments, etc). A deleted post is removed
+  // from the feed immediately instead of waiting for a manual refresh.
   const handlePostUpdate = (updatedPost) => {
+    if (updatedPost.deleted) {
+      setPosts(prevPosts => prevPosts.filter(p => p._id !== updatedPost._id));
+      return;
+    }
     setPosts(prevPosts =>
       prevPosts.map(p => p._id === updatedPost._id ? updatedPost : p)
     );
@@ -358,7 +375,7 @@ export default function MiniSiteFeed({ siteId, siteName }) {
           </div>
         ) : (
           posts.map((post) => (
-            <PostCard key={post._id} post={post} siteId={siteId} canLike={canPost} onPostUpdate={handlePostUpdate} />
+            <PostCard key={post._id} post={post} siteId={siteId} canLike={canPost} onPostUpdate={handlePostUpdate} onUserClick={handleUserClick} isMinSiteFeed={true} />
           ))
         )}
       </div>

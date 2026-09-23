@@ -7,7 +7,9 @@ import { apiRequest } from '../../services/api';
 // commentId set, replyId not → reporting a top-level comment.
 // Neither set → reporting the post itself (falls back to reportPost/reportUser).
 // siteId set → use mini-site API instead of general posts API.
-export default function ReportModal({ postId, userId, commentId, replyId, siteId, onClose }) {
+// groupId set (with siteId) → the post lives inside a mini-site Group, not
+// the mini-site's main Feed, so it hits the groups/:groupId/posts endpoint.
+export default function ReportModal({ postId, userId, commentId, replyId, siteId, groupId, onClose }) {
   const dispatch = useDispatch();
   const { token } = useSelector(s => s.auth);
   const { reportReasons, reasonsLoading, reportSubmitting } = useSelector(s => s.posts);
@@ -36,9 +38,12 @@ export default function ReportModal({ postId, userId, commentId, replyId, siteId
         : commentId
           ? `/${postId}/comments/${commentId}/report`
           : `/${postId}/report`;
+      const basePath = groupId
+        ? `/api/mini-sites/${siteId}/groups/${groupId}/posts${endpoint}`
+        : `/api/mini-sites/${siteId}/feed${endpoint}`;
 
       try {
-        await apiRequest(`/api/mini-sites/${siteId}/feed${endpoint}`, {
+        await apiRequest(basePath, {
           method: 'POST',
           token,
           body: { reason: selected }

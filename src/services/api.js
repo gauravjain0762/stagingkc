@@ -135,6 +135,29 @@ export async function reportMiniSiteGroup(siteId, groupId, { reason }, token) {
   });
 }
 
+export async function updateMiniSiteGroupPost(siteId, groupId, postId, { caption }, token) {
+  return apiRequest(`/api/mini-sites/${siteId}/groups/${groupId}/posts/${postId}`, {
+    method: 'PUT',
+    body: { caption },
+    token
+  });
+}
+
+export async function deleteMiniSiteGroupPost(siteId, groupId, postId, token) {
+  return apiRequest(`/api/mini-sites/${siteId}/groups/${groupId}/posts/${postId}`, {
+    method: 'DELETE',
+    token
+  });
+}
+
+export async function reportMiniSiteGroupPost(siteId, groupId, postId, { reason }, token) {
+  return apiRequest(`/api/mini-sites/${siteId}/groups/${groupId}/posts/${postId}/report`, {
+    method: 'POST',
+    body: { reason },
+    token
+  });
+}
+
 // Mini-site Event APIs
 export async function getMiniSiteEvents(siteId, { page = 1, limit = 20, search, category } = {}, token) {
   let url = `/api/mini-sites/${siteId}/events?page=${page}&limit=${limit}`;

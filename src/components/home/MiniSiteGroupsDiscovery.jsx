@@ -1,12 +1,42 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { apiRequest, getMiniSiteGroupPosts, likeMiniSiteGroupPost, unlikeMiniSiteGroupPost, getMiniSiteGroupComments, createMiniSiteGroupComment, likeMiniSiteGroupComment, unlikeMiniSiteGroupComment, createMiniSiteGroupPost, reportMiniSiteGroup } from '../../services/api';
+import { apiRequest, getMiniSiteGroupPosts, likeMiniSiteGroupPost, unlikeMiniSiteGroupPost, getMiniSiteGroupComments, createMiniSiteGroupComment, likeMiniSiteGroupComment, unlikeMiniSiteGroupComment, createMiniSiteGroupPost, reportMiniSiteGroup, updateMiniSiteGroupPost, deleteMiniSiteGroupPost } from '../../services/api';
 import { showToast } from '../../store/slices/toastSlice';
 import CreatePostModal from './CreatePostModal';
+import ReportModal from './ReportModal';
 import './MiniSiteGroupsDiscovery.css';
+
+// Matches the mini-site feed's PostCard formatting exactly, so group posts
+// look identical to feed posts.
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const diff = (Date.now() - new Date(dateStr)) / 1000;
+  if (diff < 60)    return 'just now';
+  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+const AVATAR_COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#6366f1', '#ef4444'];
+function nameColor(name = '') {
+  let h = 0;
+  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) & 0xffffffff;
+  return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+}
+function nameInitials(name = '') {
+  return name.split(' ').map(w => w[0]).filter(Boolean).join('').toUpperCase().slice(0, 2);
+}
 
 function GlobeIcon() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
+}
+
+function InfoIcon() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>;
+}
+
+function TargetIcon() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>;
 }
 
 function JoinIcon() {
@@ -25,13 +55,29 @@ function ShareIcon() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>;
 }
 
+function MoreIcon() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>;
+}
+
+function EditIcon() {
+  return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>;
+}
+
+function TrashIcon() {
+  return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>;
+}
+
+function FlagIcon() {
+  return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>;
+}
+
 function LoadingSpinner() {
   return <div className="msg-spinner" />;
 }
 
 export default function MiniSiteGroupsDiscovery({ siteId }) {
   const dispatch = useDispatch();
-  const { token } = useSelector(s => s.auth);
+  const { user, token } = useSelector(s => s.auth);
   const [activeTab, setActiveTab] = useState('suggested');
   const [suggestedGroups, setSuggestedGroups] = useState([]);
   const [joinedGroups, setJoinedGroups] = useState([]);
@@ -184,11 +230,8 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
       </div>
 
       <div className="msg-group-content">
-        <h3 className="msg-group-name">{group.name}</h3>
-        {group.mission && <p className="msg-group-mission">{group.mission}</p>}
-
-        <div className="msg-group-meta">
-          <span className="msg-badge" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{group.category}</span>
+        <div className="msg-group-name-row">
+          <h3 className="msg-group-name">{group.name}</h3>
           <span className="msg-privacy">
             {group.privacy === 'public' && <><GlobeIcon /> Public</>}
             {group.privacy === 'private' && '🔒 Private'}
@@ -196,23 +239,20 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
           </span>
         </div>
 
-        <div className="msg-group-stats">
-          <span>{group.memberCount.toLocaleString()} members</span>
-          <span>{group.postsCount || 0} posts</span>
-        </div>
-
         <div className="msg-group-actions">
-          <button className="msg-view-btn" onClick={() => { setSelectedGroup(group); setViewMode('detail'); }} title="View details">
-            View
-          </button>
           {group.joined ? (
-            <button
-              className="msg-action-btn msg-leave-btn"
-              onClick={() => onLeave(group._id)}
-              disabled={isLeaving}
-            >
-              {isLeaving ? 'Leaving...' : 'Leave'}
-            </button>
+            <>
+              <button className="msg-action-btn msg-view-btn" onClick={onView}>
+                View Group
+              </button>
+              <button
+                className="msg-action-btn msg-leave-btn"
+                onClick={() => onLeave(group._id)}
+                disabled={isLeaving}
+              >
+                {isLeaving ? 'Leaving...' : 'Leave'}
+              </button>
+            </>
           ) : group.pending ? (
             <button className="msg-action-btn msg-pending-btn" disabled>
               Request Sent
@@ -223,7 +263,7 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
               onClick={() => onJoin(group)}
               disabled={isJoining}
             >
-              {isJoining ? <LoadingSpinner /> : <><JoinIcon /> Join</>}
+              {isJoining ? <LoadingSpinner /> : 'Join Group'}
             </button>
           )}
         </div>
@@ -314,6 +354,10 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
     const [reportModalOpen, setReportModalOpen] = useState(false);
     const [reportCategory, setReportCategory] = useState('');
     const [isReporting, setIsReporting] = useState(false);
+    const [openPostMenuId, setOpenPostMenuId] = useState(null);
+    const [editingGroupPost, setEditingGroupPost] = useState(null);
+    const [deletingPostId, setDeletingPostId] = useState(null);
+    const [reportingPostId, setReportingPostId] = useState(null);
 
     const reportCategories = [
       'Sexual content',
@@ -353,6 +397,31 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
       } finally {
         setPostsLoading(false);
       }
+    };
+
+    const handleDeleteGroupPost = async (postId) => {
+      setOpenPostMenuId(null);
+      if (!window.confirm('Are you sure you want to delete this post? This action cannot be undone.')) return;
+      setDeletingPostId(postId);
+      try {
+        await deleteMiniSiteGroupPost(siteId, group._id, postId, token);
+        setPosts(prev => prev.filter(p => p._id !== postId));
+        dispatch(showToast({ message: 'Post deleted', type: 'success' }));
+      } catch (error) {
+        console.error('Failed to delete post:', error);
+        dispatch(showToast({ message: 'Failed to delete post', type: 'error' }));
+      } finally {
+        setDeletingPostId(null);
+      }
+    };
+
+
+    const handleEditGroupPostSave = async ({ postId, content }) => {
+      const response = await updateMiniSiteGroupPost(siteId, group._id, postId, { caption: content }, token);
+      const updated = response?.data ?? response?.post ?? { caption: content, content };
+      setPosts(prev => prev.map(p => p._id === postId ? { ...p, ...updated } : p));
+      setEditingGroupPost(null);
+      dispatch(showToast({ message: 'Post updated', type: 'success' }));
     };
 
     const loadComments = async (postId) => {
@@ -526,20 +595,6 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
             </div>
           </div>
 
-          {/* Statistics Boxes */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', padding: '24px 32px 24px', background: '#0b0d17' }}>
-            <div style={{ background: '#111422', padding: '20px', borderRadius: '8px', border: '1px solid #1a1f35', textAlign: 'center' }}>
-              <p style={{ margin: '0 0 8px', fontSize: '12px', color: 'rgba(226, 232, 240, 0.6)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '600' }}>TOTAL MEMBERS</p>
-              <p style={{ margin: '0', fontSize: '28px', fontWeight: '700', color: '#e2e8f0' }}>{group.memberCount || 0}</p>
-            </div>
-            {posts.length > 0 && (
-              <div style={{ background: '#111422', padding: '20px', borderRadius: '8px', border: '1px solid #1a1f35', textAlign: 'center' }}>
-                <p style={{ margin: '0 0 8px', fontSize: '12px', color: 'rgba(226, 232, 240, 0.6)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '600' }}>TOTAL POSTS</p>
-                <p style={{ margin: '0', fontSize: '28px', fontWeight: '700', color: '#e2e8f0' }}>{posts.length}</p>
-              </div>
-            )}
-          </div>
-
         </div>
 
           {/* Tabs */}
@@ -573,7 +628,7 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
               {group.description && (
                 <div style={{ marginBottom: '24px', background: '#111422', padding: '20px', borderRadius: '12px', border: '1px solid #1a1f35' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', background: '#3b82f6', color: '#fff' }}>ℹ️</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', background: '#3b82f6', color: '#fff' }}><InfoIcon /></span>
                     <h3 style={{ margin: '0', fontSize: '16px', color: '#e2e8f0', fontWeight: '600' }}>About this Group</h3>
                   </div>
                   <p style={{ margin: '0', color: '#b3bcc4', lineHeight: '1.6', fontSize: '14px' }}>{group.description}</p>
@@ -583,7 +638,7 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
               {group.mission && (
                 <div style={{ marginBottom: '24px', background: '#111422', padding: '20px', borderRadius: '12px', border: '1px solid #1a1f35' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', background: '#8b5cf6', color: '#fff' }}>🎯</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', background: '#8b5cf6', color: '#fff' }}><TargetIcon /></span>
                     <h3 style={{ margin: '0', fontSize: '16px', color: '#e2e8f0', fontWeight: '600' }}>Group Mission</h3>
                   </div>
                   <p style={{ margin: '0', color: '#b3bcc4', lineHeight: '1.6', fontSize: '14px' }}>{group.mission}</p>
@@ -597,7 +652,7 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
                 </div>
                 <div style={{ background: '#111422', padding: '16px', borderRadius: '12px', border: '1px solid #1a1f35' }}>
                   <p style={{ margin: '0 0 8px', fontSize: '11px', color: '#7a8494', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '600' }}>PRIVACY</p>
-                  <p style={{ margin: '0', fontSize: '13px', color: '#e2e8f0', fontWeight: '600' }}>🌐 {group.privacy.charAt(0).toUpperCase() + group.privacy.slice(1)}</p>
+                  <p style={{ margin: '0', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#e2e8f0', fontWeight: '600' }}><GlobeIcon /> {group.privacy.charAt(0).toUpperCase() + group.privacy.slice(1)}</p>
                 </div>
                 <div style={{ background: '#111422', padding: '16px', borderRadius: '12px', border: '1px solid #1a1f35' }}>
                   <p style={{ margin: '0 0 8px', fontSize: '11px', color: '#7a8494', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '600' }}>CATEGORY</p>
@@ -613,11 +668,11 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
 
           {detailTab === 'posts' && (
             <>
-              <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '12px 16px', cursor: 'pointer', transition: 'border-color 0.18s', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }} onMouseOver={(e) => e.currentTarget.style.borderColor = '#3b82f6'} onMouseOut={(e) => e.currentTarget.style.borderColor = '#334155'}>
+              <div style={{ background: '#1e293b', border: '1px solid rgba(51, 65, 85, 0.5)', borderRadius: '12px', padding: '12px 16px', cursor: 'pointer', transition: 'border-color 0.18s', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }} onMouseOver={(e) => e.currentTarget.style.borderColor = '#3b82f6'} onMouseOut={(e) => e.currentTarget.style.borderColor = 'rgba(51, 65, 85, 0.5)'}>
                 <div
                   style={{
                     background: '#0f172a',
-                    border: '1px solid #334155',
+                    border: '1px solid rgba(51, 65, 85, 0.5)',
                     borderRadius: '20px',
                     padding: '10px 16px',
                     color: '#64748b',
@@ -630,7 +685,7 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
                 >
                   Write something to the group...
                 </div>
-                <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #334155', paddingTop: '10px' }}>
+                <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid rgba(51, 65, 85, 0.5)', paddingTop: '10px' }}>
                   <button style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '13px', fontWeight: '500', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', transition: 'background 0.15s, color 0.15s' }} onMouseOver={(e) => { e.target.style.background = '#334155'; e.target.style.color = '#e2e8f0'; }} onMouseOut={(e) => { e.target.style.background = 'transparent'; e.target.style.color = '#94a3b8'; }} onClick={() => setCreatePostOpen(true)}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                     Photo
@@ -648,10 +703,61 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
                 <p style={{ textAlign: 'center', color: '#6b7a9e', padding: '40px 0' }}>No posts yet. Be the first to post!</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {posts.map(post => (
-                    <div key={post._id} style={{ background: '#111422', paddingTop: '16px', paddingLeft: '16px', paddingRight: '16px', paddingBottom: '0', borderRadius: '12px', border: '1px solid #1a1f35' }}>
-                      <p style={{ margin: '0 0 6px', color: '#e2e8f0', fontWeight: '600', fontSize: '14px' }}>{post.author?.fullName || 'Unknown'}</p>
-                      <p style={{ margin: '0 0 14px', color: '#6b7a9e', fontSize: '13px' }}>{new Date(post.createdAt).toLocaleDateString()}</p>
+                  {posts.map(post => {
+                    const isPostAuthor = !!(user && post.author && (post.author._id === (user.id ?? user._id)));
+                    return (
+                    <div key={post._id} style={{ background: '#1a1f2e', border: '1px solid rgba(59, 130, 246, 0.5)', paddingTop: '16px', paddingLeft: '16px', paddingRight: '16px', paddingBottom: '0', borderRadius: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ width: '44px', height: '44px', borderRadius: '50%', flexShrink: 0, overflow: 'hidden', background: nameColor(post.author?.fullName || ''), border: '2px solid rgba(255,255,255,0.1)', boxShadow: '0 1px 3px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '15px' }}>
+                            {post.author?.avatar
+                              ? <img src={post.author.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none'; }} />
+                              : nameInitials(post.author?.fullName || 'U')
+                            }
+                          </div>
+                          <div>
+                            <p style={{ margin: 0, color: '#e2e8f0', fontWeight: '600', fontSize: '14px' }}>{post.author?.fullName || 'Unknown'}</p>
+                            <p style={{ margin: 0, color: '#8b94a5', fontSize: '12px' }}>{timeAgo(post.createdAt)}</p>
+                          </div>
+                        </div>
+
+                        <div style={{ position: 'relative' }}>
+                          <button
+                            onClick={() => setOpenPostMenuId(openPostMenuId === post._id ? null : post._id)}
+                            style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px' }}
+                          >
+                            <MoreIcon />
+                          </button>
+                          {openPostMenuId === post._id && (
+                            <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '4px', background: '#1a2540', border: '1px solid #2a3f5f', borderRadius: '8px', minWidth: '160px', zIndex: 20, boxShadow: '0 8px 24px rgba(0,0,0,0.4)', overflow: 'hidden' }}>
+                              {isPostAuthor ? (
+                                <>
+                                  <button
+                                    onClick={() => { setEditingGroupPost(post); setOpenPostMenuId(null); }}
+                                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'none', border: 'none', color: '#e2e8f0', fontSize: '13px', cursor: 'pointer', textAlign: 'left' }}
+                                  >
+                                    <EditIcon /> Edit Post
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteGroupPost(post._id)}
+                                    disabled={deletingPostId === post._id}
+                                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'none', border: 'none', color: '#f87171', fontSize: '13px', cursor: 'pointer', textAlign: 'left' }}
+                                  >
+                                    <TrashIcon /> {deletingPostId === post._id ? 'Deleting...' : 'Delete Post'}
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  onClick={() => { setReportingPostId(post._id); setOpenPostMenuId(null); }}
+                                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'none', border: 'none', color: '#f87171', fontSize: '13px', cursor: 'pointer', textAlign: 'left' }}
+                                >
+                                  <FlagIcon /> Report Post
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                       <p style={{ margin: '0 0 14px', color: '#c8d0e0', lineHeight: '1.65', fontSize: '14px' }}>{post.caption || post.content}</p>
 
                       {/* Media Display */}
@@ -678,7 +784,7 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
 
 
                       {/* Post Actions */}
-                      <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 0, padding: '12px 16px', borderTop: '1px solid #1a1f35', borderBottom: '1px solid #1a1f35', marginBottom: '12px', marginLeft: '-16px', marginRight: '-16px' }}>
+                      <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 0, padding: '12px 16px', marginBottom: '12px', marginLeft: '-16px', marginRight: '-16px' }}>
                         <button
                           onClick={() => post.liked ? handleUnlikePost(post._id) : handleLikePost(post._id)}
                           style={{
@@ -867,7 +973,8 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
                         </div>
                       )}
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
               )}
             </>
@@ -879,12 +986,16 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
             onClose={() => setCreatePostOpen(false)}
             groupId={group._id}
             siteId={siteId}
+            isMinSiteFeed={true}
             onPostCreate={async (postData) => {
               try {
-                // Extract actual File objects from images (like main module does)
-                const mediaFiles = postData.images && postData.images.length > 0
-                  ? postData.images.map(img => img.file).filter(Boolean)
-                  : [];
+                // Extract actual File objects from images and/or video (like main module does)
+                const mediaFiles = [
+                  ...(postData.images && postData.images.length > 0
+                    ? postData.images.map(img => img.file).filter(Boolean)
+                    : []),
+                  ...(postData.video ? [postData.video] : [])
+                ];
 
                 await createMiniSiteGroupPost(siteId, group._id, {
                   caption: postData.caption,
@@ -898,6 +1009,26 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
                 throw error;
               }
             }}
+          />
+        )}
+
+        {editingGroupPost && (
+          <CreatePostModal
+            editingPost={editingGroupPost}
+            groupId={group._id}
+            siteId={siteId}
+            isMinSiteFeed={true}
+            onClose={() => setEditingGroupPost(null)}
+            onPostEdit={handleEditGroupPostSave}
+          />
+        )}
+
+        {reportingPostId && (
+          <ReportModal
+            postId={reportingPostId}
+            siteId={siteId}
+            groupId={group._id}
+            onClose={() => setReportingPostId(null)}
           />
         )}
 
@@ -1066,7 +1197,7 @@ export default function MiniSiteGroupsDiscovery({ siteId }) {
               <GroupCard
                 key={group._id}
                 group={group}
-                onView={() => {}}
+                onView={() => { setSelectedGroup(group); setViewMode('detail'); }}
                 onJoin={handleJoin}
                 onLeave={handleLeave}
                 isJoining={joiningId === group._id}

@@ -191,7 +191,7 @@ function normalizeComment(c) {
   };
 }
 
-export default function PostCard({ post, onUserClick, groupId, siteId, canLike, onPostUpdate }) {
+export default function PostCard({ post, onUserClick, groupId, siteId, canLike, onPostUpdate, isMinSiteFeed = false }) {
   const dispatch = useDispatch();
   const { user, token } = useSelector(s => s.auth);
   const { likingIds, commentingId, commentsLoadingIds, deletingId, sharingId, deletingCommentId } = useSelector(s => s.posts);
@@ -239,6 +239,7 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
   const [captionExpanded, setCaptionExpanded] = useState(false);
   const [editOpen,        setEditOpen]        = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [miniSiteDeleting, setMiniSiteDeleting] = useState(false);
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
   const [reactionsModalOpen, setReactionsModalOpen] = useState(false);
   const menuRef = useRef(null);
@@ -981,6 +982,7 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
   async function handleDeleteConfirm() {
     if (siteId) {
       // Mini-site post delete
+      setMiniSiteDeleting(true);
       try {
         await miniSiteAPI(`/${post._id}`, {
           method: 'DELETE'
@@ -994,6 +996,8 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
       } catch (err) {
         console.error('Failed to delete post:', err);
         dispatch(showToast({ message: 'Failed to delete post', type: 'error' }));
+      } finally {
+        setMiniSiteDeleting(false);
       }
     } else {
       // General post delete
@@ -1052,7 +1056,7 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
             {authorLocation && <p className="post-author-loc"><PinIcon /> {authorLocation}</p>}
             <p className="post-time">{timeAgo(post.createdAt)}</p>
           </div>
-          {isOwner && (
+          {isOwner && !isMinSiteFeed && (
             <span className="post-visibility post-visibility--header"><visMeta.Icon /> {visMeta.label}</span>
           )}
           {post.isReported ? (
@@ -1548,6 +1552,7 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
         <CreatePostModal
           editingPost={post}
           siteId={siteId}
+          isMinSiteFeed={!!siteId}
           onClose={() => setEditOpen(false)}
           onPostEdit={handlePostEdit}
         />
@@ -1582,8 +1587,8 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
             <p className="dpm-desc">Are you sure you want to delete this post? This action cannot be undone.</p>
             <div className="dpm-actions">
               <button className="dpm-cancel-btn" onClick={() => setDeleteConfirmOpen(false)} type="button">Cancel</button>
-              <button className="dpm-confirm-btn" onClick={handleDeleteConfirm} disabled={deletingId === post._id} type="button">
-                {deletingId === post._id ? 'Deleting...' : 'Delete Post'}
+              <button className="dpm-confirm-btn" onClick={handleDeleteConfirm} disabled={deletingId === post._id || miniSiteDeleting} type="button">
+                {(deletingId === post._id || miniSiteDeleting) ? 'Deleting...' : 'Delete Post'}
               </button>
             </div>
           </div>
