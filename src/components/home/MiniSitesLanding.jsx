@@ -174,7 +174,7 @@ function OrganizationDetailModal({ org, onClose, onJoin, authToken, joinedOrgs =
                 </button>
               ) : (
                 <div className="msl-modal-message">
-                  ⛓️ This organization is invite-only. You need an invite link to join.
+                  This organization is invite-only. You need an invite link to join.
                 </div>
               )}
             </div>
