@@ -61,9 +61,11 @@ function StatusBadge({ status, rejectionReason }) {
   );
 }
 
-function OrganizationDetailModal({ org, onClose, onJoin, authToken }) {
+function OrganizationDetailModal({ org, onClose, onJoin, authToken, joinedOrgs = [] }) {
   const [fullOrgData, setFullOrgData] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const isJoined = joinedOrgs.some(o => o.id === org.id);
 
   useEffect(() => {
     if (!org || !authToken) return;
@@ -91,7 +93,32 @@ function OrganizationDetailModal({ org, onClose, onJoin, authToken }) {
   return (
     <div className="msl-modal-overlay" onClick={onClose}>
       <div className="msl-modal-content msl-modal-content--large" onClick={(e) => e.stopPropagation()}>
-        <button className="msl-modal-close" onClick={onClose}>✕</button>
+        <button
+          className="msl-modal-close"
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            background: 'rgba(0, 0, 0, 0.5)',
+            border: 'none',
+            color: '#e2e8f0',
+            fontSize: '24px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.2s',
+            zIndex: 10
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.5)'}
+        >
+          ✕
+        </button>
 
         {/* Cover Image */}
         {displayData.coverImage && (
@@ -133,7 +160,11 @@ function OrganizationDetailModal({ org, onClose, onJoin, authToken }) {
             )}
 
             <div className="msl-modal-footer">
-              {displayData.visibility === 'public' ? (
+              {isJoined ? (
+                <div className="msl-modal-message" style={{ color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '12px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.3)', textAlign: 'center' }}>
+                  ✓ You are already a member of this organization
+                </div>
+              ) : displayData.visibility === 'public' ? (
                 <button className="msl-modal-btn msl-modal-btn--primary" onClick={() => onJoin(displayData)}>
                   Join Organization
                 </button>
@@ -157,7 +188,15 @@ function OrganizationDetailModal({ org, onClose, onJoin, authToken }) {
 export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganization }) {
   const dispatch = useDispatch();
   const authToken = useSelector(s => s.auth?.token);
-  const [activeTab, setActiveTab] = useState('suggested');
+  const ITEMS_PER_PAGE = 20;
+
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      return localStorage.getItem('miniSitesLandingTab') || 'suggested';
+    } catch {
+      return 'suggested';
+    }
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [joinedSearch, setJoinedSearch] = useState('');
   const [pendingSearch, setPendingSearch] = useState('');
@@ -168,6 +207,26 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
   const [createdOrgs, setCreatedOrgs] = useState([]);
   const [loadingOrgs, setLoadingOrgs] = useState(false);
   const [selectedOrgDetail, setSelectedOrgDetail] = useState(null);
+
+  // Pagination state
+  const [suggestedPage, setSuggestedPage] = useState(1);
+  const [joinedPage, setJoinedPage] = useState(1);
+  const [pendingPage, setPendingPage] = useState(1);
+  const [createdPage, setCreatedPage] = useState(1);
+
+  // Total counts for pagination
+  const [suggestedTotal, setSuggestedTotal] = useState(0);
+  const [joinedTotal, setJoinedTotal] = useState(0);
+  const [pendingTotal, setPendingTotal] = useState(0);
+  const [createdTotal, setCreatedTotal] = useState(0);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('miniSitesLandingTab', activeTab);
+    } catch {
+      // Silently fail if localStorage is unavailable
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     if (!authToken) return;
@@ -183,13 +242,16 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
     }
   }, [activeTab, authToken]);
 
-  const fetchSuggestedOrganizations = async () => {
+  const fetchSuggestedOrganizations = async (page = 1) => {
     setLoadingOrgs(true);
     try {
-      const data = await apiRequest('/api/organizations/suggested?limit=50', {
+      const offset = (page - 1) * ITEMS_PER_PAGE;
+      const data = await apiRequest(`/api/organizations/suggested?limit=${ITEMS_PER_PAGE}&offset=${offset}`, {
         token: authToken
       });
       setSuggestedOrgs(data?.data || []);
+      setSuggestedTotal(data?.pagination?.total || 0);
+      setSuggestedPage(page);
     } catch (err) {
       console.error('Failed to fetch suggested organizations:', err);
       setSuggestedOrgs([]);
@@ -198,13 +260,16 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
     }
   };
 
-  const fetchJoinedOrganizations = async () => {
+  const fetchJoinedOrganizations = async (page = 1) => {
     setLoadingOrgs(true);
     try {
-      const data = await apiRequest('/api/organizations/joined?limit=50', {
+      const offset = (page - 1) * ITEMS_PER_PAGE;
+      const data = await apiRequest(`/api/organizations/joined?limit=${ITEMS_PER_PAGE}&offset=${offset}`, {
         token: authToken
       });
       setJoinedOrgs(data?.data || []);
+      setJoinedTotal(data?.pagination?.total || 0);
+      setJoinedPage(page);
     } catch (err) {
       console.error('Failed to fetch joined organizations:', err);
       setJoinedOrgs([]);
@@ -213,13 +278,16 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
     }
   };
 
-  const fetchPendingRequests = async () => {
+  const fetchPendingRequests = async (page = 1) => {
     setLoadingOrgs(true);
     try {
-      const data = await apiRequest('/api/organizations/pending-requests?limit=50', {
+      const offset = (page - 1) * ITEMS_PER_PAGE;
+      const data = await apiRequest(`/api/organizations/pending-requests?limit=${ITEMS_PER_PAGE}&offset=${offset}`, {
         token: authToken
       });
       setPendingRequests(data?.data || []);
+      setPendingTotal(data?.pagination?.total || 0);
+      setPendingPage(page);
     } catch (err) {
       console.error('Failed to fetch pending requests:', err);
       setPendingRequests([]);
@@ -228,17 +296,90 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
     }
   };
 
-  const fetchUserOrganizations = async () => {
+  const fetchUserOrganizations = async (page = 1) => {
     setLoadingOrgs(true);
     try {
-      const response = await getOrganizations({ limit: 50 });
+      const offset = (page - 1) * ITEMS_PER_PAGE;
+      const response = await getOrganizations({ limit: ITEMS_PER_PAGE, offset });
       setCreatedOrgs(response?.data || []);
+      setCreatedTotal(response?.pagination?.total || 0);
+      setCreatedPage(page);
     } catch (err) {
       console.error('Failed to fetch organizations:', err);
       setCreatedOrgs([]);
     } finally {
       setLoadingOrgs(false);
     }
+  };
+
+  // Pagination helper
+  const PaginationControls = ({ currentPage, totalItems, onPageChange }) => {
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+    if (totalPages <= 1) return null;
+
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: '8px',
+        marginTop: '24px',
+        padding: '16px 0'
+      }}>
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          style={{
+            padding: '8px 12px',
+            background: currentPage === 1 ? 'rgba(107, 114, 128, 0.2)' : '#1d4ed8',
+            color: currentPage === 1 ? '#9ca3af' : '#fff',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+            fontSize: '14px',
+            fontWeight: '600',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => currentPage > 1 && (e.currentTarget.style.background = '#2563eb')}
+          onMouseLeave={(e) => currentPage > 1 && (e.currentTarget.style.background = '#1d4ed8')}
+        >
+          ← Previous
+        </button>
+
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          minWidth: '120px',
+          justifyContent: 'center'
+        }}>
+          <span style={{ color: '#94a3b8', fontSize: '14px', fontWeight: '500' }}>
+            Page {currentPage} of {totalPages}
+          </span>
+        </div>
+
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          style={{
+            padding: '8px 12px',
+            background: currentPage === totalPages ? 'rgba(107, 114, 128, 0.2)' : '#1d4ed8',
+            color: currentPage === totalPages ? '#9ca3af' : '#fff',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+            fontSize: '14px',
+            fontWeight: '600',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => currentPage < totalPages && (e.currentTarget.style.background = '#2563eb')}
+          onMouseLeave={(e) => currentPage < totalPages && (e.currentTarget.style.background = '#1d4ed8')}
+        >
+          Next →
+        </button>
+      </div>
+    );
   };
 
   const handleJoinOrganization = async (org) => {
@@ -350,43 +491,196 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
             ) : suggestedOrgs.length === 0 ? (
               <div className="msl-empty-state">No organizations available to join</div>
             ) : (
+              <>
               <div className="msl-cards-grid">
                 {suggestedOrgs.map(org => (
-                  <div key={org.id} className="msl-org-card">
-                    <div className="msl-card-cover" style={{
-                      backgroundImage: org.coverImage ? `url(${org.coverImage})` : 'none',
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center'
+                  <div key={org.id} style={{
+                    background: '#111422',
+                    border: '1px solid #1a1f35',
+                    borderRadius: '14px',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'border-color 0.18s, transform 0.18s',
+                    cursor: 'pointer'
+                  }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#2d3a5a';
+                      e.currentTarget.style.transform = 'translateY(-3px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#1a1f35';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                  >
+                    {/* Cover */}
+                    <div style={{
+                      position: 'relative',
+                      height: '112px',
+                      overflow: 'hidden',
+                      flexShrink: 0,
+                      background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'
                     }}>
-                      {!org.coverImage && <span className="msl-card-cover-text">Social Platform</span>}
+                      {org.coverImage && (
+                        <img src={org.coverImage} alt={org.name} style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          display: 'block'
+                        }} />
+                      )}
                     </div>
-                    <div className="msl-card-content">
-                      <div className="msl-org-header">
-                        <div className="msl-org-info">
-                          <h3 className="msl-org-name">{org.name}</h3>
-                          <p className="msl-org-members">{org.memberCount || 0} member{(org.memberCount || 0) !== 1 ? 's' : ''}</p>
+
+                    {/* Logo Icon Wrap */}
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '4px',
+                      marginTop: '-22px',
+                      position: 'relative',
+                      zIndex: 1,
+                      flexShrink: 0
+                    }}>
+                      {org.logo ? (
+                        <img src={org.logo} alt={org.name} style={{
+                          width: '44px',
+                          height: '44px',
+                          borderRadius: '50%',
+                          border: '3px solid #111422',
+                          objectFit: 'cover'
+                        }} />
+                      ) : (
+                        <div style={{
+                          width: '44px',
+                          height: '44px',
+                          borderRadius: '50%',
+                          border: '3px solid #111422',
+                          background: '#3b82f6',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#fff',
+                          fontWeight: '700',
+                          fontSize: '18px'
+                        }}>
+                          {org.name[0]?.toUpperCase()}
                         </div>
-                        <div className={`msl-visibility-badge msl-visibility-${org.visibility || 'public'}`}>
-                          {org.visibility === 'private' ? (
-                            <><LockIcon /> Private</>
-                          ) : org.visibility === 'invite-only' ? (
-                            <><KeyIcon /> Invite</>
-                          ) : (
-                            <><GlobeIcon /> Public</>
-                          )}
-                        </div>
+                      )}
+                    </div>
+
+                    {/* Body */}
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '8px 14px 16px',
+                      textAlign: 'center',
+                      flex: 1
+                    }}>
+                      {/* Name */}
+                      <p style={{
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        color: '#e0e6f8',
+                        margin: 0,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        width: '100%'
+                      }}>
+                        {org.name}
+                      </p>
+
+                      {/* Privacy Badge */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        marginTop: '4px',
+                        flexWrap: 'wrap'
+                      }}>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          fontSize: '10px',
+                          fontWeight: '600',
+                          background: org.visibility === 'private' ? 'rgba(148, 163, 184, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                          color: org.visibility === 'private' ? '#94a3b8' : '#60a5fa',
+                          border: org.visibility === 'private' ? '1px solid rgba(148, 163, 184, 0.3)' : '1px solid rgba(96, 165, 250, 0.3)'
+                        }}>
+                          {org.visibility === 'private' ? '🔒 Private' : org.visibility === 'invite-only' ? '🔑 Invite' : '🌐 Public'}
+                        </span>
                       </div>
-                      <p className="msl-org-description">{org.shortDescription}</p>
-                      <div className="msl-card-actions">
+
+                      {/* Buttons Container */}
+                      <div style={{
+                        display: 'flex',
+                        gap: '8px',
+                        marginTop: '12px',
+                        width: '100%'
+                      }}>
+                        {/* View Detail Button */}
                         <button
-                          className="msl-detail-btn"
                           onClick={() => setSelectedOrgDetail(org)}
+                          style={{
+                            flex: 1,
+                            padding: '7px 12px',
+                            borderRadius: '6px',
+                            border: '1.5px solid #3b82f6',
+                            background: 'transparent',
+                            color: '#3b82f6',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'background 0.15s, color 0.15s, border-color 0.15s',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(59,130,246,0.12)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                          }}
                         >
                           View Detail
                         </button>
+
+                        {/* Join/Action Button */}
                         <button
-                          className="msl-join-btn"
                           onClick={() => handleJoinOrganization(org)}
+                          disabled={org.visibility === 'invite-only'}
+                          style={{
+                            flex: 1,
+                            padding: '7px 12px',
+                            borderRadius: '6px',
+                            border: org.visibility === 'invite-only' ? 'none' : '1.5px solid #3b82f6',
+                            background: org.visibility === 'invite-only' ? 'rgba(107, 114, 128, 0.2)' : 'transparent',
+                            color: org.visibility === 'invite-only' ? '#9ca3af' : '#3b82f6',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            cursor: org.visibility === 'invite-only' ? 'not-allowed' : 'pointer',
+                            transition: 'background 0.15s, color 0.15s, border-color 0.15s',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (org.visibility !== 'invite-only') {
+                              e.currentTarget.style.background = 'rgba(59,130,246,0.12)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (org.visibility !== 'invite-only') {
+                              e.currentTarget.style.background = 'transparent';
+                            }
+                          }}
                           title={org.visibility === 'public' ? 'Join instantly' : org.visibility === 'private' ? 'Send join request' : 'Requires invite link'}
                         >
                           {org.visibility === 'public' ? 'Join' : org.visibility === 'private' ? 'Request to join' : 'Invite Only'}
@@ -396,6 +690,14 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                   </div>
                 ))}
               </div>
+              {suggestedOrgs.length > 0 && (
+                <PaginationControls
+                  currentPage={suggestedPage}
+                  totalItems={suggestedTotal}
+                  onPageChange={(page) => fetchSuggestedOrganizations(page)}
+                />
+              )}
+              </>
             )}
           </div>
         );
@@ -426,54 +728,210 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                 <p>{joinedOrgs.length === 0 ? "You haven't joined any organizations yet" : 'No organizations found'}</p>
               </div>
             ) : (
+              <>
               <div className="msl-cards-grid">
                 {filteredJoinedOrgs.map(org => (
-                  <div key={org.id} className="msl-org-card">
-                    <div className="msl-card-cover" style={{
-                      backgroundImage: org.coverImage ? `url(${org.coverImage})` : 'none',
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center'
+                  <div key={org.id} style={{
+                    background: '#111422',
+                    border: '1px solid #1a1f35',
+                    borderRadius: '14px',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'border-color 0.18s, transform 0.18s',
+                    cursor: 'pointer'
+                  }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#2d3a5a';
+                      e.currentTarget.style.transform = 'translateY(-3px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#1a1f35';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                  >
+                    {/* Cover */}
+                    <div style={{
+                      position: 'relative',
+                      height: '112px',
+                      overflow: 'hidden',
+                      flexShrink: 0,
+                      background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'
                     }}>
-                      {!org.coverImage && <span className="msl-card-cover-text">Social Platform</span>}
+                      {org.coverImage && (
+                        <img src={org.coverImage} alt={org.name} style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          display: 'block'
+                        }} />
+                      )}
                     </div>
-                    <div className="msl-card-content">
-                      <div className="msl-org-header">
-                        <div className="msl-org-info">
-                          <h3 className="msl-org-name">{org.name}</h3>
-                          <p className="msl-org-members">{org.memberCount || 0} member{(org.memberCount || 0) !== 1 ? 's' : ''}</p>
+
+                    {/* Logo Icon Wrap */}
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '4px',
+                      marginTop: '-22px',
+                      position: 'relative',
+                      zIndex: 1,
+                      flexShrink: 0
+                    }}>
+                      {org.logo ? (
+                        <img src={org.logo} alt={org.name} style={{
+                          width: '44px',
+                          height: '44px',
+                          borderRadius: '50%',
+                          border: '3px solid #111422',
+                          objectFit: 'cover'
+                        }} />
+                      ) : (
+                        <div style={{
+                          width: '44px',
+                          height: '44px',
+                          borderRadius: '50%',
+                          border: '3px solid #111422',
+                          background: '#10b981',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#fff',
+                          fontWeight: '700',
+                          fontSize: '18px'
+                        }}>
+                          {org.name[0]?.toUpperCase()}
                         </div>
-                        <div className={`msl-visibility-badge msl-visibility-${org.visibility || 'public'}`}>
-                          {org.visibility === 'private' ? (
-                            <><LockIcon /> Private</>
-                          ) : org.visibility === 'invite-only' ? (
-                            <><KeyIcon /> Invite</>
-                          ) : (
-                            <><GlobeIcon /> Public</>
-                          )}
-                        </div>
+                      )}
+                    </div>
+
+                    {/* Body */}
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '8px 14px 16px',
+                      textAlign: 'center',
+                      flex: 1
+                    }}>
+                      {/* Name */}
+                      <p style={{
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        color: '#e0e6f8',
+                        margin: 0,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        width: '100%'
+                      }}>
+                        {org.name}
+                      </p>
+
+                      {/* Privacy Badge */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        marginTop: '4px',
+                        flexWrap: 'wrap'
+                      }}>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          fontSize: '10px',
+                          fontWeight: '600',
+                          background: org.visibility === 'private' ? 'rgba(148, 163, 184, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                          color: org.visibility === 'private' ? '#94a3b8' : '#60a5fa',
+                          border: org.visibility === 'private' ? '1px solid rgba(148, 163, 184, 0.3)' : '1px solid rgba(96, 165, 250, 0.3)'
+                        }}>
+                          {org.visibility === 'private' ? '🔒 Private' : org.visibility === 'invite-only' ? '🔑 Invite' : '🌐 Public'}
+                        </span>
                       </div>
-                      <p className="msl-org-description">{org.shortDescription}</p>
-                      <div className="msl-card-actions">
+
+                      {/* Buttons Container */}
+                      <div style={{
+                        display: 'flex',
+                        gap: '8px',
+                        marginTop: '12px',
+                        width: '100%'
+                      }}>
+                        {/* View Detail Button */}
                         <button
-                          className="msl-detail-btn"
                           onClick={() => setSelectedOrgDetail(org)}
+                          style={{
+                            flex: 1,
+                            padding: '7px 12px',
+                            borderRadius: '6px',
+                            border: '1.5px solid #3b82f6',
+                            background: 'transparent',
+                            color: '#3b82f6',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'background 0.15s, color 0.15s, border-color 0.15s',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(59,130,246,0.12)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                          }}
                         >
                           View Detail
                         </button>
+
+                        {/* View Site Button */}
                         <button
-                          className="msl-view-btn"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleViewOrganization(org);
                           }}
+                          style={{
+                            flex: 1,
+                            padding: '7px 12px',
+                            borderRadius: '6px',
+                            border: '1.5px solid #3b82f6',
+                            background: 'rgba(59,130,246,0.12)',
+                            color: '#60a5fa',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'background 0.15s, color 0.15s, border-color 0.15s',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(59,130,246,0.18)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(59,130,246,0.12)';
+                          }}
                         >
-                          View
+                          View Site
                         </button>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
+              {joinedOrgs.length > 0 && (
+                <PaginationControls
+                  currentPage={joinedPage}
+                  totalItems={joinedTotal}
+                  onPageChange={(page) => fetchJoinedOrganizations(page)}
+                />
+              )}
+              </>
             )}
           </div>
         );
@@ -504,6 +962,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                 <p>{pendingRequests.length === 0 ? "You have no pending join requests" : 'No pending requests found'}</p>
               </div>
             ) : (
+              <>
               <div className="msl-cards-grid">
                 {filteredPendingReqs.map(org => (
                   <div key={org.id} className="msl-org-card">
@@ -557,6 +1016,14 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                   </div>
                 ))}
               </div>
+              {pendingRequests.length > 0 && (
+                <PaginationControls
+                  currentPage={pendingPage}
+                  totalItems={pendingTotal}
+                  onPageChange={(page) => fetchPendingRequests(page)}
+                />
+              )}
+              </>
             )}
           </div>
         );
@@ -590,6 +1057,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                 <p>{createdOrgs.length === 0 ? "No organizations created yet" : 'No organizations found'}</p>
               </div>
             ) : (
+              <>
               <div className="msl-cards-grid">
                 {filteredCreatedOrgs.map(org => (
                   <div
@@ -637,6 +1105,14 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                   </div>
                 ))}
               </div>
+              {createdOrgs.length > 0 && (
+                <PaginationControls
+                  currentPage={createdPage}
+                  totalItems={createdTotal}
+                  onPageChange={(page) => fetchUserOrganizations(page)}
+                />
+              )}
+              </>
             )}
           </div>
         );
@@ -695,6 +1171,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
           onClose={() => setSelectedOrgDetail(null)}
           onJoin={handleJoinOrganization}
           authToken={authToken}
+          joinedOrgs={joinedOrgs}
         />
       )}
     </div>
