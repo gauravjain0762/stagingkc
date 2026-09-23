@@ -1013,6 +1013,9 @@ export default function MiniSitesPage({
                 {userOrganization.shortDescription && (
                   <p className="ms-org-description">{userOrganization.shortDescription}</p>
                 )}
+                {userOrganization.fullDescription && (
+                  <p className="ms-org-full-description">{userOrganization.fullDescription}</p>
+                )}
               </div>
             </div>
             <button
