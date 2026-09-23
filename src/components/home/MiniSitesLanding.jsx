@@ -593,6 +593,15 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                         {org.name}
                       </p>
 
+                      {/* Members Count */}
+                      <p style={{
+                        fontSize: '11px',
+                        color: 'rgba(255, 255, 255, 0.6)',
+                        margin: 0
+                      }}>
+                        {org.memberCount || 0} member{(org.memberCount || 0) !== 1 ? 's' : ''}
+                      </p>
+
                       {/* Privacy Badge */}
                       <div style={{
                         display: 'flex',
@@ -834,6 +843,15 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                         width: '100%'
                       }}>
                         {org.name}
+                      </p>
+
+                      {/* Members Count */}
+                      <p style={{
+                        fontSize: '11px',
+                        color: 'rgba(255, 255, 255, 0.6)',
+                        margin: 0
+                      }}>
+                        {org.memberCount || 0} member{(org.memberCount || 0) !== 1 ? 's' : ''}
                       </p>
 
                       {/* Privacy Badge */}

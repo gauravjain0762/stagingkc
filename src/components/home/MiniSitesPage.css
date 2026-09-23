@@ -159,6 +159,8 @@
   display: flex;
   align-items: center;
   gap: 16px;
+  min-width: 0;
+  flex: 1;
 }
 
 .ms-org-logo {
@@ -173,6 +175,8 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
+  flex: 1;
 }
 
 .ms-org-header {
@@ -1455,6 +1459,7 @@
 .ms-org-edit-btn {
   width: 40px;
   height: 40px;
+  flex-shrink: 0;
   border-radius: 8px;
   background: rgba(100, 200, 255, 0.15);
   border: 1px solid rgba(100, 200, 255, 0.3);
