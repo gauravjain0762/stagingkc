@@ -318,7 +318,11 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
   };
 
   if (loading && events.length === 0) {
-    return <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Loading events...</div>;
+    return (
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: '#6b7280' }}>
+        Loading events...
+      </div>
+    );
   }
 
   if (view === 'detail' && selectedEvent) {

@@ -322,6 +322,9 @@ export default function MiniSiteFeed({ siteId, siteName }) {
       {/* View-only notice for non-members */}
       {!canPost && (
         <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           textAlign: 'center',
           padding: '16px',
           backgroundColor: '#111422',
