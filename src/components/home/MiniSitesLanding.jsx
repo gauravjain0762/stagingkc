@@ -1242,8 +1242,9 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                         }}
                         disabled={org.status !== 'approved'}
                         style={{
-                          marginTop: '12px',
+                          marginTop: 'auto',
                           width: '100%',
+                          height: '40px',
                           padding: '8px 12px',
                           borderRadius: '6px',
                           border: org.status === 'approved' ? '1.5px solid #3b82f6' : '1.5px solid #64748b',
@@ -1255,7 +1256,10 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                           transition: 'all 0.15s',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
-                          textOverflow: 'ellipsis'
+                          textOverflow: 'ellipsis',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
                         }}
                         onMouseEnter={(e) => {
                           if (org.status === 'approved') {
