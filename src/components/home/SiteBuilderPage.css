@@ -73,10 +73,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   letter-spacing: -0.3px;
+  display: none;
 }
 
 .sbp-site-url {
-  display: block;
+  display: none;
   font-size: 12px;
   color: #60a5fa;
   margin: 4px 0 0 0;
@@ -97,7 +98,7 @@
 }
 
 .sbp-save-status {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 7px;
   padding: 7px 12px;
