@@ -294,11 +294,11 @@ function EditOrganizationModal({ org, onClose, onSave, loading }) {
               value={formData.shortDescription}
               onChange={handleInputChange}
               placeholder="Brief description of your organization"
-              maxLength="100"
+              maxLength="200"
               required
               className="ms-form-input"
             />
-            <small className="ms-form-hint">{formData.shortDescription.length}/100</small>
+            <small className="ms-form-hint">{formData.shortDescription.length}/200</small>
           </div>
 
           <div className="ms-form-group">
