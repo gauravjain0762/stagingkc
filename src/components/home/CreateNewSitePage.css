@@ -262,7 +262,7 @@
 .csp-helper {
   font-size: 12px;
   color: #5b6a7c;
-  margin-top: 6px;
+  margin-top: 12px;
   margin-bottom: 0;
 }
 
@@ -424,6 +424,10 @@
   border: 2px dashed rgba(75, 85, 99, 0.3);
   border-radius: 12px;
   transition: all 0.2s ease;
+  height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .csp-upload-area {
@@ -500,6 +504,10 @@
   border: 2px dashed rgba(75, 85, 99, 0.3);
   border-radius: 12px;
   transition: all 0.2s ease;
+  height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .csp-logo-upload-area {
