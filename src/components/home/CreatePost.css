@@ -286,6 +286,13 @@
 
 .cp-textarea::placeholder { color: #5c6a8c; }
 
+/* Mini-site feed: hide placeholder */
+[data-minisite="true"] .cp-textarea::placeholder { color: transparent !important; }
+[data-minisite="true"] .cp-textarea::-webkit-input-placeholder { color: transparent !important; }
+[data-minisite="true"] .cp-textarea::-moz-placeholder { color: transparent !important; }
+[data-minisite="true"] .cp-textarea:-ms-input-placeholder { color: transparent !important; }
+[data-minisite="true"] .cp-textarea::-ms-input-placeholder { color: transparent !important; }
+
 /* ── Hashtag / mention highlight overlay ── */
 .cp-input-wrap { position: relative; }
 

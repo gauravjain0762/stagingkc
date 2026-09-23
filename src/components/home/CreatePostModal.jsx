@@ -534,7 +534,7 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
 
   return (
     <div className="cp-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="cp-modal" role="dialog" aria-modal="true" aria-labelledby="cp-title">
+      <div className="cp-modal" role="dialog" aria-modal="true" aria-labelledby="cp-title" data-minisite={isMinSiteFeed ? "true" : undefined}>
 
         {/* Header */}
         <div className="cp-header">
