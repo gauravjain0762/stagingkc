@@ -1063,40 +1063,177 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
               <>
               <div className="msl-cards-grid">
                 {filteredCreatedOrgs.map(org => (
-                  <div
-                    key={org.id}
-                    className={`msl-org-card ${org.status !== 'approved' ? 'msl-org-card--disabled' : ''}`}
+                  <div key={org.id} style={{
+                    background: '#111422',
+                    border: '1px solid #1a1f35',
+                    borderRadius: '14px',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'border-color 0.18s, transform 0.18s, opacity 0.18s',
+                    cursor: org.status === 'approved' ? 'pointer' : 'default',
+                    opacity: org.status !== 'approved' ? 0.6 : 1
+                  }}
                     onClick={() => org.status === 'approved' && onSelectOrganization?.(org)}
+                    onMouseEnter={(e) => {
+                      if (org.status === 'approved') {
+                        e.currentTarget.style.borderColor = '#2d3a5a';
+                        e.currentTarget.style.transform = 'translateY(-3px)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#1a1f35';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
                   >
-                    <div className="msl-card-cover" style={{
-                      backgroundImage: org.coverImage ? `url(${org.coverImage})` : 'none',
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center'
+                    {/* Cover */}
+                    <div style={{
+                      position: 'relative',
+                      height: '112px',
+                      overflow: 'hidden',
+                      flexShrink: 0,
+                      background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'
                     }}>
-                      {!org.coverImage && <span className="msl-card-cover-text">Social Platform</span>}
-                    </div>
-                    <div className="msl-card-content">
-                      <div className="msl-org-header">
-                        <div className="msl-org-info">
-                          <h3 className="msl-org-name">{org.name}</h3>
-                          <p className="msl-org-members">{org.memberCount || 0} member{(org.memberCount || 0) !== 1 ? 's' : ''}</p>
-                        </div>
-                        <div className={`msl-visibility-badge msl-visibility-${org.visibility || 'public'}`}>
-                          {org.visibility === 'private' ? (
-                            <><LockIcon /> Private</>
-                          ) : org.visibility === 'invite-only' ? (
-                            <><KeyIcon /> Invite</>
-                          ) : (
-                            <><GlobeIcon /> Public</>
-                          )}
-                        </div>
-                      </div>
-                      <p className="msl-org-description">{org.shortDescription || org.description || ''}</p>
-                      {org.fullDescription && (
-                        <p className="msl-org-full-description">{org.fullDescription}</p>
+                      {org.coverImage && (
+                        <img src={org.coverImage} alt={org.name} style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          display: 'block'
+                        }} />
                       )}
+                    </div>
+
+                    {/* Logo Icon Wrap */}
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '4px',
+                      marginTop: '-22px',
+                      position: 'relative',
+                      zIndex: 1,
+                      flexShrink: 0
+                    }}>
+                      {org.logo ? (
+                        <img src={org.logo} alt={org.name} style={{
+                          width: '44px',
+                          height: '44px',
+                          borderRadius: '50%',
+                          border: '3px solid #111422',
+                          objectFit: 'cover'
+                        }} />
+                      ) : (
+                        <div style={{
+                          width: '44px',
+                          height: '44px',
+                          borderRadius: '50%',
+                          border: '3px solid #111422',
+                          background: '#3b82f6',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#fff',
+                          fontWeight: '700',
+                          fontSize: '18px'
+                        }}>
+                          {org.name[0]?.toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Body */}
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '8px 14px 16px',
+                      textAlign: 'center',
+                      flex: 1
+                    }}>
+                      {/* Name */}
+                      <p style={{
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        color: '#e0e6f8',
+                        margin: 0,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        width: '100%'
+                      }}>
+                        {org.name}
+                      </p>
+
+                      {/* Privacy Badge */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        marginTop: '4px',
+                        flexWrap: 'wrap'
+                      }}>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          fontSize: '10px',
+                          fontWeight: '600',
+                          background: org.visibility === 'private' ? 'rgba(148, 163, 184, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                          color: org.visibility === 'private' ? '#94a3b8' : '#60a5fa',
+                          border: org.visibility === 'private' ? '1px solid rgba(148, 163, 184, 0.3)' : '1px solid rgba(96, 165, 250, 0.3)'
+                        }}>
+                          {org.visibility === 'private' ? '🔒 Private' : org.visibility === 'invite-only' ? '🔑 Invite' : '🌐 Public'}
+                        </span>
+                      </div>
+
+                      {/* Members Count */}
+                      <p style={{
+                        fontSize: '11px',
+                        color: 'rgba(255, 255, 255, 0.6)',
+                        margin: '4px 0 0 0'
+                      }}>
+                        {org.memberCount || 0} member{(org.memberCount || 0) !== 1 ? 's' : ''}
+                      </p>
+
+                      {/* Short Description */}
+                      <p style={{
+                        fontSize: '12px',
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        margin: '6px 0 0 0',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        lineHeight: '1.4'
+                      }}>
+                        {org.shortDescription || org.description || ''}
+                      </p>
+
+                      {/* Full Description */}
+                      {org.fullDescription && (
+                        <p style={{
+                          fontSize: '11px',
+                          color: 'rgba(255, 255, 255, 0.5)',
+                          margin: '6px 0 0 0',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          fontStyle: 'italic',
+                          lineHeight: '1.3'
+                        }}>
+                          {org.fullDescription}
+                        </p>
+                      )}
+
+                      {/* Manage Button */}
                       <button
-                        className={`msl-manage-btn ${org.status !== 'approved' ? 'msl-manage-btn--disabled' : ''}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           if (org.status === 'approved') {
@@ -1104,6 +1241,32 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                           }
                         }}
                         disabled={org.status !== 'approved'}
+                        style={{
+                          marginTop: '12px',
+                          width: '100%',
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          border: org.status === 'approved' ? '1.5px solid #3b82f6' : '1.5px solid #64748b',
+                          background: org.status === 'approved' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(100, 112, 139, 0.1)',
+                          color: org.status === 'approved' ? '#3b82f6' : '#64748b',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          cursor: org.status === 'approved' ? 'pointer' : 'not-allowed',
+                          transition: 'all 0.15s',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (org.status === 'approved') {
+                            e.currentTarget.style.background = 'rgba(59, 130, 246, 0.25)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (org.status === 'approved') {
+                            e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)';
+                          }
+                        }}
                       >
                         {org.status === 'pending' ? 'Pending Admin Approval' : org.status === 'rejected' ? 'Rejected' : 'Manage'}
                       </button>
