@@ -600,21 +600,34 @@ export default function CreatePostModal({ onClose, initialTab = 'photo', onNavig
 
           {/* Caption */}
           <div style={{ position: 'relative' }} ref={mentionRef}>
-            <div className="cp-input-wrap">
-              <div ref={highlightRef} className="cp-highlight" aria-hidden="true">
-                {renderHighlighted(caption, mentions)}{'​'}
-              </div>
+            {isMinSiteFeed ? (
+              // Mini-site feed textarea - completely separate styling
               <textarea
                 ref={textareaRef}
-                className={`cp-textarea cp-textarea--overlay${caption.length > CAPTION_MAX ? ' cp-textarea--error' : ''}`}
-                placeholder={isMinSiteFeed ? '' : "What's on your mind?"}
+                className="ms-post-textarea"
                 value={caption}
                 onChange={handleCaptionChange}
-                onScroll={e => { if (highlightRef.current) highlightRef.current.scrollTop = e.target.scrollTop; }}
                 rows={3}
                 maxLength={CAPTION_MAX + 50}
               />
-            </div>
+            ) : (
+              // Main feed textarea with highlighting
+              <div className="cp-input-wrap">
+                <div ref={highlightRef} className="cp-highlight" aria-hidden="true">
+                  {renderHighlighted(caption, mentions)}{'​'}
+                </div>
+                <textarea
+                  ref={textareaRef}
+                  className={`cp-textarea cp-textarea--overlay${caption.length > CAPTION_MAX ? ' cp-textarea--error' : ''}`}
+                  placeholder="What's on your mind?"
+                  value={caption}
+                  onChange={handleCaptionChange}
+                  onScroll={e => { if (highlightRef.current) highlightRef.current.scrollTop = e.target.scrollTop; }}
+                  rows={3}
+                  maxLength={CAPTION_MAX + 50}
+                />
+              </div>
+            )}
             {caption.length > CAPTION_MAX - 100 && (
               <span style={{
                 position: 'absolute', bottom: 8, right: 10,
