@@ -389,174 +389,48 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
             <p className="csp-helper">Generated automatically from the site name.</p>
           </div>
 
-          {/* Settings Row - All in one line */}
-          <div className="csp-settings-row">
-            {/* Visibility */}
-            <div className="csp-form-group">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <label className="csp-label" style={{ margin: 0 }}>Who can see this Mini-Site?</label>
-                <div style={{ position: 'relative', display: 'inline-block' }}>
-                  <button
-                    type="button"
-                    onMouseEnter={() => setActiveTooltip('visibility')}
-                    onMouseLeave={() => setActiveTooltip(null)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: '2px',
-                      color: '#3b82f6',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <InfoIcon />
-                  </button>
-                  {activeTooltip === 'visibility' && (
-                    <div className="csp-tooltip">
-                      <p><strong>Public</strong></p>
-                      <p>Anyone can see</p>
-                    </div>
-                  )}
+          {/* Settings Info Button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', position: 'relative' }}>
+            <button
+              type="button"
+              onMouseEnter={() => setActiveTooltip('settings')}
+              onMouseLeave={() => setActiveTooltip(null)}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px',
+                color: '#3b82f6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '20px',
+                position: 'relative'
+              }}
+            >
+              <InfoIcon style={{ width: '20px', height: '20px' }} />
+            </button>
+            {activeTooltip === 'settings' && (
+              <div className="csp-settings-tooltip">
+                <div className="csp-tooltip-section">
+                  <p className="csp-tooltip-title">Who can see this Mini-Site?</p>
+                  <p><strong>Public</strong></p>
+                  <p>Anyone can see</p>
+                </div>
+                <div className="csp-tooltip-divider"></div>
+                <div className="csp-tooltip-section">
+                  <p className="csp-tooltip-title">Who can join?</p>
+                  <p><strong>Anyone can join</strong></p>
+                  <p>No approval needed</p>
+                </div>
+                <div className="csp-tooltip-divider"></div>
+                <div className="csp-tooltip-section">
+                  <p className="csp-tooltip-title">Member List Visibility</p>
+                  <p><strong>Everyone</strong></p>
+                  <p>All members visible to all</p>
                 </div>
               </div>
-              <div className="csp-visibility-options">
-                {[
-                  { value: 'public', label: 'Public', Icon: GlobeIcon, description: 'Anyone can see' },
-                ].map(option => (
-                  <label key={option.value} className="csp-visibility-option">
-                    <input
-                      type="radio"
-                      name="visibility"
-                      value={option.value}
-                      checked={formData.visibility === option.value}
-                      onChange={handleInputChange}
-                      className="csp-radio-input"
-                    />
-                    <div className="csp-visibility-card">
-                      <div className="csp-visibility-content">
-                        <p className="csp-visibility-label">{option.label}</p>
-                        <p className="csp-visibility-desc">{option.description}</p>
-                      </div>
-                      <div className={`csp-visibility-check ${formData.visibility === option.value ? 'csp-visibility-check--active' : ''}`}>
-                        <CheckIcon />
-                      </div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Who can join? */}
-            <div className="csp-form-group">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <label className="csp-label" style={{ margin: 0 }}>Who can join?</label>
-                <div style={{ position: 'relative', display: 'inline-block' }}>
-                  <button
-                    type="button"
-                    onMouseEnter={() => setActiveTooltip('joinPolicy')}
-                    onMouseLeave={() => setActiveTooltip(null)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: '2px',
-                      color: '#3b82f6',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <InfoIcon />
-                  </button>
-                  {activeTooltip === 'joinPolicy' && (
-                    <div className="csp-tooltip">
-                      <p><strong>Anyone can join</strong></p>
-                      <p>No approval needed</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="csp-options-compact">
-                {[
-                  { value: 'anyone', label: 'Anyone can join', description: 'No approval needed' },
-                ].map(option => (
-                  <label key={option.value} className="csp-option-compact">
-                    <input
-                      type="radio"
-                      name="joinPolicy"
-                      value={option.value}
-                      checked={formData.joinPolicy === option.value}
-                      onChange={handleInputChange}
-                      className="csp-radio-input"
-                    />
-                    <div className="csp-option-content">
-                      <p className="csp-option-label">{option.label}</p>
-                      <p className="csp-option-desc">{option.description}</p>
-                    </div>
-                    <div className={`csp-radio-check ${formData.joinPolicy === option.value ? 'csp-radio-check--active' : ''}`}>
-                      <CheckIcon />
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Member List Visibility */}
-            <div className="csp-form-group">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <label className="csp-label" style={{ margin: 0 }}>Member List Visibility</label>
-                <div style={{ position: 'relative', display: 'inline-block' }}>
-                  <button
-                    type="button"
-                    onMouseEnter={() => setActiveTooltip('memberListVisibility')}
-                    onMouseLeave={() => setActiveTooltip(null)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: '2px',
-                      color: '#3b82f6',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <InfoIcon />
-                  </button>
-                  {activeTooltip === 'memberListVisibility' && (
-                    <div className="csp-tooltip">
-                      <p><strong>Everyone</strong></p>
-                      <p>All members visible to all</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="csp-options-compact">
-                {[
-                  { value: 'everyone', label: 'Everyone', description: 'All members visible to all' },
-                ].map(option => (
-                  <label key={option.value} className="csp-option-compact">
-                    <input
-                      type="radio"
-                      name="memberListVisibility"
-                      value={option.value}
-                      checked={formData.memberListVisibility === option.value}
-                      onChange={handleInputChange}
-                      className="csp-radio-input"
-                    />
-                    <div className="csp-option-content">
-                      <p className="csp-option-label">{option.label}</p>
-                      <p className="csp-option-desc">{option.description}</p>
-                    </div>
-                    <div className={`csp-radio-check ${formData.memberListVisibility === option.value ? 'csp-radio-check--active' : ''}`}>
-                      <CheckIcon />
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Logo and Cover Images Row */}
