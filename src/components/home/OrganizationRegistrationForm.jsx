@@ -381,14 +381,14 @@ function OrganizationRegistrationForm({ onClose, onSubmit }) {
                   <label>Short Description *</label>
                   <textarea
                     name="shortDesc"
-                    placeholder="Brief description (max 100 characters)"
-                    maxLength="100"
+                    placeholder="Brief description (max 200 characters)"
+                    maxLength="200"
                     value={formData.shortDesc}
                     onChange={handleInputChange}
                     className={errors.shortDesc ? 'error' : ''}
                     rows="2"
                   />
-                  <span className="org-reg-char-count">{formData.shortDesc.length}/100</span>
+                  <span className="org-reg-char-count">{formData.shortDesc.length}/200</span>
                   {errors.shortDesc && <span className="org-reg-error">{errors.shortDesc}</span>}
                 </div>
 
