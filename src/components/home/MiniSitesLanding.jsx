@@ -389,7 +389,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                           onClick={() => handleJoinOrganization(org)}
                           title={org.visibility === 'public' ? 'Join instantly' : org.visibility === 'private' ? 'Send join request' : 'Requires invite link'}
                         >
-                          {org.visibility === 'public' ? 'Join' : org.visibility === 'private' ? 'Request Join' : 'Invite Only'}
+                          {org.visibility === 'public' ? 'Join' : org.visibility === 'private' ? 'Request to join' : 'Invite Only'}
                         </button>
                       </div>
                     </div>
