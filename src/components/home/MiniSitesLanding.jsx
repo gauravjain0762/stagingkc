@@ -613,7 +613,13 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                           color: org.visibility === 'private' ? '#94a3b8' : '#60a5fa',
                           border: org.visibility === 'private' ? '1px solid rgba(148, 163, 184, 0.3)' : '1px solid rgba(96, 165, 250, 0.3)'
                         }}>
-                          {org.visibility === 'private' ? '🔒 Private' : org.visibility === 'invite-only' ? '🔑 Invite' : '🌐 Public'}
+                          {org.visibility === 'private' ? (
+                            <><LockIcon /> Private</>
+                          ) : org.visibility === 'invite-only' ? (
+                            <><KeyIcon /> Invite</>
+                          ) : (
+                            <><GlobeIcon /> Public</>
+                          )}
                         </span>
                       </div>
 
@@ -850,7 +856,13 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                           color: org.visibility === 'private' ? '#94a3b8' : '#60a5fa',
                           border: org.visibility === 'private' ? '1px solid rgba(148, 163, 184, 0.3)' : '1px solid rgba(96, 165, 250, 0.3)'
                         }}>
-                          {org.visibility === 'private' ? '🔒 Private' : org.visibility === 'invite-only' ? '🔑 Invite' : '🌐 Public'}
+                          {org.visibility === 'private' ? (
+                            <><LockIcon /> Private</>
+                          ) : org.visibility === 'invite-only' ? (
+                            <><KeyIcon /> Invite</>
+                          ) : (
+                            <><GlobeIcon /> Public</>
+                          )}
                         </span>
                       </div>
 
@@ -1186,7 +1198,13 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                           color: org.visibility === 'private' ? '#94a3b8' : '#60a5fa',
                           border: org.visibility === 'private' ? '1px solid rgba(148, 163, 184, 0.3)' : '1px solid rgba(96, 165, 250, 0.3)'
                         }}>
-                          {org.visibility === 'private' ? '🔒 Private' : org.visibility === 'invite-only' ? '🔑 Invite' : '🌐 Public'}
+                          {org.visibility === 'private' ? (
+                            <><LockIcon /> Private</>
+                          ) : org.visibility === 'invite-only' ? (
+                            <><KeyIcon /> Invite</>
+                          ) : (
+                            <><GlobeIcon /> Public</>
+                          )}
                         </span>
                       </div>
 
