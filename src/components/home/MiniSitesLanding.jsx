@@ -502,8 +502,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                     display: 'flex',
                     flexDirection: 'column',
                     transition: 'border-color 0.18s, transform 0.18s',
-                    cursor: 'pointer',
-                    height: '520px'
+                    cursor: 'pointer'
                   }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.borderColor = '#2d3a5a';
@@ -578,9 +577,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                       gap: '5px',
                       padding: '8px 14px 16px',
                       textAlign: 'center',
-                      flex: 1,
-                      overflow: 'hidden',
-                      minHeight: 0
+                      flex: 1
                     }}>
                       {/* Name */}
                       <p style={{
@@ -817,9 +814,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                       gap: '5px',
                       padding: '8px 14px 16px',
                       textAlign: 'center',
-                      flex: 1,
-                      overflow: 'hidden',
-                      minHeight: 0
+                      flex: 1
                     }}>
                       {/* Name */}
                       <p style={{
@@ -1077,8 +1072,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                     flexDirection: 'column',
                     transition: 'border-color 0.18s, transform 0.18s, opacity 0.18s',
                     cursor: org.status === 'approved' ? 'pointer' : 'default',
-                    opacity: org.status !== 'approved' ? 0.6 : 1,
-                    height: '520px'
+                    opacity: org.status !== 'approved' ? 0.6 : 1
                   }}
                     onClick={() => org.status === 'approved' && onSelectOrganization?.(org)}
                     onMouseEnter={(e) => {
@@ -1156,9 +1150,7 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                       gap: '5px',
                       padding: '8px 14px 16px',
                       textAlign: 'center',
-                      flex: 1,
-                      overflow: 'hidden',
-                      minHeight: 0
+                      flex: 1
                     }}>
                       {/* Name */}
                       <p style={{
