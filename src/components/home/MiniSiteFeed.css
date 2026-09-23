@@ -208,15 +208,25 @@
   box-shadow: 0 6px 16px rgba(29, 78, 216, 0.4) !important;
 }
 
-.minisite-feed-container .pc-comment-text {
+.minisite-feed-container .pc-bubble {
+  background: #1a1f2e !important;
+  border-color: #2a3f5f !important;
+}
+
+.minisite-feed-container .pc-bubble--reply {
+  background: #151a25 !important;
+  border-color: #232d45 !important;
+}
+
+.minisite-feed-container .pc-name {
   color: #e2e8f0 !important;
 }
 
-.minisite-feed-container .pc-comment-author {
-  color: #e2e8f0 !important;
+.minisite-feed-container .pc-text {
+  color: #cbd5e1 !important;
 }
 
-.minisite-feed-container .pc-comment-time {
+.minisite-feed-container .pc-time {
   color: #8b94a5 !important;
 }
 
@@ -320,7 +330,7 @@
 }
 
 .minisite-feed-container .comment-input-wrap {
-  background: #ffffff !important;
+  background: transparent !important;
 }
 
 .minisite-feed-container .comment-input-icons button {

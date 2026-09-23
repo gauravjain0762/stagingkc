@@ -511,11 +511,18 @@ export default function PostCard({ post, onUserClick, groupId, siteId, canLike, 
       return mediaArray;
     }
 
-    // If post has images array (mini-site posts), convert to media format
+    // If post has images array (mini-site posts), convert to media format.
+    // Mini-site uploads (photo + video) both land in this same array, so
+    // detect video URLs by extension / Cloudinary resource path.
     if (post.images && Array.isArray(post.images) && post.images.length > 0) {
       return post.images
         .filter(url => typeof url === 'string' && url.length > 0)
-        .map(url => ({ url, type: 'image' }));
+        .map(url => ({
+          url,
+          type: /\.(mp4|webm|mov|ogg|m4v)(\?|$)/i.test(url) || /\/video\/upload\//.test(url)
+            ? 'video'
+            : 'image',
+        }));
     }
 
     return [];
