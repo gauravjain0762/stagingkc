@@ -295,6 +295,11 @@
   top: 0;
   z-index: 20;
   border-bottom: none;
+  margin-bottom: 0;
+}
+
+.wp-section-hero {
+  margin-top: 0;
 }
 
 /* Navbar Section */
@@ -372,7 +377,7 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 40px 0 40px;
+  padding: 0 40px;
   gap: 40px;
   width: 100%;
 }
