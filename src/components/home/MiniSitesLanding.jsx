@@ -991,6 +991,9 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                         </div>
                       </div>
                       <p className="msl-org-description">{org.shortDescription}</p>
+                      {org.fullDescription && (
+                        <p className="msl-org-full-description">{org.fullDescription}</p>
+                      )}
                       <div className="msl-card-actions">
                         <button
                           className="msl-detail-btn"
@@ -1089,6 +1092,9 @@ export default function MiniSitesLanding({ onCreateOrganization, onSelectOrganiz
                         </div>
                       </div>
                       <p className="msl-org-description">{org.shortDescription || org.description || ''}</p>
+                      {org.fullDescription && (
+                        <p className="msl-org-full-description">{org.fullDescription}</p>
+                      )}
                       <button
                         className={`msl-manage-btn ${org.status !== 'approved' ? 'msl-manage-btn--disabled' : ''}`}
                         onClick={(e) => {
