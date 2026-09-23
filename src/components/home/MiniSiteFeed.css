@@ -330,3 +330,55 @@
 .minisite-feed-container .comment-input-icons button:hover {
   color: #3b82f6 !important;
 }
+
+/* Create Post Modal - Use exact main feed styling */
+.minisite-feed-container .cp-modal {
+  background: #0d1526 !important;
+  border: 1px solid #1a2540 !important;
+}
+
+.minisite-feed-container .cp-modal-header {
+  border-bottom: 1px solid #1a2540 !important;
+}
+
+.minisite-feed-container .cp-modal-tabs {
+  border-bottom: none !important;
+}
+
+.minisite-feed-container .cp-modal-tab {
+  color: #8b94a5 !important;
+}
+
+.minisite-feed-container .cp-modal-tab--active {
+  color: #1d4ed8 !important;
+  border-bottom: 2px solid #1d4ed8 !important;
+}
+
+.minisite-feed-container .cp-textarea-wrapper textarea {
+  background: #0f1720 !important;
+  border: none !important;
+  color: #e2e8f0 !important;
+}
+
+.minisite-feed-container .cp-textarea-wrapper textarea:focus {
+  background: #0f1720 !important;
+  border: none !important;
+  color: #e2e8f0 !important;
+  outline: none !important;
+}
+
+.minisite-feed-container .cp-visibility-btn {
+  background: rgba(29, 78, 216, 0.1) !important;
+  color: #60a5fa !important;
+  border: 1px solid rgba(29, 78, 216, 0.2) !important;
+}
+
+.minisite-feed-container .cp-image-upload {
+  border: 2px dashed rgba(29, 78, 216, 0.3) !important;
+  background: rgba(29, 78, 216, 0.04) !important;
+}
+
+.minisite-feed-container .cp-submit-btn {
+  background: #1d4ed8 !important;
+  color: white !important;
+}
