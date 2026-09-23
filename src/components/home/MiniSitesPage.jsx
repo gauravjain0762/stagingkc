@@ -21,6 +21,8 @@ import { ImageCarousel } from './MiniSiteCard';
 import './MiniSiteCard.css';
 import './MiniSitesPage.css';
 
+const FULL_DESC_PREVIEW_LENGTH = 110;
+
 /* ── Icons ── */
 function GlobeIcon()  { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>; }
 function PlusIcon()   { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
@@ -1014,7 +1016,20 @@ export default function MiniSitesPage({
                   <p className="ms-org-description">{userOrganization.shortDescription}</p>
                 )}
                 {userOrganization.fullDescription && (
-                  <p className="ms-org-full-description">{userOrganization.fullDescription}</p>
+                  <p className="ms-org-full-description">
+                    {userOrganization.fullDescription.length > FULL_DESC_PREVIEW_LENGTH
+                      ? userOrganization.fullDescription.slice(0, FULL_DESC_PREVIEW_LENGTH).trimEnd() + '…'
+                      : userOrganization.fullDescription}
+                    {userOrganization.fullDescription.length > FULL_DESC_PREVIEW_LENGTH && (
+                      <button
+                        type="button"
+                        className="ms-org-see-more"
+                        onClick={() => setEditingOrg(userOrganization)}
+                      >
+                        See more
+                      </button>
+                    )}
+                  </p>
                 )}
               </div>
             </div>

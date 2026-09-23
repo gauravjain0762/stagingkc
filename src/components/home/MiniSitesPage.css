@@ -221,12 +221,23 @@
   color: rgba(255, 255, 255, 0.5);
   line-height: 1.4;
   font-style: italic;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.ms-org-see-more {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 4px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+  color: #64c8ff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ms-org-see-more:hover {
+  text-decoration: underline;
 }
 
 .ms-org-type {
