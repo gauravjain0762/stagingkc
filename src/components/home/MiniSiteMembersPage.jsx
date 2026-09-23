@@ -124,11 +124,12 @@ export default function MiniSiteMembersPage({ siteId, siteName }) {
           marginLeft: '20px',
           marginRight: '20px',
           padding: '12px 16px',
-          backgroundColor: '#dbeafe',
+          backgroundColor: 'rgba(29, 78, 216, 0.1)',
+          border: '1px solid rgba(29, 78, 216, 0.25)',
           borderRadius: '8px',
           marginBottom: '16px'
         }}>
-          <p style={{ margin: '0', color: '#1e40af', fontSize: '14px', fontWeight: '500' }}>
+          <p style={{ margin: '0', color: '#60a5fa', fontSize: '14px', fontWeight: '500' }}>
             You can view members but need to join this organization
           </p>
         </div>
