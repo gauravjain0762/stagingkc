@@ -29,6 +29,27 @@ function TicketIcon() {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/></svg>;
 }
 
+function LinkIcon() {
+  return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>;
+}
+
+// Real API shape uses startDate/endDate (YYYY-MM-DD) + optional startTime/
+// endTime, not the fullDate/date fields this view used to guess at.
+function formatEventDate(event) {
+  if (!event?.startDate) return 'TBA';
+  const start = new Date(`${event.startDate}T00:00:00`);
+  const startStr = start.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  if (event.endDate && event.endDate !== event.startDate) {
+    const end = new Date(`${event.endDate}T00:00:00`);
+    const endStr = end.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    return `${startStr} – ${endStr}`;
+  }
+  if (!event.isAllDay && event.startTime) {
+    return `${startStr} · ${event.startTime}${event.endTime ? ` – ${event.endTime}` : ''}`;
+  }
+  return startStr;
+}
+
 export default function MiniSiteEventsPage({ siteId, siteName }) {
   const { token, user } = useSelector(s => s.auth);
   const [view, setView] = useState('list'); // 'list' or 'detail'
@@ -90,8 +111,23 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
   };
 
   const handleSelectEvent = async (event) => {
+    // Show the list-card data immediately so the detail view isn't blank,
+    // then replace it with the full record from the get-by-id endpoint
+    // (has fields the list endpoint doesn't return, e.g. full description,
+    // virtual link/instructions, capacity, tickets).
     setSelectedEvent(event);
     setView('detail');
+
+    const eventId = event._id || event.id;
+    if (!eventId) return;
+    try {
+      const data = await getMiniSiteEventDetail(siteId, eventId, token);
+      if (data?.data) {
+        setSelectedEvent(prev => ({ ...prev, ...data.data }));
+      }
+    } catch (err) {
+      console.error('Failed to load event detail:', err);
+    }
   };
 
   const handleJoinEvent = async (event) => {
@@ -332,7 +368,7 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
     return (
       <div className="mini-site-events-detail">
         <div className="msev-detail-header" style={{
-          background: selectedEvent.image ? `url(${selectedEvent.image})` : 'linear-gradient(135deg, #1a1f2e 0%, #0d1720 100%)',
+          background: (selectedEvent.coverImages?.[0] || selectedEvent.image) ? `url(${selectedEvent.coverImages?.[0] || selectedEvent.image})` : 'linear-gradient(135deg, #1a1f2e 0%, #0d1720 100%)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           height: '400px',
@@ -372,7 +408,7 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
               <div style={{ display: 'flex', gap: '24px', marginTop: '20px', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8' }}>
                   <CalendarIcon />
-                  <span>{selectedEvent.fullDate || selectedEvent.date || 'TBA'}</span>
+                  <span>{formatEventDate(selectedEvent)}</span>
                 </div>
                 {selectedEvent.location && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8' }}>
@@ -465,18 +501,31 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
             )}
 
             {/* Event Info Card */}
-            {selectedEvent.fullDate && (
+            {selectedEvent.startDate && (
               <div style={{ background: '#111422', border: '1px solid #1a1f35', borderRadius: '8px', padding: '20px' }}>
                 <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', margin: '0 0 12px' }}>EVENT INFO</h3>
                 <div style={{ display: 'grid', gap: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', fontSize: '14px' }}>
                     <CalendarIcon />
-                    <span>{selectedEvent.fullDate}</span>
+                    <span>{formatEventDate(selectedEvent)}</span>
                   </div>
                   {selectedEvent.location && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', fontSize: '14px' }}>
                       <MapPinIcon />
                       <span>{selectedEvent.location}</span>
+                    </div>
+                  )}
+                  {(selectedEvent.virtual?.link || selectedEvent.virtualLink) && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', fontSize: '14px' }}>
+                      <LinkIcon />
+                      <a
+                        href={(selectedEvent.virtual?.link || selectedEvent.virtualLink).startsWith('http') ? (selectedEvent.virtual?.link || selectedEvent.virtualLink) : `https://${selectedEvent.virtual?.link || selectedEvent.virtualLink}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#60a5fa' }}
+                      >
+                        {selectedEvent.virtual?.link || selectedEvent.virtualLink}
+                      </a>
                     </div>
                   )}
                   {selectedEvent.eventType && (
@@ -485,6 +534,16 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Virtual Instructions Card */}
+            {(selectedEvent.virtual?.instructions || selectedEvent.virtualInstructions) && (
+              <div style={{ background: '#111422', border: '1px solid #1a1f35', borderRadius: '8px', padding: '20px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', margin: '0 0 12px' }}>HOW TO JOIN</h3>
+                <p style={{ color: '#94a3b8', lineHeight: '1.6', margin: '0', fontSize: '14px', whiteSpace: 'pre-line' }}>
+                  {selectedEvent.virtual?.instructions || selectedEvent.virtualInstructions}
+                </p>
               </div>
             )}
           </div>
