@@ -225,3 +225,34 @@ export async function deleteMiniSiteEventDiscussion(siteId, eventId, discussionI
     token
   });
 }
+
+// Same like/comment pattern already used for mini-site group posts
+// (likeMiniSiteGroupPost / createMiniSiteGroupComment), scoped to an event
+// discussion post instead of a group post.
+export async function likeMiniSiteEventDiscussion(siteId, eventId, discussionId, token) {
+  return apiRequest(`/api/mini-sites/${siteId}/events/${eventId}/discussions/${discussionId}/like`, {
+    method: 'POST',
+    token
+  });
+}
+
+export async function unlikeMiniSiteEventDiscussion(siteId, eventId, discussionId, token) {
+  return apiRequest(`/api/mini-sites/${siteId}/events/${eventId}/discussions/${discussionId}/like`, {
+    method: 'DELETE',
+    token
+  });
+}
+
+export async function getMiniSiteEventDiscussionComments(siteId, eventId, discussionId, { page = 1, limit = 10 } = {}, token) {
+  return apiRequest(`/api/mini-sites/${siteId}/events/${eventId}/discussions/${discussionId}/comments?page=${page}&limit=${limit}`, {
+    token
+  });
+}
+
+export async function createMiniSiteEventDiscussionComment(siteId, eventId, discussionId, { text }, token) {
+  return apiRequest(`/api/mini-sites/${siteId}/events/${eventId}/discussions/${discussionId}/comments`, {
+    method: 'POST',
+    body: { text },
+    token
+  });
+}

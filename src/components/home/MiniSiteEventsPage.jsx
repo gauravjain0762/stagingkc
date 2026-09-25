@@ -1,12 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import {
   getMiniSiteEvents, getMiniSiteEventDetail, getMiniSiteEventTickets,
   joinMiniSiteEvent, leaveMiniSiteEvent, getMiniSiteEventAttendees,
   createMiniSiteEventDiscussion, getMiniSiteEventDiscussions,
-  deleteMiniSiteEventDiscussion
+  likeMiniSiteEventDiscussion, unlikeMiniSiteEventDiscussion,
+  getMiniSiteEventDiscussionComments, createMiniSiteEventDiscussionComment
 } from '../../services/api';
-import ImageCropper from './ImageCropper';
+import CreatePostModal from './CreatePostModal';
 import './MiniSiteEventsPage.css';
 
 function BackIcon() {
@@ -17,16 +18,49 @@ function CalendarIcon() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
 }
 
-function ImageIcon() {
-  return <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>;
-}
-
 function MapPinIcon() {
   return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
 }
 
 function TicketIcon() {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/></svg>;
+}
+
+function ExternalLinkIcon() {
+  return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>;
+}
+
+// Same helpers/pattern as the main Events page (EventsPage.jsx) so the map
+// card behaves identically.
+function googleMapsEmbedSrc(address) {
+  return `https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`;
+}
+function googleMapsSearchUrl(address) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+}
+// Backend returns a full breakdown at ev.locationDetails (venue, street,
+// city, state, country, pinCode) — join whatever's present into one line
+// instead of just showing the short ev.location summary.
+function eventLocationLabel(ev) {
+  if (!ev) return 'N/A';
+  const d = ev.locationDetails;
+  if (d) {
+    const full = [d.venue, d.street, d.city, d.state, d.country, d.pinCode].filter(Boolean).join(', ');
+    if (full) return full;
+  }
+  const loc = ev.venue || ev.location || ev.address;
+  if (loc) return loc;
+  return (ev.eventType || '').toLowerCase() === 'online' ? 'Online' : 'N/A';
+}
+function ClickableLocation({ location }) {
+  if (!location || location === 'Online' || location === 'N/A') {
+    return <span>{location || 'N/A'}</span>;
+  }
+  return (
+    <a href={googleMapsSearchUrl(location)} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', textDecoration: 'none', cursor: 'pointer' }}>
+      {location}
+    </a>
+  );
 }
 
 function LinkIcon() {
@@ -66,16 +100,15 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
   const [quantity, setQuantity] = useState(1);
   const [members, setMembers] = useState([{ name: '', age: '' }]);
   const [comments, setComments] = useState([]);
-  const [commentText, setCommentText] = useState('');
   const [joinSuccess, setJoinSuccess] = useState(false);
   const [discComposerOpen, setDiscComposerOpen] = useState(false);
-  const [discPostCaption, setDiscPostCaption] = useState('');
-  const [cropQueue, setCropQueue] = useState([]);
-  const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [postingDiscussion, setPostingDiscussion] = useState(false);
-  const [openMenuId, setOpenMenuId] = useState(null);
-  const [deletingId, setDeletingId] = useState(null);
-  const fileInputRef = useRef(null);
+  const [likingDiscId, setLikingDiscId] = useState(null);
+  const [expandedDiscComments, setExpandedDiscComments] = useState(new Set());
+  const [discPostComments, setDiscPostComments] = useState({});
+  const [discCommentsLoading, setDiscCommentsLoading] = useState({});
+  const [discCommentText, setDiscCommentText] = useState({});
+  const [previewEvent, setPreviewEvent] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   useEffect(() => {
     loadEvents();
@@ -127,6 +160,26 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
       }
     } catch (err) {
       console.error('Failed to load event detail:', err);
+    }
+  };
+
+  // Preview popup for a not-yet-joined event — same get-by-id endpoint as
+  // handleSelectEvent, but shown as a modal instead of navigating to the
+  // full detail page (which requires joining to see the Discussion tab).
+  const handleOpenPreview = async (event) => {
+    setPreviewEvent(event);
+    const eventId = event._id || event.id;
+    if (!eventId) return;
+    setPreviewLoading(true);
+    try {
+      const data = await getMiniSiteEventDetail(siteId, eventId, token);
+      if (data?.data) {
+        setPreviewEvent(prev => ({ ...prev, ...data.data }));
+      }
+    } catch (err) {
+      console.error('Failed to load event preview:', err);
+    } finally {
+      setPreviewLoading(false);
     }
   };
 
@@ -236,31 +289,6 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
     }
   };
 
-  const handleFileSelection = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-    setCropQueue(files);
-  };
-
-  const handleCropSave = (croppedFile) => {
-    setUploadedFiles(prev => [...prev, croppedFile]);
-    // Move to next file in queue
-    setCropQueue(prev => prev.slice(1));
-  };
-
-  const handleCropSkip = () => {
-    if (cropQueue.length > 0) {
-      setUploadedFiles(prev => [...prev, cropQueue[0]]);
-    }
-    // Move to next file in queue
-    setCropQueue(prev => prev.slice(1));
-  };
-
-  const handleCropCancel = () => {
-    setCropQueue([]);
-    setUploadedFiles([]);
-  };
-
   const loadDiscussions = async () => {
     if (!selectedEvent || !token) return;
     try {
@@ -283,11 +311,15 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
       const formattedComments = discussionsList.map(disc => ({
         id: disc._id || disc.id,
         author: disc.author?.fullName || 'User',
+        authorAvatar: disc.author?.avatar || '',
+        authorLocation: disc.author?.location || '',
+        authorId: disc.author?._id || disc.author?.id || '',
         text: disc.caption || '',
         time: disc.time ? new Date(disc.time).toLocaleString() : 'Just now',
         media: disc.media || [],
         likeCount: disc.likeCount || 0,
         commentCount: disc.commentCount || 0,
+        liked: !!(disc.liked ?? disc.likedByMe ?? disc.isLiked),
         raw: disc
       }));
 
@@ -297,59 +329,117 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
     }
   };
 
-  const handlePostDiscussion = async () => {
+  // Matches CreatePostModal's onPostCreate payload shape — same as the
+  // mini-site group posts composer.
+  const handlePostDiscussion = async (postData) => {
     if (!selectedEvent || !token) return;
-    if (!discPostCaption.trim() && uploadedFiles.length === 0) {
-      alert('Please add a caption or upload photos/videos');
-      return;
-    }
+    const eventId = selectedEvent._id || selectedEvent.id;
+    const mediaFiles = [
+      ...(postData.images && postData.images.length > 0
+        ? postData.images.map(img => img.file).filter(Boolean)
+        : []),
+      ...(postData.video ? [postData.video] : [])
+    ];
 
-    setPostingDiscussion(true);
     try {
-      const eventId = selectedEvent._id || selectedEvent.id;
-      const result = await createMiniSiteEventDiscussion(
+      await createMiniSiteEventDiscussion(
         siteId,
         eventId,
         {
-          caption: discPostCaption,
-          mediaFiles: uploadedFiles.length > 0 ? uploadedFiles : null
+          caption: postData.caption,
+          mediaFiles: mediaFiles.length > 0 ? mediaFiles : null
         },
         token
       );
-
-      // Reset form
-      setDiscPostCaption('');
-      setUploadedFiles([]);
       setDiscComposerOpen(false);
-
-      // Fetch updated discussions
       await loadDiscussions();
     } catch (err) {
       console.error('Failed to post discussion:', err);
-      alert('❌ Failed to post: ' + (err.message || 'Unknown error'));
-    } finally {
-      setPostingDiscussion(false);
+      throw err;
     }
   };
 
-  const handleDeleteDiscussion = async (discussionId) => {
+
+  const handleLikeDiscussion = async (discussionId) => {
+    if (!selectedEvent || !token || likingDiscId) return;
+    const eventId = selectedEvent._id || selectedEvent.id;
+    const target = comments.find(c => c.id === discussionId);
+    if (!target) return;
+    const wasLiked = target.liked;
+
+    // Optimistic toggle
+    setComments(prev => prev.map(c => c.id === discussionId
+      ? { ...c, liked: !wasLiked, likeCount: c.likeCount + (wasLiked ? -1 : 1) }
+      : c
+    ));
+    setLikingDiscId(discussionId);
+    try {
+      const response = wasLiked
+        ? await unlikeMiniSiteEventDiscussion(siteId, eventId, discussionId, token)
+        : await likeMiniSiteEventDiscussion(siteId, eventId, discussionId, token);
+
+      // Sync with the server's authoritative { data: { liked, likeCount } }
+      // instead of trusting the optimistic guess.
+      const liked = response?.data?.liked;
+      const likeCount = response?.data?.likeCount;
+      if (liked !== undefined || likeCount !== undefined) {
+        setComments(prev => prev.map(c => c.id === discussionId
+          ? { ...c, liked: liked ?? c.liked, likeCount: likeCount ?? c.likeCount }
+          : c
+        ));
+      }
+    } catch (err) {
+      console.error('Failed to like/unlike discussion:', err);
+      // Revert on failure
+      setComments(prev => prev.map(c => c.id === discussionId
+        ? { ...c, liked: wasLiked, likeCount: c.likeCount + (wasLiked ? 1 : -1) }
+        : c
+      ));
+    } finally {
+      setLikingDiscId(null);
+    }
+  };
+
+  const loadDiscComments = async (discussionId) => {
     if (!selectedEvent || !token) return;
-
-    if (!window.confirm('Are you sure you want to delete this post?')) return;
-
-    setDeletingId(discussionId);
+    setDiscCommentsLoading(prev => ({ ...prev, [discussionId]: true }));
     try {
       const eventId = selectedEvent._id || selectedEvent.id;
-      await deleteMiniSiteEventDiscussion(siteId, eventId, discussionId, token);
-
-      // Remove from comments
-      setComments(prev => prev.filter(c => c.id !== discussionId));
-      setOpenMenuId(null);
+      const data = await getMiniSiteEventDiscussionComments(siteId, eventId, discussionId, { limit: 50 }, token);
+      const list = data?.data?.comments ?? data?.comments ?? (Array.isArray(data?.data) ? data.data : []) ?? [];
+      setDiscPostComments(prev => ({ ...prev, [discussionId]: list }));
     } catch (err) {
-      console.error('Failed to delete discussion:', err);
-      alert('❌ Failed to delete: ' + (err.message || 'Unknown error'));
+      console.error('Failed to load discussion comments:', err);
     } finally {
-      setDeletingId(null);
+      setDiscCommentsLoading(prev => ({ ...prev, [discussionId]: false }));
+    }
+  };
+
+  const toggleDiscExpanded = (discussionId) => {
+    setExpandedDiscComments(prev => {
+      const next = new Set(prev);
+      if (next.has(discussionId)) {
+        next.delete(discussionId);
+      } else {
+        next.add(discussionId);
+        if (!discPostComments[discussionId]) loadDiscComments(discussionId);
+      }
+      return next;
+    });
+  };
+
+  const handleAddDiscComment = async (discussionId) => {
+    const text = (discCommentText[discussionId] || '').trim();
+    if (!text || !selectedEvent || !token) return;
+    const eventId = selectedEvent._id || selectedEvent.id;
+    try {
+      await createMiniSiteEventDiscussionComment(siteId, eventId, discussionId, { text }, token);
+      setDiscCommentText(prev => ({ ...prev, [discussionId]: '' }));
+      setComments(prev => prev.map(c => c.id === discussionId ? { ...c, commentCount: c.commentCount + 1 } : c));
+      await loadDiscComments(discussionId);
+    } catch (err) {
+      console.error('Failed to add comment:', err);
+      alert('❌ Failed to post comment: ' + (err.message || 'Unknown error'));
     }
   };
 
@@ -364,6 +454,8 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
   if (view === 'detail' && selectedEvent) {
     const isJoined = joinedEventIds.has(selectedEvent._id || selectedEvent.id);
     const eventId = selectedEvent._id || selectedEvent.id;
+    const mapAddress = eventLocationLabel(selectedEvent);
+    const hasMapAddress = mapAddress && mapAddress !== 'N/A' && mapAddress !== 'Online';
 
     return (
       <div className="mini-site-events-detail">
@@ -398,152 +490,169 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
           </button>
         </div>
 
-        <div className="msev-detail-content" style={{ padding: '32px', background: '#0b0d17', borderBottom: '1px solid #1a1f35' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '24px' }}>
-            <div style={{ flex: 1 }}>
-              <h1 style={{ margin: '0 0 8px', fontSize: '28px', fontWeight: '700', color: '#e2e8f0' }}>
-                {selectedEvent.title || selectedEvent.name}
-              </h1>
-
-              <div style={{ display: 'flex', gap: '24px', marginTop: '20px', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8' }}>
-                  <CalendarIcon />
-                  <span>{formatEventDate(selectedEvent)}</span>
-                </div>
-                {selectedEvent.location && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8' }}>
-                    <MapPinIcon />
-                    <span>{selectedEvent.location}</span>
-                  </div>
-                )}
-                {selectedEvent.eventType && (
-                  <div style={{ display: 'inline-block', padding: '6px 14px', background: 'transparent', borderRadius: '20px', color: '#94a3b8', fontSize: '12px', fontWeight: '500', border: '1px solid #1a1f35' }}>
-                    {selectedEvent.eventType}
-                  </div>
-                )}
-              </div>
+        {/* Hero row: calendar badge + title/location — matches EventsPage.jsx's ev-detail-hero */}
+        <div className="msev-detail-hero">
+          <div className="msev-detail-cal-badge">
+            <div className="msev-detail-cal-top">
+              {selectedEvent.startDate ? new Date(`${selectedEvent.startDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short' }).toUpperCase() : '—'}
             </div>
-
-            <button
-              onClick={() => isJoined ? handleLeaveEvent(eventId) : handleJoinEvent(selectedEvent)}
-              disabled={joiningId === eventId}
-              style={{
-                padding: isJoined ? '10px 20px' : '10px 24px',
-                background: isJoined ? 'rgba(239,68,68,0.1)' : '#1d4ed8',
-                color: isJoined ? '#f87171' : '#fff',
-                border: isJoined ? '1px solid rgba(239,68,68,0.3)' : '1px solid #2563eb',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '600',
-                transition: 'all 0.2s',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              {joiningId === eventId ? (isJoined ? 'Leaving...' : 'Joining...') : (isJoined ? 'Leave Event' : '+ Join')}
-            </button>
+            <div className="msev-detail-cal-day">
+              {selectedEvent.startDate ? new Date(`${selectedEvent.startDate}T00:00:00`).getDate() : '?'}
+            </div>
+            <div className="msev-detail-cal-year">
+              {selectedEvent.startDate ? new Date(`${selectedEvent.startDate}T00:00:00`).getFullYear() : ''}
+            </div>
+          </div>
+          <div className="msev-detail-hero-info">
+            <h1 className="msev-detail-title">{selectedEvent.title || selectedEvent.name}</h1>
+            <p className="msev-detail-location"><MapPinIcon /> <ClickableLocation location={eventLocationLabel(selectedEvent)} /></p>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: '32px', padding: '0 32px', borderBottom: '1px solid #1a1f35', background: '#070b14' }}>
+        {/* Tabs + join/leave action, same row */}
+        <div className="msev-detail-tab-row">
+          <div style={{ display: 'flex', gap: '32px' }}>
+            <button
+              onClick={() => setDetailTab('about')}
+              style={{
+                padding: '16px 0',
+                background: 'none',
+                border: 'none',
+                color: detailTab === 'about' ? '#1d4ed8' : '#64748b',
+                fontSize: '14px',
+                fontWeight: detailTab === 'about' ? '700' : '500',
+                cursor: 'pointer',
+                borderBottom: detailTab === 'about' ? '2px solid #1d4ed8' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              About
+            </button>
+            <button
+              onClick={() => setDetailTab('discussion')}
+              style={{
+                padding: '16px 0',
+                background: 'none',
+                border: 'none',
+                color: detailTab === 'discussion' ? '#1d4ed8' : '#64748b',
+                fontSize: '14px',
+                fontWeight: detailTab === 'discussion' ? '700' : '500',
+                cursor: 'pointer',
+                borderBottom: detailTab === 'discussion' ? '2px solid #1d4ed8' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              Discussion
+            </button>
+          </div>
+
           <button
-            onClick={() => setDetailTab('about')}
+            onClick={() => isJoined ? handleLeaveEvent(eventId) : handleJoinEvent(selectedEvent)}
+            disabled={joiningId === eventId}
             style={{
-              padding: '16px 0',
-              background: 'none',
-              border: 'none',
-              color: detailTab === 'about' ? '#1d4ed8' : '#64748b',
-              fontSize: '14px',
-              fontWeight: detailTab === 'about' ? '700' : '500',
+              padding: isJoined ? '10px 20px' : '10px 24px',
+              background: isJoined ? 'rgba(239,68,68,0.1)' : '#1d4ed8',
+              color: isJoined ? '#f87171' : '#fff',
+              border: isJoined ? '1px solid rgba(239,68,68,0.3)' : '1px solid #2563eb',
+              borderRadius: '8px',
               cursor: 'pointer',
-              borderBottom: detailTab === 'about' ? '2px solid #1d4ed8' : 'none',
-              transition: 'all 0.2s'
+              fontSize: '14px',
+              fontWeight: '600',
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap'
             }}
           >
-            About
-          </button>
-          <button
-            onClick={() => setDetailTab('discussion')}
-            style={{
-              padding: '16px 0',
-              background: 'none',
-              border: 'none',
-              color: detailTab === 'discussion' ? '#1d4ed8' : '#64748b',
-              fontSize: '14px',
-              fontWeight: detailTab === 'discussion' ? '700' : '500',
-              cursor: 'pointer',
-              borderBottom: detailTab === 'discussion' ? '2px solid #1d4ed8' : 'none',
-              transition: 'all 0.2s'
-            }}
-          >
-            Discussion
+            {joiningId === eventId ? (isJoined ? 'Leaving...' : 'Joining...') : (isJoined ? '✓ Joined' : '+ Join')}
           </button>
         </div>
 
-        {/* About Tab */}
+        {/* About Tab: main column + sticky map sidebar, matches ev-detail-body */}
         {detailTab === 'about' && (
-          <div style={{ padding: '32px', display: 'grid', gap: '20px' }}>
-            {/* DETAILS Card */}
-            {selectedEvent.memberCount > 0 && (
-              <div style={{ background: '#111422', border: '1px solid #1a1f35', borderRadius: '8px', padding: '20px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', margin: '0 0 12px' }}>DETAILS</h3>
-                <p style={{ color: '#94a3b8', fontSize: '14px', margin: '0' }}>{selectedEvent.memberCount || 0} people responded</p>
-              </div>
-            )}
-
-            {/* About the Event Card */}
-            {selectedEvent.description && (
-              <div style={{ background: '#111422', border: '1px solid #1a1f35', borderRadius: '8px', padding: '20px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', margin: '0 0 12px' }}>ABOUT THE EVENT</h3>
-                <p style={{ color: '#94a3b8', lineHeight: '1.6', margin: '0', fontSize: '14px' }}>{selectedEvent.description}</p>
-              </div>
-            )}
-
-            {/* Event Info Card */}
-            {selectedEvent.startDate && (
-              <div style={{ background: '#111422', border: '1px solid #1a1f35', borderRadius: '8px', padding: '20px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', margin: '0 0 12px' }}>EVENT INFO</h3>
-                <div style={{ display: 'grid', gap: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', fontSize: '14px' }}>
-                    <CalendarIcon />
-                    <span>{formatEventDate(selectedEvent)}</span>
-                  </div>
-                  {selectedEvent.location && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', fontSize: '14px' }}>
-                      <MapPinIcon />
-                      <span>{selectedEvent.location}</span>
-                    </div>
-                  )}
-                  {(selectedEvent.virtual?.link || selectedEvent.virtualLink) && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', fontSize: '14px' }}>
-                      <LinkIcon />
-                      <a
-                        href={(selectedEvent.virtual?.link || selectedEvent.virtualLink).startsWith('http') ? (selectedEvent.virtual?.link || selectedEvent.virtualLink) : `https://${selectedEvent.virtual?.link || selectedEvent.virtualLink}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: '#60a5fa' }}
-                      >
-                        {selectedEvent.virtual?.link || selectedEvent.virtualLink}
-                      </a>
-                    </div>
-                  )}
-                  {selectedEvent.eventType && (
-                    <div style={{ display: 'inline-flex', alignItems: 'center', padding: '6px 14px', background: 'transparent', borderRadius: '20px', color: '#94a3b8', fontSize: '12px', fontWeight: '500', width: 'fit-content', border: '1px solid #1a1f35' }}>
-                      {selectedEvent.eventType}
-                    </div>
-                  )}
+          <div className="msev-detail-body" style={!hasMapAddress ? { gridTemplateColumns: '1fr' } : undefined}>
+            <div className="msev-detail-main">
+              {/* DETAILS Card */}
+              {selectedEvent.memberCount > 0 && (
+                <div className="msev-detail-card">
+                  <h3 className="msev-detail-card-title">Details</h3>
+                  <p style={{ color: '#94a3b8', fontSize: '13px', margin: '0' }}>{selectedEvent.memberCount || 0} people responded</p>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Virtual Instructions Card */}
-            {(selectedEvent.virtual?.instructions || selectedEvent.virtualInstructions) && (
-              <div style={{ background: '#111422', border: '1px solid #1a1f35', borderRadius: '8px', padding: '20px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', margin: '0 0 12px' }}>HOW TO JOIN</h3>
-                <p style={{ color: '#94a3b8', lineHeight: '1.6', margin: '0', fontSize: '14px', whiteSpace: 'pre-line' }}>
-                  {selectedEvent.virtual?.instructions || selectedEvent.virtualInstructions}
-                </p>
+              {/* About the Event Card */}
+              {selectedEvent.description && (
+                <div className="msev-detail-card">
+                  <h3 className="msev-detail-card-title">About the Event</h3>
+                  <p style={{ color: '#7a8aaa', lineHeight: '1.75', margin: '0', fontSize: '13.5px' }}>{selectedEvent.description}</p>
+                </div>
+              )}
+
+              {/* Event Info Card */}
+              {selectedEvent.startDate && (
+                <div className="msev-detail-card">
+                  <h3 className="msev-detail-card-title">Event Info</h3>
+                  <div className="msev-detail-info-rows">
+                    <div className="msev-detail-info-row"><CalendarIcon /><span>{formatEventDate(selectedEvent)}</span></div>
+                    <div className="msev-detail-info-row"><MapPinIcon /><ClickableLocation location={eventLocationLabel(selectedEvent)} /></div>
+                    {(selectedEvent.virtual?.link || selectedEvent.virtualLink) && (
+                      <div className="msev-detail-info-row">
+                        <LinkIcon />
+                        <a
+                          href={(selectedEvent.virtual?.link || selectedEvent.virtualLink).startsWith('http') ? (selectedEvent.virtual?.link || selectedEvent.virtualLink) : `https://${selectedEvent.virtual?.link || selectedEvent.virtualLink}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: '#60a5fa' }}
+                        >
+                          {selectedEvent.virtual?.link || selectedEvent.virtualLink}
+                        </a>
+                      </div>
+                    )}
+                    {selectedEvent.eventType && (
+                      <div className="msev-detail-info-row">
+                        <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '20px', fontSize: '11.5px', fontWeight: '600', background: 'rgba(96,165,250,0.13)', color: '#60a5fa' }}>
+                          {selectedEvent.eventType}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Virtual Instructions Card */}
+              {(selectedEvent.virtual?.instructions || selectedEvent.virtualInstructions) && (
+                <div className="msev-detail-card">
+                  <h3 className="msev-detail-card-title">How to Join</h3>
+                  <p style={{ color: '#7a8aaa', lineHeight: '1.75', margin: '0', fontSize: '13.5px', whiteSpace: 'pre-line' }}>
+                    {selectedEvent.virtual?.instructions || selectedEvent.virtualInstructions}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Map sidebar — hidden entirely for Online events, since there's no
+                real address to map and it was showing "Online" twice (once as
+                the map placeholder, once in the footer) */}
+            {hasMapAddress && (
+              <div className="msev-detail-sidebar">
+                <div className="msev-detail-map-card">
+                  <div className="msev-detail-map-bg">
+                    <iframe
+                      className="msev-map-iframe"
+                      title="Event location"
+                      src={googleMapsEmbedSrc(mapAddress)}
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  </div>
+                  <div className="msev-detail-map-footer">
+                    <p className="msev-detail-map-venue"><ClickableLocation location={mapAddress} /></p>
+                    <button
+                      className="msev-detail-map-btn"
+                      onClick={() => window.open(googleMapsSearchUrl(mapAddress), '_blank', 'noopener,noreferrer')}
+                    >
+                      <ExternalLinkIcon /> Open in Maps
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -551,7 +660,8 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
 
         {/* Discussion Tab */}
         {detailTab === 'discussion' && (
-          <div style={{ padding: '32px' }}>
+          <div className="msev-detail-body">
+          <div className="msev-detail-main">
             {/* Comment Composer Trigger */}
             {isJoined && (
               <input
@@ -572,199 +682,23 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
                   transition: 'all 0.2s',
                   fontFamily: 'inherit'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.borderColor = '#2563eb'}
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(37, 99, 235, 0.5)'}
                 onMouseLeave={(e) => e.currentTarget.style.borderColor = '#1a1f35'}
               />
             )}
 
-            {/* Composer Modal */}
+            {/* Composer — same CreatePostModal used for mini-site group posts */}
             {discComposerOpen && isJoined && (
-              <div style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'rgba(0, 0, 0, 0.7)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 2000
-              }} onClick={() => setDiscComposerOpen(false)}>
-                <div style={{
-                  background: '#0b0d17',
-                  borderRadius: '12px',
-                  padding: '24px',
-                  maxWidth: '600px',
-                  width: '90%',
-                  border: '1px solid #1a1f35'
-                }} onClick={(e) => e.stopPropagation()}>
-                  {/* Modal Header */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <div>
-                      <h2 style={{ margin: '0', fontSize: '18px', fontWeight: '700', color: '#e2e8f0' }}>New Discussion Post</h2>
-                      <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#94a3b8' }}>Share an update, photo, or video with attendees.</p>
-                    </div>
-                    <button onClick={() => {
-                      setDiscComposerOpen(false);
-                      setDiscPostCaption('');
-                    }} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '24px' }}>✕</button>
-                  </div>
-
-                  {/* Textarea */}
-                  <textarea
-                    placeholder="Share something with attendees…"
-                    value={discPostCaption}
-                    onChange={(e) => setDiscPostCaption(e.target.value)}
-                    autoFocus
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      background: '#111422',
-                      border: '1px solid #1a1f35',
-                      borderRadius: '6px',
-                      color: '#e2e8f0',
-                      fontSize: '14px',
-                      marginBottom: '16px',
-                      fontFamily: 'inherit',
-                      resize: 'vertical',
-                      minHeight: '100px',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-
-                  {/* Uploaded Files Preview */}
-                  {uploadedFiles.length > 0 && (
-                    <div style={{ marginBottom: '16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '8px' }}>
-                      {uploadedFiles.map((file, idx) => (
-                        <div key={idx} style={{
-                          position: 'relative',
-                          width: '100%',
-                          aspectRatio: '1',
-                          background: '#111422',
-                          borderRadius: '6px',
-                          overflow: 'hidden',
-                          border: '1px solid #1a1f35'
-                        }}>
-                          <img
-                            src={URL.createObjectURL(file)}
-                            alt="uploaded"
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          />
-                          <button
-                            onClick={() => setUploadedFiles(prev => prev.filter((_, i) => i !== idx))}
-                            style={{
-                              position: 'absolute',
-                              top: '2px',
-                              right: '2px',
-                              width: '20px',
-                              height: '20px',
-                              background: 'rgba(0, 0, 0, 0.6)',
-                              border: 'none',
-                              color: '#fff',
-                              fontSize: '12px',
-                              cursor: 'pointer',
-                              borderRadius: '50%',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Upload Zone */}
-                  <div
-                    onClick={() => document.getElementById('disc-file-input')?.click()}
-                    style={{
-                      border: '2px dashed #1a1f35',
-                      borderRadius: '8px',
-                      padding: '40px',
-                      textAlign: 'center',
-                      marginBottom: '16px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.borderColor = '#2563eb'}
-                    onMouseLeave={(e) => e.currentTarget.style.borderColor = '#1a1f35'}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px', color: '#2563eb' }}>
-                      <ImageIcon />
-                    </div>
-                    <p style={{ margin: '0 0 4px', color: '#e2e8f0', fontSize: '14px', fontWeight: '600' }}>Add photos or a video</p>
-                    <p style={{ margin: '0', color: '#94a3b8', fontSize: '12px' }}>JPG, PNG, GIF or MP4 — pick multiple at once</p>
-                    <input
-                      id="disc-file-input"
-                      type="file"
-                      multiple
-                      accept="image/*,video/*"
-                      style={{ display: 'none' }}
-                      onChange={handleFileSelection}
-                    />
-                  </div>
-
-                  {/* Footer */}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                    <button
-                      onClick={() => {
-                        setDiscComposerOpen(false);
-                        setDiscPostCaption('');
-                      }}
-                      style={{
-                        padding: '10px 20px',
-                        background: 'transparent',
-                        color: '#94a3b8',
-                        border: '1px solid #1a1f35',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: '600'
-                      }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handlePostDiscussion}
-                      disabled={(!discPostCaption.trim() && uploadedFiles.length === 0) || postingDiscussion}
-                      style={{
-                        padding: '10px 20px',
-                        background: '#1d4ed8',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        opacity: (discPostCaption.trim() || uploadedFiles.length > 0) && !postingDiscussion ? 1 : 0.5
-                      }}
-                    >
-                      {postingDiscussion ? 'Posting...' : 'Post'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Image Cropper Modal */}
-            {cropQueue.length > 0 && (
-              <ImageCropper
-                file={cropQueue[0]}
-                index={uploadedFiles.length}
-                total={uploadedFiles.length + cropQueue.length}
-                defaultAspect="original"
-                cropShape="rect"
-                onSave={handleCropSave}
-                onSkip={handleCropSkip}
-                onCancel={handleCropCancel}
+              <CreatePostModal
+                onClose={() => setDiscComposerOpen(false)}
+                siteId={siteId}
+                isMinSiteFeed={true}
+                onPostCreate={handlePostDiscussion}
               />
             )}
 
             {/* Discussion Posts Feed */}
-            <div style={{ display: 'grid', gap: '16px' }}>
+            <div className="msev-disc-posts">
               {!isJoined && (
                 <p style={{ color: '#64748b', textAlign: 'center', padding: '32px 0', fontSize: '14px' }}>
                   Join this event to see discussions
@@ -777,151 +711,35 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
                 </p>
               )}
 
-              {comments.map((comment, idx) => {
-                const isAuthor = user && comment.raw?.author?._id === user._id;
+              {comments.map((comment) => {
+                const isExpanded = expandedDiscComments.has(comment.id);
                 return (
-                <div key={idx} style={{ paddingBottom: '16px', borderBottom: '1px solid #1a1f35' }}>
-                  <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', position: 'relative' }}>
-                    {/* Avatar */}
-                    <div style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
-                      background: '#1d4ed8',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#fff',
-                      fontWeight: '600',
-                      flexShrink: 0,
-                      fontSize: '14px'
-                    }}>
-                      {comment.author ? comment.author[0]?.toUpperCase() : '?'}
+                <div key={comment.id} className="msev-disc-post">
+                  <div className="msev-disc-post-header" style={{ position: 'relative' }}>
+                    {comment.authorAvatar
+                      ? <img src={comment.authorAvatar} alt={comment.author} className="msev-disc-comment-av" />
+                      : <span className="msev-disc-comment-av msev-disc-av-fallback">{comment.author ? comment.author[0]?.toUpperCase() : '?'}</span>
+                    }
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p className="msev-disc-author-row">{comment.author || 'Anonymous'}</p>
+                      {comment.authorLocation && (
+                        <p className="msev-disc-author-loc"><MapPinIcon /> {comment.authorLocation}</p>
+                      )}
+                      <p className="msev-disc-post-time">{comment.time || 'Just now'}</p>
                     </div>
-
-                    {/* Post Header */}
-                    <div style={{ flex: 1 }}>
-                      <p style={{ margin: '0 0 4px', color: '#e2e8f0', fontWeight: '600', fontSize: '14px' }}>
-                        {comment.author || 'Anonymous'}
-                      </p>
-                      <p style={{ margin: '0', color: '#94a3b8', fontSize: '12px' }}>
-                        {comment.time || 'Just now'}
-                      </p>
-                    </div>
-
-                    {/* Three Dot Menu - Only for Author */}
-                    {isAuthor && (
-                      <div style={{ position: 'relative' }}>
-                        <button
-                          onClick={() => setOpenMenuId(openMenuId === comment.id ? null : comment.id)}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#94a3b8',
-                            cursor: 'pointer',
-                            fontSize: '20px',
-                            padding: '4px 8px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            transition: 'color 0.2s'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.color = '#e2e8f0'}
-                          onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}
-                        >
-                          ⋮
-                        </button>
-
-                        {/* Dropdown Menu */}
-                        {openMenuId === comment.id && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            right: '0',
-                            background: '#0b0d17',
-                            border: '1px solid #1a1f35',
-                            borderRadius: '6px',
-                            minWidth: '150px',
-                            zIndex: 100,
-                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)'
-                          }}>
-                            <button
-                              onClick={() => handleDeleteDiscussion(comment.id)}
-                              disabled={deletingId === comment.id}
-                              style={{
-                                width: '100%',
-                                padding: '12px 16px',
-                                background: 'none',
-                                border: 'none',
-                                color: '#ef4444',
-                                cursor: deletingId === comment.id ? 'not-allowed' : 'pointer',
-                                textAlign: 'left',
-                                fontSize: '14px',
-                                transition: 'all 0.2s',
-                                opacity: deletingId === comment.id ? 0.6 : 1
-                              }}
-                              onMouseEnter={(e) => !deletingId && (e.currentTarget.style.background = '#111422')}
-                              onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-                            >
-                              {deletingId === comment.id ? 'Deleting...' : 'Delete'}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
 
                   {/* Post Caption */}
-                  {comment.text && (
-                    <p style={{ color: '#94a3b8', fontSize: '14px', lineHeight: '1.5', margin: '0 0 12px', paddingLeft: '52px' }}>
-                      {comment.text}
-                    </p>
-                  )}
+                  {comment.text && <p className="msev-disc-post-caption">{comment.text}</p>}
 
                   {/* Media Grid */}
                   {comment.media && comment.media.length > 0 && (
-                    <div
-                      style={{
-                        display: 'grid',
-                        gap: '4px',
-                        borderRadius: '10px',
-                        overflow: 'hidden',
-                        marginBottom: '12px',
-                        marginLeft: '52px',
-                        gridTemplateColumns: comment.media.length === 1 ? '1fr' :
-                                            comment.media.length === 2 ? '1fr 1fr' :
-                                            'repeat(2, 1fr)'
-                      }}
-                    >
+                    <div className={`msev-disc-post-media msev-disc-post-media--${Math.min(comment.media.length, 4)}`}>
                       {comment.media.map((media, i) => (
                         media.type === 'video' || media.mediaType?.includes('video') ? (
-                          <video
-                            key={i}
-                            src={media.url}
-                            controls
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              maxHeight: '360px',
-                              objectFit: 'cover',
-                              display: 'block',
-                              background: '#0d1022'
-                            }}
-                          />
+                          <video key={i} src={media.url} controls />
                         ) : (
-                          <img
-                            key={i}
-                            src={media.url}
-                            alt="discussion media"
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              maxHeight: '360px',
-                              objectFit: 'cover',
-                              display: 'block',
-                              background: '#0d1022'
-                            }}
-                          />
+                          <img key={i} src={media.url} alt="discussion media" />
                         )
                       ))}
                     </div>
@@ -929,40 +747,125 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
 
                   {/* Reactions */}
                   {comment.raw?.reactions && Object.keys(comment.raw.reactions).length > 0 && (
-                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', paddingLeft: '52px', fontSize: '12px' }}>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '10px', fontSize: '12px' }}>
                       {Object.entries(comment.raw.reactions).filter(([_, count]) => count > 0).map(([reactionId, count]) => {
                         const reactionEmoji = { like: '👍', celebrate: '👏', support: '🫶', love: '❤️', insightful: '💡', funny: '😄' }[reactionId];
                         return reactionEmoji ? (
-                          <button
-                            key={reactionId}
-                            style={{
-                              background: 'rgba(29, 78, 216, 0.1)',
-                              border: '1px solid rgba(29, 78, 216, 0.2)',
-                              borderRadius: '20px',
-                              padding: '4px 10px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              fontSize: '13px',
-                              color: '#60a5fa',
-                              transition: 'all 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(29, 78, 216, 0.15)'}
-                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(29, 78, 216, 0.1)'}
-                          >
+                          <span key={reactionId} style={{ background: 'rgba(29, 78, 216, 0.1)', border: '1px solid rgba(29, 78, 216, 0.2)', borderRadius: '20px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#60a5fa' }}>
                             <span style={{ fontSize: '15px' }}>{reactionEmoji}</span>
                             {count > 1 && <span>{count}</span>}
-                          </button>
+                          </span>
                         ) : null;
                       })}
                     </div>
                   )}
+
+                  {/* Like / Comment action row — matches EventsPage.jsx's discussion posts */}
+                  <div className="msev-disc-post-actions">
+                    <button
+                      className={`msev-disc-action-btn${comment.liked ? ' msev-disc-action-btn--active' : ''}`}
+                      onClick={() => handleLikeDiscussion(comment.id)}
+                      disabled={likingDiscId === comment.id}
+                    >
+                      <span style={{ fontSize: '16px' }}>👍</span> {comment.liked ? 'Liked' : 'Like'} ({comment.likeCount})
+                    </button>
+                    <div className="msev-disc-action-divider" />
+                    <button className="msev-disc-action-btn" onClick={() => toggleDiscExpanded(comment.id)}>
+                      <span style={{ fontSize: '16px' }}>💬</span> Comment ({comment.commentCount})
+                    </button>
+                  </div>
+
+                  {/* Inline comments */}
+                  {isExpanded && (
+                    <div className="msev-disc-comments">
+                      {isJoined && (
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                          <input
+                            type="text"
+                            placeholder="Write a comment…"
+                            value={discCommentText[comment.id] || ''}
+                            onChange={(e) => setDiscCommentText(prev => ({ ...prev, [comment.id]: e.target.value }))}
+                            onKeyDown={(e) => e.key === 'Enter' && handleAddDiscComment(comment.id)}
+                            style={{ flex: 1, padding: '8px 12px', background: '#0f172a', color: '#e2e8f0', border: '1px solid #1a1f35', borderRadius: '20px', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }}
+                          />
+                          <button
+                            onClick={() => handleAddDiscComment(comment.id)}
+                            disabled={!(discCommentText[comment.id] || '').trim()}
+                            style={{ padding: '8px 16px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', opacity: (discCommentText[comment.id] || '').trim() ? 1 : 0.5 }}
+                          >
+                            Post
+                          </button>
+                        </div>
+                      )}
+
+                      {discCommentsLoading[comment.id] ? (
+                        <p style={{ textAlign: 'center', color: '#6b7a9e', fontSize: '13px', margin: 0 }}>Loading comments…</p>
+                      ) : (discPostComments[comment.id] || []).length === 0 ? (
+                        <p style={{ textAlign: 'center', color: '#6b7a9e', fontSize: '13px', margin: 0 }}>No comments yet.</p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          {discPostComments[comment.id].map((c, i) => (
+                            <div key={c._id || c.id || i} style={{ display: 'flex', gap: '10px' }}>
+                              {c.author?.avatar
+                                ? <img src={c.author.avatar} alt="" className="msev-disc-comment-av" />
+                                : <span className="msev-disc-comment-av msev-disc-av-fallback">{(c.author?.fullName || 'U')[0]?.toUpperCase()}</span>
+                              }
+                              <div style={{ background: '#0f172a', border: '1px solid #1a1f35', borderRadius: '12px', padding: '8px 12px', flex: 1 }}>
+                                <p style={{ margin: '0 0 2px', fontSize: '12.5px', fontWeight: 700, color: '#c8d3e8' }}>{c.author?.fullName || 'User'}</p>
+                                <p style={{ margin: 0, fontSize: '13px', color: '#c8d3e8', lineHeight: 1.5 }}>{c.text}</p>
+                                {c.createdAt && <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#4a5270' }}>{new Date(c.createdAt).toLocaleString()}</p>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
-              }
+              })}
+            </div>
+          </div>
+
+          {/* Right: description sidebar — matches EventsPage.jsx's discussion tab */}
+          <div className="msev-detail-sidebar">
+            <div className="msev-detail-card">
+              <h3 className="msev-detail-card-title">Description</h3>
+
+              <div className="msev-detail-info-rows" style={{ marginBottom: 16 }}>
+                <div className="msev-detail-info-row">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  <span>{selectedEvent.memberCount || 0} people responded</span>
+                </div>
+                <div className="msev-detail-info-row">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <span>{(selectedEvent.organizer?.fullName || selectedEvent.createdBy?.fullName) ? `${selectedEvent.organizer?.fullName || selectedEvent.createdBy?.fullName}'s Event` : selectedEvent.title}</span>
+                </div>
+                <div className="msev-detail-info-row">
+                  <MapPinIcon />
+                  <ClickableLocation location={mapAddress} />
+                </div>
+                <div className="msev-detail-info-row">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                  <span>
+                    {selectedEvent.visibility === 'friends' ? 'Friends only · Only friends can join'
+                      : selectedEvent.visibility === 'only_me' ? 'Only me · Private event'
+                      : 'Public · Anyone can join'}
+                  </span>
+                </div>
+              </div>
+
+              <p style={{ color: '#7a8aaa', lineHeight: '1.75', margin: 0, fontSize: '13.5px' }}>{selectedEvent.description || selectedEvent.about}</p>
+
+              {selectedEvent.category && (
+                <div style={{ marginTop: 14 }}>
+                  <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '20px', fontSize: '11.5px', fontWeight: '600', background: (selectedEvent.categoryColor || '#7c3aed') + '22', color: selectedEvent.categoryColor || '#7c3aed', border: `1px solid ${selectedEvent.categoryColor || '#7c3aed'}44` }}>
+                    {selectedEvent.category}
+                  </span>
+                </div>
               )}
             </div>
+          </div>
           </div>
         )}
       </div>
@@ -1190,6 +1093,106 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
         </div>
         )}
 
+      {/* Event Preview Popup — for a not-yet-joined event clicked from the
+          All Events grid. Same get-by-id data as the full detail page, shown
+          as a modal instead of navigating (since Discussion needs joining). */}
+      {previewEvent && (() => {
+        const previewIsJoined = joinedEventIds.has(previewEvent._id || previewEvent.id);
+        const previewLocation = eventLocationLabel(previewEvent);
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0, 0, 0, 0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '16px' }} onClick={() => setPreviewEvent(null)}>
+            <div style={{ background: '#0b0d17', borderRadius: '12px', maxWidth: '560px', width: '100%', maxHeight: '85vh', overflowY: 'auto', border: '1px solid #1a1f35' }} onClick={(e) => e.stopPropagation()}>
+              <div style={{
+                height: '220px',
+                background: (previewEvent.coverImages?.[0] || previewEvent.image) ? `url(${previewEvent.coverImages?.[0] || previewEvent.image})` : 'linear-gradient(135deg, #1a1f2e 0%, #0d1720 100%)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                position: 'relative',
+                borderRadius: '12px 12px 0 0'
+              }}>
+                <button
+                  onClick={() => setPreviewEvent(null)}
+                  style={{ position: 'absolute', top: '12px', right: '12px', width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(0, 0, 0, 0.5)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#e2e8f0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div style={{ padding: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', marginBottom: '16px' }}>
+                  <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '800', color: '#e2e8f0' }}>{previewEvent.title || previewEvent.name}</h2>
+                  {previewEvent.eventType && (
+                    <span style={{ flexShrink: 0, padding: '4px 12px', borderRadius: '20px', fontSize: '11.5px', fontWeight: '700', background: 'rgba(96,165,250,0.13)', color: '#60a5fa', textTransform: 'uppercase' }}>
+                      {previewEvent.eventType}
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '18px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', fontSize: '13.5px' }}>
+                    <CalendarIcon /> {formatEventDate(previewEvent)}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', fontSize: '13.5px' }}>
+                    <MapPinIcon /> <ClickableLocation location={previewLocation} />
+                  </div>
+                  {(previewEvent.virtual?.link || previewEvent.virtualLink) && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', fontSize: '13.5px' }}>
+                      <LinkIcon /> {previewEvent.virtual?.link || previewEvent.virtualLink}
+                    </div>
+                  )}
+                </div>
+
+                {previewLoading && !previewEvent.description && (
+                  <p style={{ color: '#6b7a9e', fontSize: '13px' }}>Loading details…</p>
+                )}
+
+                {previewEvent.description && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#7a8494', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 8px' }}>About the Event</h3>
+                    <p style={{ color: '#c8d3e8', fontSize: '13.5px', lineHeight: '1.7', margin: 0 }}>{previewEvent.description}</p>
+                  </div>
+                )}
+
+                {(previewEvent.virtual?.instructions || previewEvent.virtualInstructions) && (
+                  <div style={{ marginBottom: '20px' }}>
+                    <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#7a8494', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 8px' }}>How to Join</h3>
+                    <p style={{ color: '#c8d3e8', fontSize: '13.5px', lineHeight: '1.7', margin: 0, whiteSpace: 'pre-line' }}>{previewEvent.virtual?.instructions || previewEvent.virtualInstructions}</p>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => {
+                    if (previewIsJoined) {
+                      const ev = previewEvent;
+                      setPreviewEvent(null);
+                      handleSelectEvent(ev);
+                    } else {
+                      const ev = previewEvent;
+                      setPreviewEvent(null);
+                      handleJoinEvent(ev);
+                    }
+                  }}
+                  disabled={joiningId === (previewEvent._id || previewEvent.id)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    background: previewIsJoined ? 'rgba(96,165,250,0.12)' : '#1d4ed8',
+                    color: previewIsJoined ? '#60a5fa' : '#fff',
+                    border: previewIsJoined ? '1px solid rgba(96,165,250,0.3)' : '1px solid #2563eb',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '700'
+                  }}
+                >
+                  {previewIsJoined ? 'View Event' : '+ Join Event'}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       <div className="msev-header">
         <div className="msev-tabs">
           <button
@@ -1222,8 +1225,8 @@ export default function MiniSiteEventsPage({ siteId, siteName }) {
                 <div
                   key={eventId}
                   className="msev-card msev-card--clickable"
-                  onClick={() => isJoined && handleSelectEvent(event)}
-                  style={{ cursor: isJoined ? 'pointer' : 'not-allowed', opacity: isJoined ? 1 : 0.7 }}
+                  onClick={() => isJoined ? handleSelectEvent(event) : handleOpenPreview(event)}
+                  style={{ cursor: 'pointer' }}
                 >
                   <div className="msev-card-img-wrap">
                     {event.image ? (

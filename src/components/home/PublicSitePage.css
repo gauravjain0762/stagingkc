@@ -4,6 +4,20 @@
   color: #e2e8f0;
   display: flex;
   flex-direction: column;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Form fields still need selectable/editable text — user-select:none on an
+   ancestor doesn't normally affect them, but this makes it explicit. */
+.pub-site-page input,
+.pub-site-page textarea {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
 }
 
 /* Sub-pages (feed/members/events/groups) render as navbar + content + footer
