@@ -11,6 +11,14 @@
   scrollbar-color: #2a3f5f transparent !important;
 }
 
+.minisite-feed-view-only-notice {
+  min-height: calc(100vh - 440px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
 /* Dark theme overrides for PostCard elements in mini sites */
 .minisite-feed-container .post-menu-dropdown {
   background: #1a1f2e !important;
