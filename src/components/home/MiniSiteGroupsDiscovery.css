@@ -637,6 +637,13 @@
   border-color: #1a2540 !important;
 }
 
+.cp-modal[data-minisite="true"] textarea.ms-post-textarea,
+.cp-modal[data-minisite="true"] textarea.ms-post-textarea:focus {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 .cpm-modal-body textarea::placeholder,
 .cpm-modal-body input::placeholder {
   color: #7c8aab !important;

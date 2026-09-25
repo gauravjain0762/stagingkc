@@ -65,6 +65,40 @@
   line-height: 1.25;
 }
 
+.ecf-admin {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 12px;
+}
+
+.ecf-admin-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #3b82f6;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ecf-admin-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ecf-admin-name {
+  color: #e0e6f8;
+  font-size: 13px;
+  font-weight: 500;
+}
+
 /* Info */
 .ecf-info {
   display: flex;

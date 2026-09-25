@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { apiRequest } from '../../services/api';
 import { showToast } from '../../store/slices/toastSlice';
+import SkeletonImg from '../SkeletonImg';
 import ShareSheet from './ShareSheet';
 import './EventCardFeed.css';
 
@@ -31,7 +32,7 @@ function formatTimeWithAMPM(time) {
   return `${displayHour}:${minute} ${ampm}`;
 }
 
-export default function EventCardFeed({ event, onEventClick, onUserClick }) {
+export default function EventCardFeed({ event, onEventClick, onUserClick, showAdmin = true }) {
   const dispatch = useDispatch();
   const { user } = useSelector(s => s.auth);
   const [joined, setJoined] = useState(event.isAttending ?? false);
@@ -43,6 +44,9 @@ export default function EventCardFeed({ event, onEventClick, onUserClick }) {
 
   const eventImage = event.coverImages?.[0] ?? event.images?.[0] ?? event.coverImage ?? event.image ?? 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&q=80&fit=crop';
   const eventTitle = event.title ?? 'Untitled Event';
+  const eventAdminName = event.admin?.fullName || event.createdBy?.fullName || 'Event admin';
+  const eventAdminAvatar = event.admin?.avatar || event.createdBy?.avatar || '';
+  const eventAdminInitials = eventAdminName.split(' ').map(part => part[0]).filter(Boolean).join('').slice(0, 2).toUpperCase();
   const eventDate = event.startDate ?? event.eventDate ?? 'TBA';
   const eventTime = event.isAllDay ? 'All Day' : formatTimeWithAMPM(event.startTime || '00:00');
   const isOnlineEvent = event.eventType === 'online';
@@ -115,6 +119,17 @@ export default function EventCardFeed({ event, onEventClick, onUserClick }) {
               <p className="ecf-time">{createdTime}</p>
             </div>
           </div>
+
+          {showAdmin && (
+            <div className="ecf-admin">
+              <div className="ecf-admin-avatar">
+                {eventAdminAvatar?.startsWith?.('http') ? (
+                  <SkeletonImg src={eventAdminAvatar} alt={eventAdminName} fallback={<span>{eventAdminInitials}</span>} />
+                ) : eventAdminInitials}
+              </div>
+              <span className="ecf-admin-name">{eventAdminName}</span>
+            </div>
+          )}
 
           {/* Info */}
           <div className="ecf-info">

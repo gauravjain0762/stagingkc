@@ -1,5 +1,6 @@
 import { useDispatch } from 'react-redux';
 import { joinGroup } from '../../store/slices/groupsSlice';
+import SkeletonImg from '../SkeletonImg';
 import './GroupCard.css';
 
 function ShareIcon() {
@@ -24,6 +25,9 @@ export default function GroupCard({ group, onJoin, onDetails, onShare }) {
   const dispatch = useDispatch();
   const groupType = group.groupType || 'public';
   const typeConfig = TYPE_CONFIG[groupType] || TYPE_CONFIG.public;
+  const authorName = group.admin?.fullName || 'Group admin';
+  const authorAvatar = group.admin?.avatar?.startsWith?.('http') ? group.admin.avatar : '';
+  const authorInitials = authorName.split(' ').map(part => part[0]).filter(Boolean).join('').slice(0, 2).toUpperCase();
 
   const handleOpenGroup = () => {
     onDetails?.(group._id);
@@ -44,6 +48,15 @@ export default function GroupCard({ group, onJoin, onDetails, onShare }) {
           <span className="gc-type" style={{ color: typeConfig.color, background: typeConfig.bg }}>
             {typeConfig.label}
           </span>
+        </div>
+
+        <div className="gc-author">
+          <div className="gc-author-avatar">
+            {authorAvatar
+              ? <SkeletonImg src={authorAvatar} alt={authorName} fallback={<span>{authorInitials}</span>} />
+              : authorInitials}
+          </div>
+          <span className="gc-author-name">{authorName}</span>
         </div>
 
         {/* Category and Description */}

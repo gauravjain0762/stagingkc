@@ -2,6 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import SkeletonImg from '../SkeletonImg';
 import PostCard from './PostCard';
+import GroupCard from './GroupCard';
+import EventCardFeed from './EventCardFeed';
+import ShareSheet from './ShareSheet';
 import CreatePostModal from './CreatePostModal';
 import { apiRequest } from '../../services/api';
 import { showToast } from '../../store/slices/toastSlice';
@@ -58,6 +61,10 @@ export default function MiniSiteFeed({ siteId, siteName }) {
   const { profile } = useSelector(s => s.profile);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [suggestedGroups, setSuggestedGroups] = useState([]);
+  const [groupsLoading, setGroupsLoading] = useState(false);
+  const [suggestedEvents, setSuggestedEvents] = useState([]);
+  const [groupToShare, setGroupToShare] = useState(null);
   const [isMember, setIsMember] = useState(false);
   const [canPost, setCanPost] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -71,6 +78,64 @@ export default function MiniSiteFeed({ siteId, siteName }) {
     if (siteId && token) {
       loadPosts();
     }
+  }, [siteId, token]);
+
+  useEffect(() => {
+    if (!siteId) return;
+
+    let cancelled = false;
+    const loadSuggestedEvents = async () => {
+      try {
+        const data = await apiRequest(`/api/mini-sites/${siteId}/events?page=1&limit=50`, { token });
+        const eventsList = Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data?.data?.events)
+            ? data.data.events
+            : [];
+        const unjoinedEvents = eventsList
+          .filter(event => !event.joined && !event.isJoined && !event.hasJoined)
+          .map(event => ({
+            ...event,
+            title: event.title || event.name,
+            startDate: event.fullDate || event.startDate || event.eventDate,
+            startTime: event.startTime || event.time,
+            isAllDay: event.isAllDay || !(event.startTime || event.time),
+            eventType: event.eventType?.toLowerCase?.(),
+            attendingCount: event.memberCount ?? event.attendingCount ?? 0,
+            isAttending: false,
+            createdBy: '__mini_site_suggested_event__',
+          }));
+        if (!cancelled) setSuggestedEvents(unjoinedEvents);
+      } catch (err) {
+        console.error('Failed to load suggested mini-site events:', err);
+        if (!cancelled) setSuggestedEvents([]);
+      }
+    };
+
+    loadSuggestedEvents();
+    return () => { cancelled = true; };
+  }, [siteId, token]);
+
+  useEffect(() => {
+    if (!siteId) return;
+
+    let cancelled = false;
+    const loadSuggestedGroups = async () => {
+      setGroupsLoading(true);
+      try {
+        const data = await apiRequest(`/api/mini-sites/${siteId}/groups/suggested?page=1&limit=20`, { token });
+        const groupsList = Array.isArray(data?.data?.groups) ? data.data.groups : [];
+        if (!cancelled) setSuggestedGroups(groupsList.filter(group => !group.joined));
+      } catch (err) {
+        console.error('Failed to load suggested mini-site groups:', err);
+        if (!cancelled) setSuggestedGroups([]);
+      } finally {
+        if (!cancelled) setGroupsLoading(false);
+      }
+    };
+
+    loadSuggestedGroups();
+    return () => { cancelled = true; };
   }, [siteId, token]);
 
   const loadPosts = async () => {
@@ -369,6 +434,82 @@ export default function MiniSiteFeed({ siteId, siteName }) {
           ))
         )}
       </div>
+
+      {(groupsLoading || suggestedGroups.length > 0) && (
+        <section className="minisite-suggested-groups">
+          {!groupsLoading && (
+            <div className="minisite-suggested-groups-list">
+              {suggestedGroups.map(group => (
+                <div
+                  key={group._id}
+                  className="minisite-suggested-group"
+                  onClick={event => {
+                    if (event.target.closest('.gc-author') && group.admin?._id) {
+                      handleUserClick(group.admin._id);
+                    }
+                  }}
+                >
+                  <GroupCard
+                    group={group}
+                    onDetails={() => window.dispatchEvent(new Event('openGroups'))}
+                    onShare={setGroupToShare}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {suggestedEvents.length > 0 && (
+        <section className="minisite-suggested-events">
+          {suggestedEvents.map(event => (
+            <div className="minisite-suggested-event" key={event._id || event.id}>
+              <div
+                className="minisite-suggested-event-admin"
+                role={event.admin?._id ? 'button' : undefined}
+                tabIndex={event.admin?._id ? 0 : undefined}
+                onClick={() => event.admin?._id && handleUserClick(event.admin._id)}
+                onKeyDown={e => {
+                  if (event.admin?._id && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    handleUserClick(event.admin._id);
+                  }
+                }}
+                style={{ cursor: event.admin?._id ? 'pointer' : 'default' }}
+              >
+                <div className="minisite-suggested-event-admin-avatar">
+                  {event.admin?.avatar?.startsWith?.('http') ? (
+                    <SkeletonImg
+                      src={event.admin.avatar}
+                      alt={event.admin.fullName || 'Event admin'}
+                      fallback={<span>{(event.admin.fullName || 'EA').split(' ').map(part => part[0]).filter(Boolean).join('').slice(0, 2).toUpperCase()}</span>}
+                    />
+                  ) : (
+                    (event.admin?.fullName || 'Event admin').split(' ').map(part => part[0]).filter(Boolean).join('').slice(0, 2).toUpperCase()
+                  )}
+                </div>
+                <span className="minisite-suggested-event-admin-name">{event.admin?.fullName || 'Event admin'}</span>
+              </div>
+              <EventCardFeed
+                event={event}
+                showAdmin={false}
+                onEventClick={() => window.dispatchEvent(new Event('openEvents'))}
+              />
+            </div>
+          ))}
+        </section>
+      )}
+
+      {groupToShare && (
+        <ShareSheet
+          url={`${window.location.origin}${window.location.pathname}${window.location.search}`}
+          title={groupToShare.name}
+          text={`Check out ${groupToShare.name} on this mini-site`}
+          heading="Share group"
+          onClose={() => setGroupToShare(null)}
+        />
+      )}
     </main>
   );
 }
