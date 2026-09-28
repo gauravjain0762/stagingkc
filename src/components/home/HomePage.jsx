@@ -238,6 +238,7 @@ export default function HomePage() {
         onPostsClick={() => goToProfileTab('Feed')}
         onPostClick={goToPost}
         onUserClick={goToUserProfile}
+        onEventClick={goToEvent}
         onNavigateToConnections={(tab) => {
           setSection('profile');
           setProfileInitTab('Connections');

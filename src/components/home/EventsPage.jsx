@@ -433,6 +433,17 @@ function eventLocationLabel(ev) {
   return ev.eventType === 'online' ? 'Online' : 'N/A';
 }
 
+// An event is expired once its last day has fully passed — compares against
+// the END of endDate (or startDate for single-day events) so an event
+// running today doesn't show as expired before it's actually over.
+function isEventExpired(ev) {
+  const dateStr = ev?.endDate || ev?.startDate;
+  if (!dateStr) return false;
+  const eventEnd = new Date(`${dateStr}T23:59:59`);
+  if (Number.isNaN(eventEnd.getTime())) return false;
+  return eventEnd < new Date();
+}
+
 // Create clickable location link to Google Maps
 function ClickableLocation({ location }) {
   if (!location || location === 'Online' || location === 'N/A') {
@@ -2178,10 +2189,13 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
               )}
             </div>
             <div className="ev-detail-actions">
-              {selectedEvent._sourceTab === 'created' && (
+              {selectedEvent._sourceTab === 'created' && !isEventExpired(selectedEvent) && (
                 <button className="ev-detail-going-btn" onClick={() => openEditEvent(eventDetail?.id === selectedEvent.id ? { ...selectedEvent, ...eventDetail } : selectedEvent)}>
                   <EditIcon /> Edit Event
                 </button>
+              )}
+              {selectedEvent._sourceTab === 'created' && isEventExpired(selectedEvent) && (
+                <span className="ev-disc-book-btn ev-disc-book-btn--sold" style={{ cursor: 'default' }}>Expired</span>
               )}
               {selectedEvent._sourceTab !== 'created' && (() => {
                 const isJoined = joinedIds.has(selectedEvent.id);
@@ -2331,15 +2345,22 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                 <div className="ev-detail-main">
 
                   {/* Trigger — opens the proper modal composer below, matching the
-                      main Feed's "Create Post" trigger card */}
-                  <div className="ev-disc-composer-trigger" onClick={openDiscComposer}>
-                    {authUser?.avatar
-                      ? <img src={authUser.avatar} alt="you" className="ev-disc-compose-av" />
-                      : <div className="ev-disc-compose-av ev-disc-av-fallback">{(authUser?.fullName ?? 'U')[0]}</div>
-                    }
-                    <span className="ev-disc-composer-trigger-text">Share something with attendees…</span>
-                    <span className="ev-disc-composer-trigger-icon"><ImageIcon /></span>
-                  </div>
+                      main Feed's "Create Post" trigger card. Hidden once the
+                      event is over — no new discussion posts on expired events. */}
+                  {isEventExpired(selectedEvent) ? (
+                    <p style={{ color: '#64748b', fontSize: '13px', margin: '0 0 16px', textAlign: 'center' }}>
+                      This event has ended — new posts are disabled.
+                    </p>
+                  ) : (
+                    <div className="ev-disc-composer-trigger" onClick={openDiscComposer}>
+                      {authUser?.avatar
+                        ? <img src={authUser.avatar} alt="you" className="ev-disc-compose-av" />
+                        : <div className="ev-disc-compose-av ev-disc-av-fallback">{(authUser?.fullName ?? 'U')[0]}</div>
+                      }
+                      <span className="ev-disc-composer-trigger-text">Share something with attendees…</span>
+                      <span className="ev-disc-composer-trigger-icon"><ImageIcon /></span>
+                    </div>
+                  )}
 
                   {discComposerOpen && (
                     <div className="cp-overlay" onClick={e => e.target === e.currentTarget && closeDiscComposer()}>
@@ -2918,7 +2939,9 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                         {ev.seats}
                       </span>}
                     </div>
-                    {discTab === 'created' && ev.status === 'draft' ? (
+                    {isEventExpired(ev) ? (
+                      <span className="ev-disc-book-btn ev-disc-book-btn--sold" style={{ cursor: 'default' }}>Expired</span>
+                    ) : discTab === 'created' && ev.status === 'draft' ? (
                       <button
                         type="button"
                         className="ev-disc-book-btn ev-disc-book-btn--publish"
@@ -2994,7 +3017,9 @@ export default function EventsPage({ onBack, onEventsClick, onGroupsClick, onCal
                           <span key={p.id} className="ev-heart-particle" style={{ '--dx': `${p.dx}px`, '--dy': `${p.dy}px`, '--rot': `${p.rot}deg` }}>❤️</span>
                         ))}
                       </div>
-                      {discTab === 'created' && ev.status === 'draft' ? (
+                      {isEventExpired(ev) ? (
+                        <span className="ev-disc-book-btn ev-disc-book-btn--sold" style={{ cursor: 'default' }}>Expired</span>
+                      ) : discTab === 'created' && ev.status === 'draft' ? (
                         <button
                           type="button"
                           className="ev-disc-book-btn ev-disc-book-btn--publish"

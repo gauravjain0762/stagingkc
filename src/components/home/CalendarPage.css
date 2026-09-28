@@ -265,6 +265,19 @@
   position: relative;
 }
 
+.cal-week-spanning-layer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  pointer-events: none;
+  z-index: 3;
+}
+
+.cal-week-spanning-layer .cal-event {
+  pointer-events: auto;
+}
+
 .cal-day-col {
   flex: 1;
   position: relative;
@@ -307,6 +320,7 @@
   transition: opacity 0.15s;
 }
 .cal-event:hover { opacity: 0.88; }
+.cal-event--spanning { z-index: 3; }
 
 .cal-event--blue {
   background: #1e40af;

@@ -10,6 +10,7 @@ import HomePage from './components/home/HomePage';
 import OnboardingForm from './components/home/OnboardingForm';
 import PublicSitePage from './components/home/PublicSitePage';
 import InviteJoinPage from './components/home/InviteJoinPage';
+import { logout } from './store/slices/authSlice';
 import { showToast } from './store/slices/toastSlice';
 
 // A Mini Site's public link (?site=<slug>) must be viewable by anyone,
@@ -27,11 +28,35 @@ function readInviteToken() {
 
 export default function App() {
   const dispatch = useDispatch();
-  const { otpPending, isAuthenticated, requiresPlanSelection, user } = useSelector((state) => state.auth);
+  const { otpPending, isAuthenticated, requiresPlanSelection, user, token } = useSelector((state) => state.auth);
   const { planSelectionComplete, justSelectedPlan } = useSelector((state) => state.plans);
   const { page } = useSelector((state) => state.ui);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const inviteToken = readInviteToken();
+
+  useEffect(() => {
+    if (!isAuthenticated || !token) return;
+
+    const expiresAt = Number(localStorage.getItem('auth_session_expires_at'));
+    const checkExpiry = () => {
+      if (!Number.isFinite(expiresAt) || Date.now() >= expiresAt) {
+        dispatch(logout());
+      }
+    };
+
+    checkExpiry();
+    if (!Number.isFinite(expiresAt) || Date.now() >= expiresAt) return;
+
+    const expiryTimer = window.setTimeout(() => dispatch(logout()), expiresAt - Date.now());
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') checkExpiry();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.clearTimeout(expiryTimer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [dispatch, isAuthenticated, token]);
 
   // Show invite modal if token is present (from URL or localStorage)
   useEffect(() => {

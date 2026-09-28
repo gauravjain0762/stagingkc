@@ -5,7 +5,7 @@ import './EventsPage.css';
 import AnimatedNav from './AnimatedNav';
 import CreatePostModal from './CreatePostModal';
 import Loader from '../Loader';
-import { fetchEvents, fetchMyCalendar } from '../../store/slices/eventsSlice';
+import { fetchCalendarUpcomingEvents, fetchMyCalendar } from '../../store/slices/eventsSlice';
 import { CustomDatePicker } from './DateTimePicker';
 import { DISC_CATEGORIES } from './EventsPage';
 import { isEventFree } from '../../utils/eventHelpers';
@@ -14,6 +14,8 @@ import LocationRadiusFilter from './LocationRadiusFilter';
 import useRadiusFilter from '../../hooks/useRadiusFilter';
 import { getCurrentLocation, reverseGeocode, primeGeocode } from '../../utils/geo';
 import { showToast } from '../../store/slices/toastSlice';
+import { apiRequest } from '../../services/api';
+import { publicSiteUrl } from './miniSiteUtils';
 
 /* ── Sidebar nav icons ── */
 function FeedNavIcon()     { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>; }
@@ -50,6 +52,10 @@ function toISODate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+function dateOnly(value) {
+  return value ? String(value).slice(0, 10) : '';
+}
+
 function parseHM(timeStr) {
   if (!timeStr) return null;
   const [h, m] = timeStr.split(':').map(Number);
@@ -57,37 +63,131 @@ function parseHM(timeStr) {
   return { h, m: Number.isNaN(m) ? 0 : m };
 }
 
-// Places each event on whichever weekDay column its startDate matches,
-// clamped into the visible 9am–6pm grid. Events entirely outside that
-// window (e.g. a midnight event) used to be dropped outright — now they're
-// pinned as a thin sliver at whichever edge they're closest to instead, so
-// nothing you've added to your calendar silently disappears. `sH/sM/eH/eM`
-// are the clamped block position; `realStart*/realEnd*` (used for the
-// on-screen time label) always carry the event's actual, unclamped time.
+// All ISO ('YYYY-MM-DD') dates from startDate to endDate inclusive — used to
+// spread a multi-day event across every day column it spans, not just its
+// start day.
+function datesInRange(startDate, endDate) {
+  const startIso = String(startDate).slice(0, 10);
+  const endIso = endDate ? String(endDate).slice(0, 10) : startIso;
+  const start = new Date(startIso + 'T00:00');
+  if (isNaN(start)) return [];
+  const end = new Date(endIso + 'T00:00');
+  if (isNaN(end) || end < start) return [startIso];
+  const dates = [];
+  const cur = new Date(start);
+  while (cur <= end) {
+    dates.push(toISODate(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return dates;
+}
+
+// Places each event on every weekDay column between its startDate and
+// endDate (inclusive) that falls in the visible week, clamped into the
+// visible 9am–6pm grid. Events entirely outside that window (e.g. a
+// midnight event) used to be dropped outright — now they're pinned as a
+// thin sliver at whichever edge they're closest to instead, so nothing
+// you've added to your calendar silently disappears. `sH/sM/eH/eM` are the
+// clamped block position; `realStart*/realEnd*` (used for the on-screen
+// time label) always carry the event's actual, unclamped time.
 function buildWeekEvents(events, weekDays) {
   const gridEnd = GRID_START + HOURS.length;
   const out = [];
   for (const ev of events) {
-    const dayIdx = weekDays.findIndex(d => d.iso === ev.startDate);
-    if (dayIdx === -1) continue;
+    if (!ev.startDate) continue;
+    // All-day and multi-day events are rendered as a single spanning bar in
+    // the all-day banner row above the grid instead (see
+    // buildWeekAllDayBars) — showing them here too would duplicate them.
+    if (ev.isAllDay || (ev.endDate && dateOnly(ev.endDate) !== dateOnly(ev.startDate))) continue;
+    for (const dateStr of datesInRange(ev.startDate, ev.endDate)) {
+      const dayIdx = weekDays.findIndex(d => d.iso === dateStr);
+      if (dayIdx === -1) continue;
+      const start = parseHM(ev.startTime) ?? { h: GRID_START, m: 0 };
+      const endRaw = ev.isAllDay ? null : parseHM(ev.endTime);
+      let end = endRaw ?? { h: Math.min(start.h + 1, gridEnd), m: start.m };
+      if (end.h * 60 + end.m <= start.h * 60 + start.m) {
+        const nextHour = start.h * 60 + start.m + 60;
+        end = { h: Math.floor(nextHour / 60), m: nextHour % 60 };
+      }
+      const startMinutes = start.h * 60 + start.m;
+      const endMinutes = end.h * 60 + end.m;
+      const outsideWindow = startMinutes >= gridEnd * 60 || endMinutes <= GRID_START * 60;
+      out.push({
+        id: `${ev.id}__${dateStr}`,
+        eventId: ev.id,
+        dayIdx,
+        title: ev.title || 'Untitled event',
+        sH: outsideWindow ? (startMinutes >= gridEnd * 60 ? gridEnd - 1 : GRID_START) : Math.max(start.h, GRID_START),
+        sM: outsideWindow ? 0 : (start.h < GRID_START ? 0 : start.m),
+        eH: outsideWindow ? (startMinutes >= gridEnd * 60 ? gridEnd : GRID_START + 1) : Math.min(end.h, gridEnd),
+        eM: outsideWindow ? 0 : (end.h > gridEnd ? 0 : end.m),
+        realStartH: start.h, realStartM: start.m,
+        realEndH: end.h, realEndM: end.m,
+        color: colorFor(ev.category || ev.title),
+      });
+    }
+  }
+  return layoutOverlappingEvents(out);
+}
+
+// All-day / multi-day events for the week view — one block spanning every
+// day column the event covers within the visible week, positioned at its
+// real (or, for a plain all-day event, default 9am) time in the hourly
+// grid — same spanning treatment as the month view, but still anchored to
+// the time axis instead of floating in a separate banner with no time
+// context.
+function buildWeekSpanningEvents(events, weekDays) {
+  const gridEnd = GRID_START + HOURS.length;
+  const items = [];
+  for (const ev of events) {
+    if (!ev.startDate) continue;
+    const isMultiDay = ev.endDate && dateOnly(ev.endDate) !== dateOnly(ev.startDate);
+    if (!ev.isAllDay && !isMultiDay) continue;
+    const colIdxs = datesInRange(ev.startDate, ev.endDate)
+      .map(dateStr => weekDays.findIndex(d => d.iso === dateStr))
+      .filter(i => i !== -1);
+    if (!colIdxs.length) continue;
+
     const start = parseHM(ev.startTime) ?? { h: GRID_START, m: 0 };
     const endRaw = ev.isAllDay ? null : parseHM(ev.endTime);
-    const end = endRaw ?? { h: Math.min(start.h + 1, gridEnd), m: start.m };
-    const outsideWindow = start.h >= gridEnd || end.h < GRID_START;
-    out.push({
+    let end = endRaw ?? { h: Math.min(start.h + 1, gridEnd), m: start.m };
+    if (end.h * 60 + end.m <= start.h * 60 + start.m) {
+      const nextHour = start.h * 60 + start.m + 60;
+      end = { h: Math.floor(nextHour / 60), m: nextHour % 60 };
+    }
+    const startMinutes = start.h * 60 + start.m;
+    const endMinutes = end.h * 60 + end.m;
+    const outsideWindow = startMinutes >= gridEnd * 60 || endMinutes <= GRID_START * 60;
+
+    items.push({
       id: ev.id,
-      dayIdx,
+      eventId: ev.id,
       title: ev.title || 'Untitled event',
-      sH: outsideWindow ? (start.h >= gridEnd ? gridEnd - 1 : GRID_START) : Math.max(start.h, GRID_START),
+      colStart: Math.min(...colIdxs),
+      colEnd: Math.max(...colIdxs),
+      sH: outsideWindow ? (startMinutes >= gridEnd * 60 ? gridEnd - 1 : GRID_START) : Math.max(start.h, GRID_START),
       sM: outsideWindow ? 0 : (start.h < GRID_START ? 0 : start.m),
-      eH: outsideWindow ? (start.h >= gridEnd ? gridEnd : GRID_START + 1) : Math.min(end.h, gridEnd),
+      eH: outsideWindow ? (startMinutes >= gridEnd * 60 ? gridEnd : GRID_START + 1) : Math.min(end.h, gridEnd),
       eM: outsideWindow ? 0 : (end.h > gridEnd ? 0 : end.m),
       realStartH: start.h, realStartM: start.m,
       realEndH: end.h, realEndM: end.m,
       color: colorFor(ev.category || ev.title),
     });
   }
-  return layoutOverlappingEvents(out);
+  // Give overlapping date-ranges separate horizontal lanes (narrower,
+  // side-by-side) so two spanning events sharing a day don't render on top
+  // of each other — same greedy interval-coloring idea as
+  // layoutOverlappingEvents, but on the day-column axis instead of time.
+  items.sort((a, b) => a.colStart - b.colStart || a.colEnd - b.colEnd);
+  const laneEnds = [];
+  for (const item of items) {
+    let lane = laneEnds.findIndex(end => end < item.colStart);
+    if (lane === -1) { lane = laneEnds.length; laneEnds.push(item.colEnd); }
+    else laneEnds[lane] = item.colEnd;
+    item.lane = lane;
+  }
+  const laneCount = laneEnds.length || 1;
+  return items.map(item => ({ ...item, laneCount }));
 }
 
 // Every event block in the hourly grid used to be a fixed `left:4px;
@@ -139,9 +239,10 @@ function buildMonthEvents(events, year, month) {
   const out = [];
   for (const ev of events) {
     if (!ev.startDate) continue;
-    const s = new Date(ev.startDate + 'T00:00');
+    const startIso = String(ev.startDate).slice(0, 10);
+    const s = new Date(startIso + 'T00:00');
     if (isNaN(s) || s.getFullYear() !== year || s.getMonth() !== month) continue;
-    const e = ev.endDate ? new Date(ev.endDate + 'T00:00') : s;
+    const e = ev.endDate ? new Date(String(ev.endDate).slice(0, 10) + 'T00:00') : s;
     const endsInMonth = !isNaN(e) && e.getFullYear() === year && e.getMonth() === month;
     out.push({
       id: ev.id,
@@ -159,7 +260,7 @@ function buildMonthEvents(events, year, month) {
 // there's no fixed-height grid to fit into here.
 function buildDayEvents(events, iso) {
   return events
-    .filter(ev => ev.startDate === iso)
+    .filter(ev => ev.startDate && datesInRange(ev.startDate, ev.endDate).includes(iso))
     .map(ev => {
       const start = parseHM(ev.startTime);
       const end = parseHM(ev.endTime);
@@ -281,7 +382,17 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
   // (see EventsPage), so a week/month you navigate into the past will show
   // no events — a real gap if past events need to show here too; would need
   // either a date-range query param or a tab that includes past events.
-  const { events: allEvents, calendarEvents, eventsLoading, calendarLoading } = useSelector(s => s.events);
+  const {
+    calendarUpcomingEvents,
+    calendarUpcomingLoading,
+    calendarUpcomingFetched,
+    calendarEvents,
+    calendarLoading,
+    calendarFetched,
+    calendarFetchedUserId,
+  } = useSelector(s => s.events);
+  const { token, user } = useSelector(s => s.auth);
+  const userId = user?._id ?? user?.id ?? null;
   const [monday,    setMonday]   = useState(getMondayOf(initialDate ? new Date(initialDate) : new Date()));
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [monthDate, setMonthDate] = useState(initialDate ? new Date(initialDate) : new Date());
@@ -312,12 +423,21 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
   const [locatingMe, setLocatingMe] = useState(false);
 
   useEffect(() => {
-    if (scope === 'mine') dispatch(fetchMyCalendar({ limit: 100 }));
-    else dispatch(fetchEvents({ tab: 'upcoming', limit: 100 }));
-  }, [dispatch, scope]);
+    if (scope === 'mine') {
+      if ((!calendarFetched || calendarFetchedUserId !== userId) && !calendarLoading) {
+        dispatch(fetchMyCalendar({ limit: 100 }));
+      }
+    } else if (!calendarUpcomingFetched && !calendarUpcomingLoading) {
+      dispatch(fetchCalendarUpcomingEvents({ limit: 100 }));
+    }
+  // Loading flags are read to avoid duplicate requests if the user switches
+  // scopes while one is already in flight. They are intentionally excluded
+  // to avoid retrying in a render loop after a failed request.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, scope, calendarFetched, calendarFetchedUserId, calendarUpcomingFetched, userId]);
 
-  const scopedEvents = scope === 'mine' ? calendarEvents : allEvents;
-  const isLoading = scope === 'mine' ? calendarLoading : eventsLoading;
+  const scopedEvents = scope === 'mine' ? calendarEvents : calendarUpcomingEvents;
+  const isLoading = scope === 'mine' ? calendarLoading : calendarUpcomingLoading;
 
   const radiusFilterActive = filters.location.trim().length > 0;
   const { distanceById, resolving: geoResolving, searchFailed: geoSearchFailed } =
@@ -343,6 +463,30 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
     }
     return true;
   });
+
+  // Org-hosted events (pulled in from GET /api/organizations/:id/events/
+  // main-calendar — see fetchMyCalendar) only exist inside a mini-site, so
+  // the main site's event detail can't show them. Route a click on one of
+  // those to its organization's mini-site Events page instead of the
+  // normal onEventClick(id) flow.
+  async function handleEventClick(eventId) {
+    const ev = scopedEvents.find(e => e.id === eventId);
+    if (ev?.isMiniSiteEvent && ev?.organizationId) {
+      try {
+        const data = await apiRequest(`/api/organizations/${ev.organizationId}/mini-sites?status=live`, { token });
+        const site = (data?.data ?? [])[0];
+        if (site?.slug) {
+          window.location.href = `${publicSiteUrl(site.slug)}&tab=events`;
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to open organization mini site:', err);
+      }
+      dispatch(showToast({ message: 'This organization has no published mini site yet', type: 'info' }));
+      return;
+    }
+    onEventClick?.(eventId);
+  }
 
   function openFilter() { setPendingF({ ...filters, categories: new Set(filters.categories) }); setShowFilter(true); }
   function commitFilters(next) { setFilters(next); setShowFilter(false); }
@@ -389,6 +533,8 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
   const monthGrid  = getMonthGrid(monthDate.getFullYear(), monthDate.getMonth());
   const monthWeeks = Array.from({ length: 6 }, (_, i) => monthGrid.slice(i * 7, i * 7 + 7));
   const weekEvents  = buildWeekEvents(filteredEvents, weekDays);
+  const weekSpanningEvents = buildWeekSpanningEvents(filteredEvents, weekDays);
+  const spanningLaneCount = Math.max(1, ...weekSpanningEvents.map(ev => ev.laneCount));
   const monthEvents = buildMonthEvents(filteredEvents, monthDate.getFullYear(), monthDate.getMonth());
   const dayEvents    = buildDayEvents(filteredEvents, toISODate(mobileDay));
   const isMobileToday = toISODate(mobileDay) === toISODate(new Date());
@@ -510,13 +656,34 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
                           width: `calc(${100 / ev.colCount}% - 8px)`,
                           cursor: onEventClick ? 'pointer' : undefined,
                         }}
-                        onClick={() => onEventClick?.(ev.id)}>
+                        onClick={() => handleEventClick(ev.eventId)}>
                         <p className="cal-ev-title">{ev.title}</p>
                         <p className="cal-ev-time">{fmtT(ev.realStartH, ev.realStartM)} –<br />{fmtT(ev.realEndH, ev.realEndM)} {fmtPeriod(ev.realEndH)}</p>
                       </div>
                     ))}
                   </div>
                 ))}
+                {/* All-day / multi-day events — one block spanning every day
+                    column it covers, positioned at its real (or default
+                    9am) time like any other block, overlaid across the
+                    whole days-area instead of nested in a single day-col. */}
+                <div className="cal-week-spanning-layer" style={{ gridTemplateColumns: `repeat(${weekDays.length * spanningLaneCount}, minmax(0, 1fr))` }}>
+                  {weekSpanningEvents.map(ev => (
+                    <div key={ev.id} className={`cal-event cal-event--${ev.color} cal-event--spanning`}
+                      style={{
+                        gridColumn: `${ev.colStart * spanningLaneCount + ev.lane + 1} / ${(ev.colEnd + 1) * spanningLaneCount + ev.lane + 1}`,
+                        top: evTop(ev.sH, ev.sM),
+                        height: evH(ev.sH, ev.sM, ev.eH, ev.eM),
+                        left: 4,
+                        right: 4,
+                        cursor: onEventClick ? 'pointer' : undefined,
+                      }}
+                      onClick={() => handleEventClick(ev.eventId)}>
+                      <p className="cal-ev-title">{ev.title}</p>
+                      <p className="cal-ev-time">{fmtT(ev.realStartH, ev.realStartM)} –<br />{fmtT(ev.realEndH, ev.realEndM)} {fmtPeriod(ev.realEndH)}</p>
+                    </div>
+                  ))}
+                </div>
                 {showNowLine && (
                   <div className="cal-now-line" style={{ top: nowTop }}>
                     <span className="cal-now-dot" /><span className="cal-now-track" />
@@ -547,7 +714,7 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
                   key={ev.id}
                   className="cal-day-agenda-item"
                   style={{ cursor: onEventClick ? 'pointer' : undefined }}
-                  onClick={() => onEventClick?.(ev.id)}
+                  onClick={() => handleEventClick(ev.id)}
                 >
                   <span className={`cal-day-agenda-bar cal-day-agenda-bar--${ev.color}`} />
                   <div className="cal-day-agenda-body">
@@ -602,7 +769,7 @@ export default function CalendarPage({ onFeedClick, onEventsClick, onEventsCreat
                           top:    `${30 + ev.slot * 22}px`,
                           cursor: onEventClick ? 'pointer' : undefined,
                         }}
-                        onClick={() => onEventClick?.(ev.id)}
+                        onClick={() => handleEventClick(ev.id)}
                       >
                         <span className="cal-month-ev-title">{ev.title}</span>
                       </div>

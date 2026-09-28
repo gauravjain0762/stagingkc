@@ -168,6 +168,20 @@ export const fetchEvents = createAsyncThunk(
   }
 );
 
+// Dedicated Redux cache for the calendar's upcoming view.
+export const fetchCalendarUpcomingEvents = createAsyncThunk(
+  'events/fetchCalendarUpcomingEvents',
+  async ({ limit = 100 } = {}, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await apiRequest(`/api/events?tab=upcoming&page=1&limit=${limit}`, { token });
+      return { events: (data.data ?? []).map(normalizeEvent), total: data.total ?? 0 };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 // 2. GET /api/events/:id
 export const fetchEventDetail = createAsyncThunk(
   'events/fetchEventDetail',
@@ -406,14 +420,65 @@ export const uncalendarEvent = createAsyncThunk(
   }
 );
 
-// 19. GET /api/events/my/calendar
+// 19. GET /api/events/my/calendar — also pulls in events from every
+// organization the user has joined or created (GET /api/organizations/:id/
+// events/main-calendar), so org-hosted events show up on "My Events"
+// alongside personally-saved ones, not just the latter.
 export const fetchMyCalendar = createAsyncThunk(
   'events/fetchMyCalendar',
   async ({ page = 1, limit = 20 } = {}, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
       const data = await apiRequest(`/api/events/my/calendar?page=${page}&limit=${limit}`, { token });
-      return { events: (data.data ?? []).map(normalizeEvent), total: data.total ?? 0 };
+      const personalEvents = (data.data ?? []).map(normalizeEvent);
+
+      let orgEvents = [];
+      try {
+        const [joinedRes, createdRes] = await Promise.all([
+          apiRequest('/api/organizations/joined?limit=100&offset=0', { token }),
+          apiRequest('/api/organizations?limit=100&page=1', { token }),
+        ]);
+        const orgIds = [...new Set(
+          [...(joinedRes?.data ?? []), ...(createdRes?.data ?? [])]
+            .map(o => o.id ?? o._id)
+            .filter(Boolean)
+        )];
+
+        const perOrgResults = await Promise.all(
+          orgIds.map(orgId =>
+            apiRequest(`/api/organizations/${orgId}/events/main-calendar`, { token })
+              .then(res => ({ orgId, res }))
+              .catch(() => null)
+          )
+        );
+        // Tagged so the calendar can route a click on one of these to its
+        // organization's mini-site Events page instead of the main-site
+        // event detail — these events only exist inside a mini-site, the
+        // main /api/events/:id detail endpoint doesn't know about them.
+        orgEvents = perOrgResults
+          .filter(Boolean)
+          .flatMap(({ orgId, res }) => (res?.data ?? []).map(e => ({
+            ...normalizeEvent(e),
+            isMiniSiteEvent: true,
+            organizationId: orgId,
+          })));
+      } catch {
+        // Org-calendar fetch is best-effort — personal calendar events
+        // should still show even if this fails.
+      }
+
+      const seen = new Set();
+      const events = [...personalEvents, ...orgEvents].filter(ev => {
+        if (!ev.id || seen.has(ev.id)) return false;
+        seen.add(ev.id);
+        return true;
+      });
+
+      return {
+        events,
+        total: data.total ?? events.length,
+        userId: getState().auth.user?._id ?? getState().auth.user?.id ?? null,
+      };
     } catch (err) { return rejectWithValue(err.message); }
   }
 );
@@ -440,6 +505,11 @@ const eventsSlice = createSlice({
     eventsTotal: 0,
     eventsLoading: false,
 
+    calendarUpcomingEvents: [],
+    calendarUpcomingTotal: 0,
+    calendarUpcomingLoading: false,
+    calendarUpcomingFetched: false,
+
     bookedEvents: [],
     bookedTotal: 0,
     bookedLoading: false,
@@ -455,6 +525,8 @@ const eventsSlice = createSlice({
     calendarEvents: [],
     calendarTotal: 0,
     calendarLoading: false,
+    calendarFetched: false,
+    calendarFetchedUserId: null,
 
     eventDetail: null,
     detailLoading: false,
@@ -663,6 +735,12 @@ const eventsSlice = createSlice({
       .addCase(calendarEvent.pending, (s, a) => {
         const eventId = a.meta.arg;
         s.events        = patchEventInList(s.events,        eventId, { isInCalendar: true });
+        s.calendarUpcomingEvents = patchEventInList(s.calendarUpcomingEvents, eventId, { isInCalendar: true });
+        const event = s.calendarUpcomingEvents.find(e => e.id === eventId) || s.events.find(e => e.id === eventId);
+        if (event && !s.calendarEvents.some(e => e.id === eventId)) {
+          s.calendarEvents.push({ ...event, isInCalendar: true });
+          s.calendarTotal = s.calendarEvents.length;
+        }
         s.bookedEvents  = patchEventInList(s.bookedEvents,  eventId, { isInCalendar: true });
         s.savedEvents   = patchEventInList(s.savedEvents,   eventId, { isInCalendar: true });
         s.createdEvents = patchEventInList(s.createdEvents, eventId, { isInCalendar: true });
@@ -671,6 +749,7 @@ const eventsSlice = createSlice({
       .addCase(calendarEvent.rejected, (s, a) => {
         const eventId = a.meta.arg;
         s.events        = patchEventInList(s.events,        eventId, { isInCalendar: false });
+        s.calendarUpcomingEvents = patchEventInList(s.calendarUpcomingEvents, eventId, { isInCalendar: false });
         s.bookedEvents  = patchEventInList(s.bookedEvents,  eventId, { isInCalendar: false });
         s.savedEvents   = patchEventInList(s.savedEvents,   eventId, { isInCalendar: false });
         s.createdEvents = patchEventInList(s.createdEvents, eventId, { isInCalendar: false });
@@ -681,6 +760,7 @@ const eventsSlice = createSlice({
       .addCase(uncalendarEvent.pending, (s, a) => {
         const eventId = a.meta.arg;
         s.events         = patchEventInList(s.events,        eventId, { isInCalendar: false });
+        s.calendarUpcomingEvents = patchEventInList(s.calendarUpcomingEvents, eventId, { isInCalendar: false });
         s.bookedEvents   = patchEventInList(s.bookedEvents,  eventId, { isInCalendar: false });
         s.savedEvents    = patchEventInList(s.savedEvents,   eventId, { isInCalendar: false });
         s.createdEvents  = patchEventInList(s.createdEvents, eventId, { isInCalendar: false });
@@ -690,6 +770,12 @@ const eventsSlice = createSlice({
       .addCase(uncalendarEvent.rejected, (s, a) => {
         const eventId = a.meta.arg;
         s.events        = patchEventInList(s.events,        eventId, { isInCalendar: true });
+        s.calendarUpcomingEvents = patchEventInList(s.calendarUpcomingEvents, eventId, { isInCalendar: true });
+        const event = s.calendarUpcomingEvents.find(e => e.id === eventId) || s.events.find(e => e.id === eventId);
+        if (event && !s.calendarEvents.some(e => e.id === eventId)) {
+          s.calendarEvents.push({ ...event, isInCalendar: true });
+          s.calendarTotal = s.calendarEvents.length;
+        }
         s.bookedEvents  = patchEventInList(s.bookedEvents,  eventId, { isInCalendar: true });
         s.savedEvents   = patchEventInList(s.savedEvents,   eventId, { isInCalendar: true });
         s.createdEvents = patchEventInList(s.createdEvents, eventId, { isInCalendar: true });
@@ -697,13 +783,25 @@ const eventsSlice = createSlice({
       })
 
       // fetchMyCalendar
-      .addCase(fetchMyCalendar.pending, s => { s.calendarLoading = true; s.calendarEvents = []; })
+      .addCase(fetchMyCalendar.pending, s => { s.calendarLoading = true; })
       .addCase(fetchMyCalendar.fulfilled, (s, a) => {
         s.calendarLoading = false;
         s.calendarEvents = a.payload.events;
         s.calendarTotal  = a.payload.total;
+        s.calendarFetched = true;
+        s.calendarFetchedUserId = a.payload.userId;
       })
       .addCase(fetchMyCalendar.rejected, s => { s.calendarLoading = false; })
+
+      // fetchCalendarUpcomingEvents
+      .addCase(fetchCalendarUpcomingEvents.pending, s => { s.calendarUpcomingLoading = true; })
+      .addCase(fetchCalendarUpcomingEvents.fulfilled, (s, a) => {
+        s.calendarUpcomingLoading = false;
+        s.calendarUpcomingEvents = a.payload.events;
+        s.calendarUpcomingTotal = a.payload.total;
+        s.calendarUpcomingFetched = true;
+      })
+      .addCase(fetchCalendarUpcomingEvents.rejected, s => { s.calendarUpcomingLoading = false; })
 
       // fetchMyBooked
       .addCase(fetchMyBooked.pending, s => { s.bookedLoading = true; s.bookedEvents = []; })

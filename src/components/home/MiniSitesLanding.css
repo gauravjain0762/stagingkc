@@ -678,7 +678,17 @@
   }
 
   .msl-tabs {
+    width: 100%;
     flex-wrap: wrap;
+  }
+
+  .msl-tab {
+    flex: 1 1 calc(50% - 4px);
+    justify-content: center;
+    text-align: center;
+    padding: 8px 10px;
+    font-size: 12.5px;
+    white-space: nowrap;
   }
 
   .msl-card-actions {
@@ -688,6 +698,13 @@
   .msl-modal-content {
     max-width: 90vw;
     padding: 24px;
+  }
+}
+
+@media (max-width: 420px) {
+  .msl-tab {
+    flex: 1 1 100%;
+    font-size: 13px;
   }
 }
 

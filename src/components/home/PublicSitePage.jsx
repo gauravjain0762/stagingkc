@@ -267,6 +267,12 @@ export default function PublicSitePage({ slug }) {
       // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
+
+    // Deep link into the Events tab (e.g. from the main site's Calendar,
+    // clicking an org-hosted event) — ?site=<slug>&tab=events
+    if (params.get('tab') === 'events') {
+      setShowEvents(true);
+    }
   }, []);
 
   const fetchOrgDetailModal = async (orgId) => {

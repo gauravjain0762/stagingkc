@@ -27,11 +27,19 @@ export const fetchMe = createAsyncThunk(
 
 const TOKEN_KEY = 'auth_token';
 const USER_KEY  = 'auth_user';
+const SESSION_EXPIRES_KEY = 'auth_session_expires_at';
+const SESSION_DURATION_MS = 24 * 60 * 60 * 1000;
 
 function saveSession(token, user) {
   try {
+    const savedToken = localStorage.getItem(TOKEN_KEY);
+    let expiresAt = Number(localStorage.getItem(SESSION_EXPIRES_KEY));
+    if (token !== savedToken || !Number.isFinite(expiresAt) || expiresAt <= 0) {
+      expiresAt = Date.now() + SESSION_DURATION_MS;
+    }
     localStorage.setItem(TOKEN_KEY, token ?? '');
     localStorage.setItem(USER_KEY, JSON.stringify(user ?? null));
+    localStorage.setItem(SESSION_EXPIRES_KEY, String(expiresAt));
   } catch (_) {}
 }
 
@@ -39,6 +47,7 @@ function clearSession() {
   try {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(SESSION_EXPIRES_KEY);
   } catch (_) {}
 }
 
@@ -46,6 +55,19 @@ function loadSession() {
   try {
     const token = localStorage.getItem(TOKEN_KEY) || null;
     const user  = JSON.parse(localStorage.getItem(USER_KEY)) || null;
+    if (token && user) {
+      let expiresAt = Number(localStorage.getItem(SESSION_EXPIRES_KEY));
+      // Existing saved sessions predate the expiry setting; give them one
+      // final 24-hour window, then enforce the fixed session lifetime.
+      if (!Number.isFinite(expiresAt) || expiresAt <= 0) {
+        expiresAt = Date.now() + SESSION_DURATION_MS;
+        localStorage.setItem(SESSION_EXPIRES_KEY, String(expiresAt));
+      }
+      if (Date.now() >= expiresAt) {
+        clearSession();
+        return { token: null, user: null };
+      }
+    }
     return { token, user };
   } catch (_) {
     return { token: null, user: null };

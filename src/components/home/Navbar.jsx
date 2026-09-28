@@ -83,7 +83,7 @@ function timeAgo(dateStr) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsClick, onPostsClick, onPostClick, onUserClick, onNavigateToConnections, onPlansClick }) {
+export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsClick, onPostsClick, onPostClick, onUserClick, onEventClick, onNavigateToConnections, onPlansClick }) {
   const dispatch               = useDispatch();
   const { user: authUser }     = useSelector((state) => state.auth);
   const { profile }            = useSelector((state) => state.profile);
@@ -375,6 +375,11 @@ export default function Navbar({ onMessagesClick, onProfileClick, onConnectionsC
                         // Navigate to the group
                         const gid = n.relatedGroup?._id ?? n.relatedGroup?.id;
                         if (gid) window.location.hash = '#/group/' + gid;
+                      } else if (n.relatedEvent) {
+                        // Event reminder, or an event invite (sendInvites also
+                        // sets relatedEvent) — open that event's detail/about page
+                        const eid = n.relatedEvent?._id ?? n.relatedEvent?.id ?? n.relatedEvent;
+                        onEventClick?.(eid);
                       } else if (n.relatedPost) {
                         // mention/comment/like notifications carry the post they refer to
                         onPostClick?.(n.relatedPost);
