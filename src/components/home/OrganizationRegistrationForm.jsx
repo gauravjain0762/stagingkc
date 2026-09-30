@@ -294,20 +294,12 @@ function OrganizationRegistrationForm({ onClose, onSubmit }) {
     } catch (error) {
       console.error('Organization creation failed:', error);
 
-      let errorMessage = 'Failed to create organization. Please try again.';
-
-      // Handle different error types
-      if (error.status === 400) {
-        errorMessage = error.data?.errors?.name || error.message || 'Invalid organization data';
-      } else if (error.status === 409) {
-        errorMessage = 'Organization name already exists. Please choose a different name.';
-      } else if (error.status === 401) {
-        errorMessage = 'You must be logged in to create an organization.';
-      } else if (error.status === 500) {
-        errorMessage = 'Server error. Please try again later.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
+      // apiRequest already builds error.message from the backend's specific
+      // field error (e.g. "Email already registered") when one is present,
+      // so trust it directly instead of only checking for an `errors.name`
+      // field, which missed every other validation field.
+      let errorMessage = error.message || 'Failed to create organization. Please try again.';
+      if (error.status === 401) errorMessage = 'You must be logged in to create an organization.';
 
       dispatch(showToast({
         message: '❌ ' + errorMessage,

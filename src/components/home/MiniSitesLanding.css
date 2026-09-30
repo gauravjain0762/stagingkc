@@ -708,6 +708,106 @@
   }
 }
 
+/* Mobile layout: the desktop icon rail becomes a bottom tab bar, so this
+   page must use the full viewport width and leave room for that bar. */
+@media (max-width: 700px) {
+  .mini-sites-landing {
+    width: 100%;
+    box-sizing: border-box;
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+    flex: 1;
+    overflow-y: auto;
+    margin-left: 0;
+    padding: 18px 14px calc(104px + env(safe-area-inset-bottom));
+    gap: 18px;
+  }
+
+  .msl-header {
+    gap: 14px;
+  }
+
+  .msl-title { font-size: 22px; }
+  .msl-subtitle { font-size: 13px; line-height: 1.45; }
+
+  .msl-create-org-btn {
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+
+  .msl-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    box-sizing: border-box;
+    gap: 4px;
+  }
+
+  .msl-tab {
+    min-width: 0;
+    min-height: 40px;
+    padding: 8px 6px;
+    white-space: normal;
+    line-height: 1.25;
+    font-size: 12px;
+  }
+
+  .msl-search-wrap { margin-bottom: 2px; }
+  .msl-search { min-height: 42px; }
+
+  .msl-cards-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .msl-org-card {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    box-sizing: border-box;
+  }
+
+  .msl-card-cover { height: clamp(110px, 32vw, 150px); }
+  .msl-card-content { padding: 16px 14px; gap: 10px; }
+  .msl-org-name { overflow-wrap: anywhere; }
+
+  .msl-card-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .msl-detail-btn,
+  .msl-join-btn,
+  .msl-view-btn,
+  .msl-cancel-btn,
+  .msl-manage-btn {
+    min-height: 42px;
+    box-sizing: border-box;
+  }
+
+  .msl-modal-overlay { padding: 12px; }
+  .msl-modal-content,
+  .msl-modal-content--large {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100dvh - 24px);
+    box-sizing: border-box;
+  }
+
+  .msl-modal-header,
+  .msl-modal-body,
+  .msl-modal-footer { padding-left: 16px; padding-right: 16px; }
+  .msl-modal-title { font-size: 20px; padding-right: 36px; }
+  .msl-modal-cover { height: clamp(150px, 45vw, 220px); }
+}
+
+@media (max-width: 360px) {
+  .mini-sites-landing { padding-left: 10px; padding-right: 10px; }
+  .msl-title { font-size: 20px; }
+  .msl-tab { font-size: 11px; }
+}
+
 /* Dark theme for mini-site - override ALL white backgrounds */
 .pub-site-view-inline {
   background: #070b14 !important;

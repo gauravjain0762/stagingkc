@@ -9,6 +9,30 @@ const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 let suspensionHandled = false;
 let sessionExpiredHandled = false;
 
+// The backend's top-level `message` on a validation failure is often just a
+// generic "Validation failed", with the actual per-field reason (e.g.
+// "Email already registered") nested under `errors`. Every caller across the
+// app throws/reads `err.message` for its error toast, so build that message
+// from `errors` (whatever shape it comes in — a field->message object, an
+// array of strings, or an array of {field, message} objects) instead of the
+// generic one, here once, so every existing call site gets the specific
+// message without having to special-case individual field names itself.
+function extractErrorMessage(data, status) {
+  const { errors } = data ?? {};
+  if (typeof errors === 'string' && errors.trim()) return errors;
+  if (Array.isArray(errors) && errors.length) {
+    const msgs = errors
+      .map(e => (typeof e === 'string' ? e : e?.message ?? e?.msg ?? null))
+      .filter(Boolean);
+    if (msgs.length) return msgs.join(', ');
+  }
+  if (errors && typeof errors === 'object') {
+    const msgs = Object.values(errors).filter(v => typeof v === 'string' && v.trim());
+    if (msgs.length) return msgs.join(', ');
+  }
+  return data?.message || data?.error || data?.msg || `Request failed (${status})`;
+}
+
 export async function apiRequest(path, { method = 'GET', body, token, isFormData = false } = {}) {
   const headers = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -44,8 +68,7 @@ export async function apiRequest(path, { method = 'GET', body, token, isFormData
     //     type: 'error',
     //   }));
     // }
-    const message =
-      data?.message || data?.error || data?.msg || `Request failed (${res.status})`;
+    const message = extractErrorMessage(data, res.status);
     const err = new Error(message);
     err.status = res.status;
     err.data = data;

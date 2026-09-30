@@ -292,22 +292,13 @@ export default function CreateNewSitePage({ onCancel, onSiteCreated, initialName
     } catch (err) {
       console.error('Mini site creation failed:', err);
 
-      let errorMessage = 'Failed to create mini site. Please try again.';
-
-      // Handle different error types
-      if (err.status === 400) {
-        errorMessage = err.data?.errors?.name || err.data?.message || err.message || 'Invalid site data';
-      } else if (err.status === 409) {
-        errorMessage = err.data?.message || err.message || 'Site name already exists. Please choose a different name.';
-      } else if (err.status === 401) {
-        errorMessage = 'You must be logged in to create a mini site.';
-      } else if (err.status === 403) {
-        errorMessage = 'You do not have permission to create a mini site for this organization.';
-      } else if (err.status === 500) {
-        errorMessage = 'Server error. Please try again later.';
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
+      // apiRequest already builds err.message from the backend's specific
+      // field error (e.g. "Email already registered") when one is present,
+      // so trust it directly instead of only checking for an `errors.name`
+      // field, which missed every other validation field.
+      let errorMessage = err.message || 'Failed to create mini site. Please try again.';
+      if (err.status === 401) errorMessage = 'You must be logged in to create a mini site.';
+      else if (err.status === 403) errorMessage = 'You do not have permission to create a mini site for this organization.';
 
       dispatch(showToast({
         message: '❌ ' + errorMessage,
