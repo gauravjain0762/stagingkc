@@ -152,7 +152,33 @@ const CALLOUT_STYLE = {
   'NOTE':        { border: '#f59e0b', bg: '#f59e0b08', label: '#f59e0b', Icon: NoteIcon },
 };
 
-export default function CourseReaderPage({ course, onBack }) {
+function LessonReaderView({ course, lesson, moduleTitle, lessonPosition, lessonCount, progress, completed, onBack, onComplete, onPrevious, onNext, hasPrevious, hasNext, avatarUrl }) {
+  const [videoFinished, setVideoFinished] = useState(false);
+  const type = (lesson.type || 'Text').toLowerCase();
+  const video = type.includes('video');
+  const audio = type.includes('audio');
+  const image = type.includes('image');
+  const pdf = type.includes('pdf');
+  const download = type.includes('download');
+  const external = type.includes('external');
+  const url = lesson.url || lesson.videoUrl || 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
+  const content = video ? <video className="cr-lesson-video" controls onEnded={() => { setVideoFinished(true); onComplete?.(); }} src={url}>Your browser does not support video playback.</video>
+    : audio ? <div className="cr-lesson-audio"><div className="cr-lesson-media-icon">♫</div><audio controls src={lesson.url} /></div>
+      : image ? <img className="cr-lesson-image" src={lesson.url || lesson.img} alt={lesson.title} />
+        : pdf ? <iframe className="cr-lesson-pdf" title={lesson.title} src={lesson.url || '/sample.pdf'} />
+          : download ? <a className="cr-lesson-download" href={lesson.url || '#'} download>↓ Download lesson file</a>
+            : external ? <a className="cr-lesson-external" href={lesson.url || '#'} target="_blank" rel="noreferrer">Open learning resource ↗</a>
+              : <div className={`cr-lesson-reading${type.includes('quiz') || type.includes('assessment') ? ' cr-lesson-exercise' : ''}`}><span>{type.includes('quiz') || type.includes('assessment') ? 'EXERCISE' : 'LESSON NOTES'}</span><p>{lesson.content || `Welcome to ${lesson.title}. Work through this lesson at your own pace, then mark it complete to continue.`}</p>{(type.includes('quiz') || type.includes('assessment')) && <button onClick={onComplete}>Submit demo assessment</button>}</div>;
+  const isComplete = completed || videoFinished;
+  return <div className="cr-page cr-lesson-page">
+    <header className="cr-topbar cr-lesson-topbar"><div className="cr-topbar-left"><button className="cr-back-btn" onClick={onBack}><BackArrowIcon /><span className="cr-back-label">Back to Course</span></button></div><div className="cr-lesson-titlebar"><b>{course.title}</b><span>{moduleTitle} <i>•</i> Lesson {lessonPosition} of {lessonCount}</span></div><div className="cr-topbar-right"><img src={avatarUrl} alt="avatar" className="cr-avatar" /></div></header>
+    <div className="cr-lesson-progress"><span style={{ width: `${progress}%` }} /></div>
+    <main className="cr-reader cr-lesson-reader"><div className="cr-lesson-reader-heading"><div><span>{lesson.type || 'Lesson'} {lesson.duration ? `· ${lesson.duration}` : ''}</span><h1>{lesson.title}</h1></div><b>{progress}% Complete</b></div><section className="cr-lesson-content">{content}</section>{isComplete && <div className="cr-lesson-finished">Lesson Completed ✓</div>}</main>
+    <footer className="cr-lesson-bottom"><button className="cr-lesson-nav" onClick={onPrevious} disabled={!hasPrevious}><ChevLeftIcon /> Previous</button><span>Lesson {lessonPosition} of {lessonCount}</span>{isComplete ? <button className="cr-lesson-next" onClick={onNext} disabled={!hasNext}>Next Lesson <ChevRightIcon /></button> : <div className="cr-lesson-actions"><button className="cr-lesson-complete" onClick={onComplete}>Mark Complete</button><button className="cr-lesson-next" onClick={onNext} disabled={!hasNext}>Next <ChevRightIcon /></button></div>}</footer>
+  </div>;
+}
+
+export default function CourseReaderPage({ course, onBack, lesson, moduleTitle, lessonPosition, lessonCount, progress, completed, onComplete, onPrevious, onNext, hasPrevious, hasNext }) {
   const { profile } = useSelector(s => s.profile);
   const avatarUrl   = profile?.avatar ?? ALEX_AVATAR;
 
@@ -164,6 +190,8 @@ export default function CourseReaderPage({ course, onBack }) {
 
   const spread = getSpread(course.title, page);
   const calloutStyle = spread ? (CALLOUT_STYLE[spread.callout?.type] ?? CALLOUT_STYLE['PRO TIP']) : CALLOUT_STYLE['PRO TIP'];
+
+  if (lesson) return <LessonReaderView course={course} lesson={lesson} moduleTitle={moduleTitle} lessonPosition={lessonPosition} lessonCount={lessonCount} progress={progress} completed={completed} onBack={onBack} onComplete={onComplete} onPrevious={onPrevious} onNext={onNext} hasPrevious={hasPrevious} hasNext={hasNext} avatarUrl={avatarUrl} />;
 
   function goNext() {
     if (page >= totalPages) return;
