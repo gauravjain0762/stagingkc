@@ -64,7 +64,7 @@ export default function BecomeEducatorPage({ onBack, onToolsEnabled }) {
         <label><input required type="checkbox" /> I understand educator approval and onboarding are subject to KC review.</label>
         <label><input required type="checkbox" /> I understand a KC monthly contribution is required, with amount and terms confirmed before onboarding.</label>
       </div></section>
-      <div className="educator-application-submit"><small>Demo only: this form will not upload files or send your application to a server.</small><button className="become-educator-primary" type="submit">Submit Application <span>→</span></button></div>
+      <div className="educator-application-submit"><small>Demo only: this form will not upload files or send your application to a server.</small><button className="become-educator-primary" type="submit">Submit Application</button></div>
     </form>
   </main>;
 
@@ -74,7 +74,7 @@ export default function BecomeEducatorPage({ onBack, onToolsEnabled }) {
       <span className="become-educator-eyebrow">TEACH · CONNECT · GROW</span>
       <h1>Become a Certified Educator</h1>
       <p>Share your knowledge and build your educational presence within KinkCatalyst.</p>
-      <button className="become-educator-primary" onClick={() => setApplicationOpen(true)}>Apply to Become an Educator <span>→</span></button>
+      <button className="become-educator-primary" onClick={() => setApplicationOpen(true)}>Apply to Become an Educator</button>
       <div className="become-educator-hero-note">A member-facing overview of the educator journey</div>
     </header>
 

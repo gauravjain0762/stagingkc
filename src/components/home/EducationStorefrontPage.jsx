@@ -3,7 +3,7 @@ import './EducatorProfileManagement.css';
 
 function StoreItem({ item, onOpen }) {
   const access = item.isFree ? 'Free' : item.tier || item.price || 'Paid';
-  return <button className="es-item" onClick={() => onOpen(item)}><img src={item.img} alt=""/><span><i>{item.type} · {item.level || 'All levels'}</i><b>{item.title}</b><small>{item.desc}</small><em>{access}</em></span><strong>View →</strong></button>;
+  return <button className="es-item" onClick={() => onOpen(item)}><img src={item.img} alt=""/><span><i>{item.type} · {item.level || 'All levels'}</i><b>{item.title}</b><small>{item.desc}</small><em>{access}</em></span><strong>View</strong></button>;
 }
 
 export default function EducationStorefrontPage({ educatorName = 'Jane Doe', profile, items, subscribed, onBack, onOpenEducation, onOpenSubscription }) {
