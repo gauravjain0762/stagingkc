@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import EducationBackButton from './EducationBackButton';
 import './EducatorProfilePage.css';
 import './EducatorProfileManagement.css';
 
@@ -30,7 +31,7 @@ export default function EducatorProfilePage({ educatorName = 'Jane Doe', profile
   const areas = (profile?.areas || 'Safety & Consent, Communication').split(',').map(value => value.trim()).filter(Boolean);
   const showSection = (title, collection) => collection.length > 0 && <section className="epf-section" key={title}><div className="epf-section-head"><h2>{title}</h2><button onClick={onOpenStore}>View store</button></div><div className="epf-card-row">{collection.slice(0, 3).map(item => <StoreCard key={item.id} item={item} onOpen={onOpenEducation}/>)}</div></section>;
 
-  return <main className="epf-page"><button className="epf-back" onClick={onBack}>← Back to Education</button>
+  return <main className="epf-page"><EducationBackButton onClick={onBack} label="Back to Education" />
     {view === 'profile' ? <>
       {profile && !profile.isPublic && <div className="epf-private-note">This educator profile is currently hidden from public view.</div>}
       <section className="epf-profile-hero"><div className="epf-cover"><img src={profile?.profileImage || 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=1200&q=85&fit=crop'} alt=""/></div><div className="epf-profile-info"><div className="epf-avatar">{profile?.profileImage ? <img src={profile.profileImage} alt={`${name} profile`} /> : name.split(' ').map(part => part[0]).join('').slice(0,2)}</div><div><span className="epf-certified">✓ CERTIFIED EDUCATOR</span><h1>{name}</h1><p>{profile?.title || 'Educator, facilitator, and lifelong learner'}{profile?.showLocation && profile?.location ? ` · ${profile.location}` : ''}</p></div><div className="epf-profile-actions"><button className="epf-follow" onClick={() => setFollowing(value => !value)}>{following ? 'Following ✓' : 'Follow'}</button><button className="epf-subscribe" onClick={onOpenSubscription}>Subscribe</button></div></div></section>

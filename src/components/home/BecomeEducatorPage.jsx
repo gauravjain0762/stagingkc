@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import EducationBackButton from './EducationBackButton';
 import './BecomeEducatorPage.css';
 
 const topics = [
@@ -18,7 +19,7 @@ export default function BecomeEducatorPage({ onBack, onToolsEnabled }) {
   };
 
   if (submitted) return <main className="become-educator-page educator-status-page">
-    <button className="become-educator-back" onClick={returnHomeAfterDemoApproval}>← Back to Education</button>
+    <EducationBackButton onClick={returnHomeAfterDemoApproval} label="Back to Education" />
     <header className="become-educator-application-header"><span className="become-educator-eyebrow">EDUCATOR APPLICATION</span><h1>Application Status</h1><p>Your application has been submitted for review. You can check the next steps in your educator journey here.</p></header>
     <section className="educator-status-card" aria-label="Educator application progress">
       <div className="educator-status-summary"><span className="educator-status-indicator" /><div><span className="become-educator-eyebrow">CURRENT STATUS</span><h2>Under Review</h2><p>Application submitted · Awaiting the KC team’s review</p></div></div>
@@ -35,7 +36,7 @@ export default function BecomeEducatorPage({ onBack, onToolsEnabled }) {
   </main>;
 
   if (applicationOpen) return <main className="become-educator-page educator-application-page">
-    <button className="become-educator-back" onClick={() => { setApplicationOpen(false); setSubmitted(false); }}>← Back to educator information</button>
+    <EducationBackButton onClick={() => { setApplicationOpen(false); setSubmitted(false); }} label="Back to educator information" />
     <header className="become-educator-application-header"><span className="become-educator-eyebrow">KINKCATALYST EDUCATION</span><h1>Educator Application</h1><p>Tell us about your experience and the education you hope to share. The KC team will review your application and follow up about next steps.</p></header>
     <form className="educator-application-form" onSubmit={event => { event.preventDefault(); setSubmitted(true); }}>
       <section className="educator-application-section"><div><h2>Basic information</h2><p>How should we identify and contact you?</p></div><div className="educator-application-fields">
@@ -69,7 +70,7 @@ export default function BecomeEducatorPage({ onBack, onToolsEnabled }) {
   </main>;
 
   return <main className="become-educator-page">
-    <button className="become-educator-back" onClick={onBack}>← Back to Education</button>
+    <EducationBackButton onClick={onBack} label="Back to Education" />
     <header className="become-educator-hero">
       <span className="become-educator-eyebrow">TEACH · CONNECT · GROW</span>
       <h1>Become a Certified Educator</h1>

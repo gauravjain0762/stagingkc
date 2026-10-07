@@ -100,7 +100,11 @@ export default function EducationHubPage({ onBack, onMessagesClick, onEventsClic
       case 'discussion':
         return <DiscussionPage onBack={() => setCurrentView('dashboard')} onMessagesClick={onMessagesClick} onEventsClick={onEventsClick} onGroupsClick={onGroupsClick} onCalendarClick={onCalendarClick} onLibraryClick={onLibraryClick} onMinisitesClick={onMinisitesClick} />;
       default:
-        return <LearningActivityPage onBack={onBack} onMessagesClick={onMessagesClick} onEventsClick={onEventsClick} onGroupsClick={onGroupsClick} onCalendarClick={onCalendarClick} onLibraryClick={onLibraryClick} onMinisitesClick={onMinisitesClick} onNavigateEducation={handleViewChange} />;
+        // Any currentView other than 'dashboard' and the named cases above
+        // (e.g. 'legacy', set by the "Go to Education Hub" banner in
+        // EducationCenterPage) lands here. Backing out returns to the new
+        // Education Center instead of leaving Education entirely.
+        return <LearningActivityPage onBack={() => setCurrentView('dashboard')} onMessagesClick={onMessagesClick} onEventsClick={onEventsClick} onGroupsClick={onGroupsClick} onCalendarClick={onCalendarClick} onLibraryClick={onLibraryClick} onMinisitesClick={onMinisitesClick} onNavigateEducation={handleViewChange} />;
     }
   };
 

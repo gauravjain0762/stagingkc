@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import EducationBackButton from './EducationBackButton';
 import './EducatorDashboardPage.css';
 import './EducatorProfileManagement.css';
 import EducatorEducationManagement from './EducatorEducationManagement';
@@ -62,7 +63,7 @@ export default function EducatorDashboardPage({ initialSection = 'Overview', pro
   };
 
   return <main className="ed-dashboard-page">
-    <button className="ed-back" onClick={onBack}>← Education Home</button>
+    <EducationBackButton onClick={onBack} label="Education Home" />
     <header className="ed-dashboard-header"><div><span className="ed-kicker">CERTIFIED EDUCATOR · WORKSPACE</span><h1>Educator Dashboard</h1><p>Manage your education, students, and educator business from one place.</p></div><span className="ed-access-badge">✓ Educator access enabled</span></header>
     <div className="ed-dashboard-layout"><aside className="ed-sidebar" aria-label="Educator dashboard sections">{navigation.map((item, index) => { const Icon = navIcons[index]; return <button key={item} className={section === item ? 'active' : ''} onClick={() => setSection(item)}><span><Icon /></span>{item}</button>; })}</aside><section className="ed-main"><div className="ed-content-title"><div><h2>{section}</h2><p>{section === 'Overview' ? 'A snapshot of your educator activity.' : `Manage your ${section.toLowerCase()} as a Certified Educator.`}</p></div><span className="ed-demo-badge">DEMO DATA</span></div>{content[section]}</section></div>
     {notice && <div className="ed-toast" role="status">{notice}<button onClick={() => setNotice('')}>×</button></div>}

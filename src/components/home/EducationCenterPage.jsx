@@ -11,12 +11,14 @@ import UpcomingEducationPage from './UpcomingEducationPage';
 import BecomeEducatorPage from './BecomeEducatorPage';
 import EducatorDashboardPage from './EducatorDashboardPage';
 import EducatorWorkspacePage from './EducatorWorkspacePage';
+import EducationBackButton from './EducationBackButton';
 import './EducationCenterPage.css';
 
 function SearchIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
 function BookIcon()   { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>; }
 function HeartIcon({ filled }) { return <svg width="13" height="13" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>; }
-function FilterIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>; }
+function ChevronDownIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>; }
+function CompassIcon() { return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>; }
 
 const BROWSE_TABS = ['All', 'Courses', 'Articles', 'Videos', 'Classes'];
 const FACETS = {
@@ -88,7 +90,10 @@ export default function EducationCenterPage({ avatarUrl, onNavigate }) {
   const [view, setView] = useState('all');
   const [browseType, setBrowseType] = useState('All');
   const [facets, setFacets] = useState({});
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  // Which filter-sidebar sections (Category/Level/Access/Format/Status) are
+  // expanded — all open by default, each independently collapsible.
+  const [openFacets, setOpenFacets] = useState(() => new Set(Object.keys(FACETS)));
+  const toggleFacetOpen = group => setOpenFacets(prev => { const next = new Set(prev); next.has(group) ? next.delete(group) : next.add(group); return next; });
   const [notice, setNotice] = useState('');
   const [dashboardSection, setDashboardSection] = useState('Overview');
   const [educatorProfile, setEducatorProfile] = useState({ displayName: 'Jane Doe', title: 'Certified Educator', location: '', bio: 'I create thoughtful, practical learning experiences for the community.', experience: '6+ years of community education experience', qualifications: 'Certified Relationship & Consent Educator; Advanced Facilitation Certificate', areas: 'Safety & Consent, Communication', specialties: 'Consent & Safety, Communication, Negotiation, Rope Foundations', website: '', profileImage: '', isPublic: true, showLocation: true });
@@ -114,9 +119,29 @@ export default function EducationCenterPage({ avatarUrl, onNavigate }) {
     const viewMatch = view === 'all' || (view === 'learning' ? joined.has(item.id) || item.status === 'In Progress' || item.status === 'Completed' : saved.has(item.id));
     return textMatch && catMatch && filterMatch && viewMatch;
   }), [query, category, filter, joined, saved, view, browseType, facets]);
-  const openDiscovery = () => { setPage('discovery'); setBrowseType('All'); setFacets({}); setMobileFiltersOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const openDiscovery = () => { setPage('discovery'); setBrowseType('All'); setFacets({}); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  // Topic/type quick filters (the two dropdowns under the topbar) jump
+  // straight to the filtered results in Discovery, reusing its existing
+  // filter/results machinery instead of duplicating a results grid here.
+  const applyQuickFilter = (nextCategory, nextBrowseType) => {
+    setCategory(nextCategory);
+    setBrowseType(nextBrowseType);
+    // Mirror the chosen topic into the sidebar's Category facet too, so the
+    // radio there shows pre-selected instead of resetting to "All" — the
+    // topic dropdown and the sidebar facet share the same label strings.
+    setFacets(nextCategory === 'All topics' ? {} : { Category: nextCategory });
+    setPage('discovery');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const resetQuickFilters = () => { setCategory('All topics'); setBrowseType('All'); };
+  const quickFiltersActive = category !== 'All topics' || browseType !== 'All';
   const openUpcoming = () => { setPage('upcoming'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   const section = (title, collection, sub = '') => <section className="ec-section" key={title}><div className="ec-section-heading"><div><h2>{title}</h2>{sub && <p>{sub}</p>}</div><button onClick={title.toLowerCase().startsWith('upcoming') ? openUpcoming : openDiscovery}>{title.toLowerCase().startsWith('upcoming') ? 'View Upcoming' : 'View All'}</button></div><div className="ec-grid">{collection.slice(0, 4).map(item => <EducationCard key={item.id} item={item} onOpen={setSelected} />)}</div></section>;
+  // Horizontal-scroll variant for the Top Pick / Trending strips — fixed-width
+  // cards in a scrollable row instead of the wrapping grid the other sections use.
+  const scrollSection = (title, collection, sub = '') => <section className="ec-scroll-section" key={title}><div className="ec-section-heading"><div><h2>{title}</h2>{sub && <p>{sub}</p>}</div><button className="ec-explore-all-btn" onClick={openDiscovery}>Explore All Education</button></div><div className="ec-scroll-row">{collection.slice(0, 6).map(item => <EducationCard key={item.id} item={item} onOpen={setSelected} />)}</div></section>;
+  const topPicks = items.slice(0, 6);
+  const trending = [...items].sort((a, b) => (b.rating || 4.8) - (a.rating || 4.7)).slice(0, 6);
   const recommended = items.slice(3, 7);
   const continueItems = items.filter(item => item.status === 'In Progress' || joined.has(item.id));
   const popular = [...items].sort((a, b) => (b.rating || 4.8) - (a.rating || 4.7)).slice(0, 4);
@@ -137,10 +162,37 @@ export default function EducationCenterPage({ avatarUrl, onNavigate }) {
   if (page === 'educator-workspace') return <><AnimatedNav activeId="courses" avatarUrl={avatarUrl} onNavigate={onNavigate} /><EducatorWorkspacePage onBack={() => setPage('home')} onOpenTool={tool => { const tabs = { 'Educator Dashboard': 'Overview', 'Create Course': 'Education', 'Course Builder': 'Education', 'Student Management': 'Students', 'Subscription Management': 'Subscriptions', Events: 'Events', Analytics: 'Analytics', Financials: 'Financial', 'KC Contribution': 'KC Contribution' }; if (tool === 'Educator Store') { setActiveEducator('Jane Doe'); setActiveStore(true); } else { setDashboardSection(tabs[tool] || 'Overview'); setPage('educator-dashboard'); } }} /></>;
   if (page === 'educator-dashboard') return <><AnimatedNav activeId="courses" avatarUrl={avatarUrl} onNavigate={onNavigate} /><EducatorDashboardPage initialSection={dashboardSection} profile={educatorProfile} onProfileChange={updates => setEducatorProfile(prev => ({ ...prev, ...updates }))} onBack={() => setPage('home')} onOpenProfile={() => { setActiveEducator('Jane Doe'); setActiveStore(false); }} onOpenStore={() => { setActiveEducator('Jane Doe'); setActiveStore(true); }} /></>;
   return <><AnimatedNav activeId="courses" avatarUrl={avatarUrl} onNavigate={onNavigate} /><main className="ec-page">
-    <div className="ec-topbar">{page === 'discovery' && <button className="ec-back-home" onClick={() => setPage('home')}>← Education home</button>}<h1>{page === 'home' ? 'Education' : 'Education Center'}</h1><label className="ec-search ec-search-compact"><SearchIcon /><input aria-label="Search education" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search education..." /></label><div className="ec-top-actions"><button className="ec-educator-cta" onClick={() => setPage('become-educator')}>Become a Certified Educator</button><button className="ec-educator-workspace-cta" onClick={() => setPage('educator-workspace')}>Educator Workspace</button><button onClick={() => setPage('learning')}><BookIcon /> My Learning</button><button className={view === 'saved' ? 'active' : ''} onClick={() => { setView(view === 'saved' ? 'all' : 'saved'); setFilter('All'); openDiscovery(); }}><HeartIcon filled={view === 'saved'} /> Saved <span>{saved.size}</span></button></div></div>
+    <div className="ec-topbar">{page === 'discovery' && <EducationBackButton onClick={() => setPage('home')} label="Education home" className="edu-back-btn--inline" />}<label className="ec-search ec-search-compact"><SearchIcon /><input aria-label="Search education" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search education..." /></label><div className="ec-top-actions"><button className="ec-educator-cta" onClick={() => setPage('become-educator')}>Become a Certified Educator</button><button className="ec-educator-workspace-cta" onClick={() => setPage('educator-workspace')}>Educator Workspace</button><button onClick={() => setPage('learning')}><BookIcon /> My Learning</button><button className={view === 'saved' ? 'active' : ''} onClick={() => { setView(view === 'saved' ? 'all' : 'saved'); setFilter('All'); openDiscovery(); }}><HeartIcon filled={view === 'saved'} /> Saved <span>{saved.size}</span></button></div></div>
     {page === 'home' && <>
-    <header className="ec-hero"><div className="ec-hero-copy"><span className="ec-eyebrow">LEARN SOMETHING THAT MOVES YOU</span><h1>Your next big idea<br />starts <em>here.</em></h1><p>Courses, conversations and practical resources from KC and independent educators, all in one place.</p><label className="ec-search"><SearchIcon /><input aria-label="Search education" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search courses, topics, educators…" /></label><div className="ec-proof"><span>✦ Curated learning</span><span>•</span><span>KC + educator content</span></div><button className="ec-explore-cta" onClick={openDiscovery}>Explore All Education</button></div><div className="ec-hero-art"><img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1100&q=85&fit=crop" alt="Learners collaborating around a laptop"/><div className="ec-art-label"><b>Learn at your pace</b><span>Find your next skill</span></div></div></header>
-    <nav className="ec-categories" aria-label="Education categories"><span>Explore by topic</span><div>{topics.map(name => <button className={category === name ? 'active' : ''} key={name} onClick={() => setCategory(name)}>{name}</button>)}</div></nav>
+    <section className="ec-hub-banner">
+      <span className="ec-hub-banner-icon"><CompassIcon /></span>
+      <div className="ec-hub-banner-copy">
+        <h2>Explore the Education Hub</h2>
+        <p>Discover courses, articles, videos, and live classes from KC and independent educators — everything there is to learn, all in one place.</p>
+      </div>
+      <button className="ec-hub-banner-btn" onClick={openDiscovery}>Explore Education Hub</button>
+    </section>
+    {scrollSection('Top Pick', topPicks, 'Hand-picked education to get you started.')}
+    {scrollSection('Trending', trending, 'What the community is learning right now.')}
+    <nav className="ec-categories" aria-label="Education categories">
+      <span>Explore by topic</span>
+      <div className="ec-category-filters">
+        <div className="ec-filter-select-wrap">
+          <select aria-label="Filter by topic" value={category} onChange={e => applyQuickFilter(e.target.value, browseType)}>
+            {topics.map(name => <option key={name} value={name}>{name}</option>)}
+          </select>
+          <span className="ec-filter-chevron"><ChevronDownIcon /></span>
+        </div>
+        <div className="ec-filter-select-wrap">
+          <select aria-label="Filter by type" value={browseType} onChange={e => applyQuickFilter(category, e.target.value)}>
+            {BROWSE_TABS.map(type => <option key={type} value={type}>{type}</option>)}
+          </select>
+          <span className="ec-filter-chevron"><ChevronDownIcon /></span>
+        </div>
+        <button className="ec-filter-reset" disabled={!quickFiltersActive} onClick={resetQuickFilters}>Reset</button>
+      </div>
+    </nav>
+    {/* Commented out for now — not needed below the topic/type filter bar.
     <section className="ec-section ec-featured"><div className="ec-section-heading"><div><span className="ec-eyebrow">EDITOR'S PICK</span><h2>Featured education</h2><p>Fresh perspectives selected for curious minds.</p></div><button onClick={openDiscovery}>Explore All Education</button></div><div className="ec-feature-grid">{items.filter(item => item.type === 'Course').slice(0, 3).map(item => <EducationCard key={item.id} item={item} onOpen={setSelected} />)}</div><div className="ec-featured-detail"><div><span>{categoryLabel(COURSES[0].category)} · {COURSES[0].difficulty} · {COURSES[0].isFree ? 'Free' : 'Paid'}</span><strong>{COURSES[0].title}</strong><small>with {COURSES[0].instructor} · {COURSES[0].duration}</small></div><button onClick={() => setSelected(items.find(item => item.id === COURSES[0].id))}>View Course</button></div></section>
     {section('Recommended for you', recommended, 'A few good places to keep exploring.')}
     {continueItems.length > 0 && <section className="ec-section"><div className="ec-section-heading"><div><h2>Continue learning</h2><p>Pick up right where you left off.</p></div></div><div className="ec-resume-grid">{continueItems.slice(0, 3).map(item => <article className="ec-resume-card" key={item.id} onClick={() => setSelected(item)}><img src={item.img} alt=""/><div><span className="ec-eyebrow">{item.module || 'Continue your course'}</span><h3>{item.title}</h3><p>Progress: {item.progress || 35}%</p><div className="ec-progress"><i style={{ width: `${item.progress || 35}%` }} /></div><button onClick={e => { e.stopPropagation(); setSelected(item); }}>Continue</button></div></article>)}</div></section>}
@@ -151,12 +203,47 @@ export default function EducationCenterPage({ avatarUrl, onNavigate }) {
     {section('Upcoming education', upcoming, 'Join a live session or catch a fresh recording.')}
     {section('Free to explore', free, 'Start learning today, at no cost.')}
     <section className="ec-my-learning"><div><span className="ec-eyebrow">YOUR LEARNING SPACE</span><h2>My learning</h2><p>Keep your saved and joined education close at hand.</p></div><button onClick={() => setPage('learning')}>View my learning</button><div className="ec-learning-stats"><span><b>{joined.size}</b>Joined</span><span><b>{continueItems.length}</b>In progress</span><span><b>1</b>Completed</span></div></section>
+    */}
     </>}
-    {page === 'discovery' && <section className="ec-center" id="education-center-results"><div className="ec-center-title"><div><span className="ec-eyebrow">BROWSE ALL FORMATS</span><h2>Education Center</h2><p>Explore courses, articles, videos and classes from KC and independent educators.</p></div><span className="ec-count">{filtered.length} learning options</span></div>
+    {page === 'discovery' && <section className="ec-center" id="education-center-results"><div className="ec-center-title"><div><h2>Education Hub</h2><p>Explore courses, articles, videos and classes from KC and independent educators.</p></div></div>
       <div className="ec-browse-tabs">{BROWSE_TABS.map(tab => <button className={browseType === tab ? 'active' : ''} key={tab} onClick={() => setBrowseType(tab)}>{tab}</button>)}</div>
       <div className="ec-browse-layout">
-        <button className="ec-mobile-filter-trigger" onClick={() => setMobileFiltersOpen(true)}><FilterIcon /> Filters {Object.keys(facets).length > 0 && <span>{Object.keys(facets).length}</span>}</button>
-        <aside className={`ec-filter-sidebar${mobileFiltersOpen ? ' ec-filter-sidebar-open' : ''}`}><div className="ec-filter-head"><b>Filters</b><button className="ec-filter-close" onClick={() => setMobileFiltersOpen(false)}>×</button><button onClick={() => { setFacets({}); setCategory('All topics'); }}>Reset</button></div>{Object.entries(FACETS).map(([group, options]) => <fieldset className="ec-filter-group" key={group}><legend>{group}</legend>{options.map(option => <label key={option}><input type="radio" name={`filter-${group}`} checked={(facets[group] || (group === 'Category' ? 'All' : '')) === option} onChange={() => { if (group === 'Category' && option === 'All') { setFacets(prev => { const next = { ...prev }; delete next.Category; return next; }); setCategory('All topics'); } else setFacets(prev => ({ ...prev, [group]: option })); }} />{option}</label>)}</fieldset>)}<button className="ec-apply-filters" onClick={() => setMobileFiltersOpen(false)}>Show {filtered.length} results</button></aside>
+        <aside className="ec-filter-sidebar">
+          <div className="ec-filter-panel-header">
+            <span className="ec-filter-panel-title">Filters</span>
+            <button className="ec-filter-reset-btn" onClick={() => { setFacets({}); setCategory('All topics'); }}>Reset All</button>
+          </div>
+          <div className="ec-filter-panel-body">
+            {Object.entries(FACETS).map(([group, options]) => {
+              const isOpen = openFacets.has(group);
+              return (
+                <fieldset className={`ec-filter-section${isOpen ? ' ec-filter-section--open' : ''}`} key={group}>
+                  <legend className="ec-filter-section-legend">
+                    <button type="button" className="ec-filter-section-toggle" onClick={() => toggleFacetOpen(group)} aria-expanded={isOpen}>
+                      <span className="ec-filter-section-title">{group}</span>
+                      <span className="ec-filter-section-chevron"><ChevronDownIcon /></span>
+                    </button>
+                  </legend>
+                  {isOpen && <div className="ec-filter-options">
+                    {options.map(option => (
+                      <label key={option} className="ec-filter-check-label">
+                        <input
+                          type="radio"
+                          className="ec-filter-radio"
+                          name={`filter-${group}`}
+                          checked={(facets[group] || (group === 'Category' ? 'All' : '')) === option}
+                          onChange={() => { if (group === 'Category' && option === 'All') { setFacets(prev => { const next = { ...prev }; delete next.Category; return next; }); setCategory('All topics'); } else setFacets(prev => ({ ...prev, [group]: option })); }}
+                        />
+                        <span className="ec-filter-radio-dot" />
+                        {option}
+                      </label>
+                    ))}
+                  </div>}
+                </fieldset>
+              );
+            })}
+          </div>
+        </aside>
         <div className="ec-results"><div className="ec-results-head"><span>{browseType === 'All' ? 'All education' : browseType}</span><span>{filtered.length} results</span></div>{filtered.length ? <div className="ec-grid">{filtered.map(item => <EducationCard key={item.id} item={item} onOpen={setSelected} />)}</div> : <div className="ec-empty"><b>No matches just yet</b><span>Try another topic or filter.</span><button onClick={() => { setFacets({}); setBrowseType('All'); setCategory('All topics'); setQuery(''); }}>Clear filters</button></div>}</div>
       </div></section>}
     {selected && <div className="ec-modal-backdrop" onClick={() => setSelected(null)}><article className="ec-modal" onClick={e => e.stopPropagation()}><button className="ec-modal-close" onClick={() => setSelected(null)} aria-label="Close">×</button><img src={selected.img} alt=""/><div className="ec-modal-body"><span className="ec-eyebrow">{selected.source} · {selected.type}</span><h2>{selected.title}</h2><p>{selected.desc || `Build practical skills with ${selected.instructor} in this ${selected.duration} learning experience.`}</p><div className="ec-modal-meta">{selected.instructor}　·　{selected.level || selected.duration || 'Self paced'}　·　{selected.isFree ? 'Free' : selected.price || 'Premium'}</div><div className="ec-modal-actions"><button className="ec-primary" onClick={() => { if (selected.status === 'Upcoming') setNotice(`You're on the list for ${selected.title}.`); else { setJoined(prev => new Set(prev).add(selected.id)); setNotice(`${selected.title} added to My learning.`); } setSelected(null); }}>{selected.status === 'Upcoming' ? 'Reserve a spot' : joined.has(selected.id) ? 'Continue learning' : selected.isFree ? 'Start Learning' : 'View Course'}</button><button className="ec-save-btn" onClick={() => setSaved(prev => { const next = new Set(prev); next.has(selected.id) ? next.delete(selected.id) : next.add(selected.id); return next; })}>{saved.has(selected.id) ? '♥ Saved' : '♡ Save'}</button></div></div></article></div>}
