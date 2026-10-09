@@ -234,15 +234,56 @@ function ColorField({ label, value, onChange }) {
   );
 }
 
+// Section images are embedded as base64 data URLs directly in the
+// sections JSON that gets saved/published (no separate file-upload step).
+// An uncompressed photo straight from a phone camera can be several MB,
+// which bloats that JSON payload enough to get silently dropped by the
+// backend on publish — the editor's own in-memory preview still shows it
+// (nothing round-tripped through the server), but the live published site,
+// reading the saved data back, shows the placeholder instead. Downscaling
+// and re-encoding as JPEG here keeps the embedded payload small enough to
+// reliably survive the round trip.
+function resizeImageToDataUrl(file, maxDimension = 1600, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
+      if (width > maxDimension || height > maxDimension) {
+        if (width >= height) {
+          height = Math.round(height * (maxDimension / width));
+          width = maxDimension;
+        } else {
+          width = Math.round(width * (maxDimension / height));
+          height = maxDimension;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Failed to load image')); };
+    img.src = objectUrl;
+  });
+}
+
 function ImageField({ label, value, onChange }) {
   const id = useId();
-  const handleFile = (e) => {
+  const handleFile = async (e) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => onChange(ev.target.result);
-    reader.readAsDataURL(file);
     e.target.value = '';
+    if (!file) return;
+    try {
+      onChange(await resizeImageToDataUrl(file));
+    } catch {
+      // Fallback for the rare case resizing fails — still usable in-session.
+      const reader = new FileReader();
+      reader.onload = (ev) => onChange(ev.target.result);
+      reader.readAsDataURL(file);
+    }
   };
   return (
     <div className="sbp-property-group">

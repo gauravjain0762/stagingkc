@@ -48,8 +48,8 @@
 .cp-cert-title { font-size: 16px; font-weight: 700; color: #fff; margin: 0 0 8px 0; }
 .cp-cert-instructor { font-size: 13px; color: #8b95a5; margin: 0 0 16px 0; }
 .cp-cert-date { font-size: 12px; color: #8b95a5; margin-bottom: 16px; }
-.cp-cert-action { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; width: 100%; }
-.cp-cert-action:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+.cp-cert-action { background: #1d4ed8; color: #fff; border: none; padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; width: 100%; box-shadow: 0 8px 24px rgba(29, 78, 216, 0.4); }
+.cp-cert-action:hover { background: #1e40af; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(29, 78, 216, 0.4); }
 
 /* Discussions */
 .dp-discussions { display: flex; flex-direction: column; gap: 16px; }
@@ -74,8 +74,8 @@
 .dp-reply-input { width: 100%; padding: 12px 16px; border: 1px solid rgba(75, 85, 99, 0.3); background: rgba(255, 255, 255, 0.02); border-radius: 8px; color: #e0e6ed; font-size: 13px; min-height: 80px; resize: vertical; margin-bottom: 12px; font-family: inherit; }
 .dp-reply-input::placeholder { color: #5b6a7c; }
 .dp-reply-input:focus { outline: none; border-color: rgba(59, 130, 246, 0.5); background: rgba(59, 130, 246, 0.05); }
-.dp-reply-btn { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; margin-right: 8px; transition: all 0.2s; }
-.dp-reply-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+.dp-reply-btn { background: #1d4ed8; color: #fff; border: none; padding: 10px 22px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; margin-right: 8px; transition: all 0.2s ease; box-shadow: 0 4px 14px rgba(29, 78, 216, 0.35); }
+.dp-reply-btn:hover { background: #1e40af; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(29, 78, 216, 0.4); }
 .dp-close-btn { background: rgba(75, 85, 99, 0.15); color: #d0d6ec; border: 1px solid rgba(75, 85, 99, 0.3); padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
 .dp-close-btn:hover { background: rgba(75, 85, 99, 0.25); }
 
