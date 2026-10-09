@@ -55,9 +55,9 @@ export default function PublicSitePage({ slug }) {
       try {
         // Fetch published site from backend API (no auth required)
         const backendUrl = import.meta.env.VITE_API_URL || 'https://kick-analyst-backend-production.jay886631.workers.dev';
-        const apiUrl = `${backendUrl}/api/mini-sites/public/${slug}`;
+        const apiUrl = `${backendUrl}/api/mini-sites/public/${slug}?t=${Date.now()}`;
         console.log('📡 Calling API:', apiUrl);
-        const response = await fetch(apiUrl);
+        const response = await fetch(apiUrl, { cache: 'no-store' });
 
         console.log('✅ Response status:', response.status);
 

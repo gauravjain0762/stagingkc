@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSelector } from 'react-redux';
 import EducationBackButton from './EducationBackButton';
 import './EducatorDashboardPage.css';
 import './EducatorProfileManagement.css';
@@ -27,10 +28,32 @@ function Metric({ label, value, note }) {
   return <article className="ed-metric"><span>{label}</span><strong>{value}</strong><small>{note}</small></article>;
 }
 
-export default function EducatorDashboardPage({ initialSection = 'Overview', profile, onProfileChange, onBack, onOpenProfile, onOpenStore }) {
+export default function EducatorDashboardPage({
+  initialSection = 'Overview',
+  hideSidebar: hideSidebarProp,
+  profile,
+  onProfileChange,
+  courses: propCourses,
+  onCoursesChange,
+  onBack,
+  onOpenProfile,
+  onOpenStore
+}) {
   const [section, setSection] = useState(initialSection);
-  const [courses, setCourses] = useState(initialCourses);
+  const [localCourses, setLocalCourses] = useState(initialCourses);
+  const courses = propCourses ?? localCourses;
+  const setCourses = onCoursesChange ?? setLocalCourses;
   const [notice, setNotice] = useState('');
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [startNewTrigger, setStartNewTrigger] = useState(0);
+
+  const { user: authUser } = useSelector(state => state.auth || {});
+  const { profile: reduxProfile } = useSelector(state => state.profile || {});
+  const rawUsername = reduxProfile?.username || authUser?.username || reduxProfile?.fullName || authUser?.fullName || authUser?.name || 'Tom';
+  const username = rawUsername.startsWith('@') ? rawUsername.slice(1) : rawUsername;
+
+  const isCreateCourse = section === 'Education';
+  const hideSidebar = hideSidebarProp ?? isCreateCourse;
 
   const content = {
     Overview: <>
@@ -38,7 +61,15 @@ export default function EducatorDashboardPage({ initialSection = 'Overview', pro
       <div className="ed-overview-grid"><section className="ed-panel"><div className="ed-panel-head"><div><h3>Recent education</h3><p>Your latest courses and content</p></div><button onClick={() => setSection('Education')}>Manage education</button></div>{courses.slice(0,3).map(course => <div className="ed-list-row" key={course.title}><span className="ed-row-icon"><BookIcon /></span><div><b>{course.title}</b><small>{course.category} · {course.updated}</small></div><i className={`ed-state ed-state-${course.status.toLowerCase()}`}>{course.status}</i></div>)}</section><section className="ed-panel"><div className="ed-panel-head"><div><h3>Next up</h3><p>Upcoming educator sessions</p></div><button onClick={() => setSection('Events')}>View events</button></div><div className="ed-event-mini"><span>OCT<br/><b>20</b></span><div><b>Rope Workshop</b><small>7:00 PM · Online</small></div><i>Upcoming</i></div><div className="ed-event-mini"><span>OCT<br/><b>28</b></span><div><b>Negotiation: Live Q&amp;A</b><small>6:30 PM · Online</small></div><i>Upcoming</i></div></section></div>
       <section className="ed-panel ed-quick-actions"><div className="ed-panel-head"><div><h3>Quick actions</h3><p>Keep your educator work moving</p></div></div><div><button onClick={() => setSection('Education')}><PlusIcon /> Create course</button><button onClick={() => setSection('Events')}><PlusIcon /> Plan an event</button><button onClick={onOpenStore}>Open educator store</button></div></section>
     </>,
-    Education: <EducatorEducationManagement courses={courses} onCoursesChange={setCourses} />,
+    Education: (
+      <EducatorEducationManagement
+        courses={courses}
+        onCoursesChange={setCourses}
+        builderOpen={builderOpen}
+        onBuilderOpenChange={setBuilderOpen}
+        startNewTrigger={startNewTrigger}
+      />
+    ),
     Students: <section className="ed-panel"><div className="ed-panel-head"><div><h3>Students</h3><p>People learning from your published education.</p></div><label className="ed-search"><SearchIcon /><input placeholder="Search students" /></label></div><div className="ed-table"><div className="ed-table-row ed-table-header"><span>Member</span><span>Learning</span><span>Progress</span><span>Last active</span></div>{[['Alex Morgan','Consent Foundations','72%','Today'],['Sam Rivera','Consent Foundations','45%','Yesterday'],['Jordan Lee','Consent Foundations','100%','Sep 28']].map(row => <div className="ed-table-row" key={row[0]}>{row.map((cell, i) => <span key={i}>{cell}</span>)}</div>)}</div></section>,
     Subscriptions: <><div className="ed-metrics"><Metric label="Active subscribers" value="34" note="Across your plans"/><Metric label="Monthly plan" value="$19" note="Jane's Studio"/><Metric label="Annual plan" value="$190" note="Billed yearly"/><Metric label="Renewals soon" value="6" note="Next 30 days"/></div><section className="ed-panel"><div className="ed-panel-head"><div><h3>Subscription management</h3><p>Review your plans and member access.</p></div><button onClick={onOpenStore}>View subscriber storefront</button></div><div className="ed-plan-row"><div><b>Jane's Studio</b><small>Subscriber-only courses · Monthly webinar · Live class discounts</small></div><span className="ed-state ed-state-published">Active</span><button onClick={() => setNotice('Plan settings are available in this demo.')}>Manage plan</button></div></section></>,
     Events: <section className="ed-panel"><div className="ed-panel-head"><div><h3>Events</h3><p>Manage upcoming classes, webinars, and workshops.</p></div><button className="ed-primary" onClick={() => setNotice('Event creation is available in this demo.')}><PlusIcon /> Create Event</button></div>{[['Rope Workshop','Oct 20 · 7:00 PM · Online','$25'],['Negotiation: Live Q&A','Oct 28 · 6:30 PM · Online','Free']].map(event => <div className="ed-plan-row" key={event[0]}><div><b>{event[0]}</b><small>{event[1]}</small></div><span>{event[2]}</span><button onClick={() => setNotice(`${event[0]} event details opened in demo.`)}>Manage</button></div>)}</section>,
@@ -63,9 +94,51 @@ export default function EducatorDashboardPage({ initialSection = 'Overview', pro
   };
 
   return <main className="ed-dashboard-page">
-    <EducationBackButton onClick={onBack} label="Education Home" />
-    <header className="ed-dashboard-header"><div><span className="ed-kicker">CERTIFIED EDUCATOR · WORKSPACE</span><h1>Educator Dashboard</h1><p>Manage your education, students, and educator business from one place.</p></div><span className="ed-access-badge">✓ Educator access enabled</span></header>
-    <div className="ed-dashboard-layout"><aside className="ed-sidebar" aria-label="Educator dashboard sections">{navigation.map((item, index) => { const Icon = navIcons[index]; return <button key={item} className={section === item ? 'active' : ''} onClick={() => setSection(item)}><span><Icon /></span>{item}</button>; })}</aside><section className="ed-main"><div className="ed-content-title"><div><h2>{section}</h2><p>{section === 'Overview' ? 'A snapshot of your educator activity.' : `Manage your ${section.toLowerCase()} as a Certified Educator.`}</p></div><span className="ed-demo-badge">DEMO DATA</span></div>{content[section]}</section></div>
+    <EducationBackButton onClick={onBack} label={hideSidebar ? 'Educator Workspace' : 'Education Home'} />
+    <header className="ed-dashboard-header">
+      <div>
+        <span className="ed-kicker">welcome {username}</span>
+        <h1>{hideSidebar ? 'Total Courses' : 'Educator Dashboard'}</h1>
+        <p>{hideSidebar ? 'Build, manage, and publish your courses as a Certified Educator.' : 'Manage your education, students, and educator business from one place.'}</p>
+      </div>
+      <div className="ed-header-right">
+        {section === 'Education' && !builderOpen && (
+          <button
+            type="button"
+            className="ed-primary ed-create-course-header-btn"
+            onClick={() => setStartNewTrigger(c => c + 1)}
+          >
+            ＋ Create Course
+          </button>
+        )}
+        <span className="ec-educator-enabled">
+          <span className="ec-educator-active-dot" />
+          Active
+        </span>
+      </div>
+    </header>
+    <div className={`ed-dashboard-layout${hideSidebar ? ' ed-dashboard-layout--full' : ''}`}>
+      {!hideSidebar && (
+        <aside className="ed-sidebar" aria-label="Educator dashboard sections">
+          {navigation.map((item, index) => {
+            const Icon = navIcons[index];
+            return <button key={item} className={section === item ? 'active' : ''} onClick={() => setSection(item)}><span><Icon /></span>{item}</button>;
+          })}
+        </aside>
+      )}
+      <section className="ed-main">
+        {!hideSidebar && (
+          <div className="ed-content-title">
+            <div>
+              <h2>{section}</h2>
+              <p>{section === 'Overview' ? 'A snapshot of your educator activity.' : `Manage your ${section.toLowerCase()} as a Certified Educator.`}</p>
+            </div>
+            <span className="ed-demo-badge">DEMO DATA</span>
+          </div>
+        )}
+        {content[section]}
+      </section>
+    </div>
     {notice && <div className="ed-toast" role="status">{notice}<button onClick={() => setNotice('')}>×</button></div>}
   </main>;
 }

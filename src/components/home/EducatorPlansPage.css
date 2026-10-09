@@ -1,0 +1,424 @@
+.educator-plans-page {
+  width: min(1300px, calc(100% - 72px));
+  margin: 0 0 0 72px;
+  padding: 30px 36px 80px;
+  color: #eef3ff;
+  box-sizing: border-box;
+}
+
+.educator-plans-topbar {
+  margin-bottom: 22px;
+}
+
+.educator-plans-hero {
+  text-align: center;
+  max-width: 780px;
+  margin: 0 auto 36px;
+}
+
+.educator-plans-eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+  color: #83b4ff;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.educator-plans-hero h1 {
+  margin: 0 0 12px;
+  font-size: clamp(32px, 4vw, 44px);
+  font-weight: 800;
+  letter-spacing: -1.2px;
+  color: #ffffff;
+  line-height: 1.15;
+}
+
+.educator-plans-hero p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #9cb1ce;
+}
+
+.educator-plans-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  max-width: 600px;
+  margin: 0 auto 28px;
+  padding: 12px 20px;
+  border: 1px solid #22c55e55;
+  border-radius: 10px;
+  background: #143224;
+  color: #8ce0b2;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+  animation: fadeInNotice 0.2s ease-out;
+}
+
+@keyframes fadeInNotice {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.educator-plans-notice-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #22c55e;
+  color: #0b1f14;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* 2-Column Responsive Grid */
+.educator-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+  max-width: 1160px;
+  margin: 0 auto;
+  align-items: stretch;
+}
+
+.educator-plan-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #0d1424;
+  border: 1px solid #1f2c44;
+  border-radius: 18px;
+  padding: 34px 30px;
+  box-sizing: border-box;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s, box-shadow 0.2s;
+}
+
+.educator-plan-card:hover {
+  transform: translateY(-4px);
+  border-color: #3b82f677;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+}
+
+.educator-plan-card--popular {
+  background: linear-gradient(165deg, #131f36 0%, #0d1526 100%);
+  border-color: #355386;
+  box-shadow: 0 10px 32px rgba(29, 78, 216, 0.15);
+}
+
+.educator-plan-card--selected {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1.5px #3b82f6, 0 18px 45px rgba(29, 78, 216, 0.2);
+}
+
+.educator-plan-badge-wrap {
+  margin-bottom: 14px;
+}
+
+.educator-plan-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  background: #19273c;
+  color: #9cbaff;
+  border: 1px solid #2e4368;
+}
+
+.educator-plan-badge--popular {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 14px rgba(29, 78, 216, 0.4);
+}
+
+.educator-plan-header {
+  margin-bottom: 18px;
+}
+
+.educator-plan-name {
+  margin: 0 0 8px;
+  font-size: 24px;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: -0.4px;
+}
+
+.educator-plan-description {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #94a3b8;
+}
+
+/* Price Block */
+.educator-plan-price-block {
+  margin-bottom: 20px;
+  padding: 16px 18px;
+  background: #111a2c;
+  border: 1px solid #1e2c45;
+  border-radius: 12px;
+}
+
+.educator-plan-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.educator-plan-price {
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -1.2px;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.educator-plan-period {
+  font-size: 15px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.educator-plan-equivalent {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #86efac;
+}
+
+/* Billing Cycle Block */
+.educator-plan-cycle-block {
+  margin-bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.educator-plan-cycle-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #83b4ff;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.educator-plan-cycle-val {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.educator-plan-cycle-note {
+  font-size: 12px;
+  color: #8292a8;
+  line-height: 1.5;
+}
+
+.educator-plan-divider {
+  height: 1px;
+  background: #1a253a;
+  margin: 0 0 22px;
+}
+
+/* Benefits Section */
+.educator-plan-benefits-section {
+  margin-bottom: 24px;
+  flex: 1 0 auto;
+}
+
+.educator-plan-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #cbd5e1;
+}
+
+.educator-plan-section-title svg {
+  color: #60a5fa;
+  flex-shrink: 0;
+}
+
+.educator-plan-benefits-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.educator-plan-benefit-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #d1d5db;
+}
+
+.educator-plan-check-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #133324;
+  border: 1px solid #22c55e44;
+  color: #4ade80;
+  font-size: 10.5px;
+  font-weight: 800;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Cancellation Policy Section */
+.educator-plan-cancellation-section {
+  margin-bottom: 26px;
+}
+
+.educator-plan-cancellation-box {
+  background: #0f1727;
+  border: 1px solid #1f2b40;
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.educator-plan-cancellation-headline {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #93c5fd;
+  margin-bottom: 9px;
+}
+
+.educator-plan-cancellation-list {
+  margin: 0;
+  padding-left: 17px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.educator-plan-cancellation-list li::marker {
+  color: #60a5fa;
+}
+
+/* Action Button */
+.educator-plan-action {
+  margin-top: auto;
+}
+
+.educator-plan-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 13px 22px;
+  border: none;
+  border-radius: 10px;
+  background: #1d4ed8;
+  color: #ffffff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(29, 78, 216, 0.35);
+  transition: all 0.2s ease;
+}
+
+.educator-plan-btn:hover {
+  background: #1e40af;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(29, 78, 216, 0.4);
+}
+
+.educator-plan-btn--selected {
+  background: #15803d;
+  box-shadow: 0 4px 14px rgba(21, 128, 61, 0.35);
+}
+
+.educator-plan-btn--selected:hover {
+  background: #166534;
+  box-shadow: 0 8px 24px rgba(21, 128, 61, 0.4);
+}
+
+/* Footer / Guarantee */
+.educator-plans-footer {
+  max-width: 900px;
+  margin: 44px auto 0;
+}
+
+.educator-plans-guarantee {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: #0f1626;
+  border: 1px solid #1e2b40;
+  border-radius: 14px;
+  padding: 20px 24px;
+  color: #94a3b8;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.educator-plans-guarantee svg {
+  color: #60a5fa;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.educator-plans-guarantee strong {
+  display: block;
+  font-size: 13.5px;
+  color: #e2e8f0;
+  margin-bottom: 4px;
+}
+
+.educator-plans-guarantee p {
+  margin: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 950px) {
+  .educator-plans-grid {
+    grid-template-columns: 1fr;
+    max-width: 600px;
+  }
+}
+
+@media (max-width: 700px) {
+  .educator-plans-page {
+    width: 100%;
+    margin: 0;
+    padding: 20px 16px 50px;
+  }
+  .educator-plan-card {
+    padding: 24px 20px;
+  }
+  .educator-plans-hero h1 {
+    font-size: 28px;
+  }
+}
+
