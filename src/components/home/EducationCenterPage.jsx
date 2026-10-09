@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CATEGORIES, COURSES, RESOURCES, categoryLabel, categoryColor } from './educationData';
 import AnimatedNav from './AnimatedNav';
 import EducationDetailPage from './EducationDetailPage';
@@ -11,7 +11,9 @@ import UpcomingEducationPage from './UpcomingEducationPage';
 import BecomeEducatorPage from './BecomeEducatorPage';
 import EducatorDashboardPage from './EducatorDashboardPage';
 import EducatorWorkspacePage from './EducatorWorkspacePage';
+import EducatorPlansPage from './EducatorPlansPage';
 import EducationBackButton from './EducationBackButton';
+import './EventsPage.css';
 import './EducationCenterPage.css';
 
 function SearchIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
@@ -21,13 +23,21 @@ function ChevronDownIcon() { return <svg width="13" height="13" viewBox="0 0 24 
 function CompassIcon() { return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>; }
 
 const BROWSE_TABS = ['All', 'Courses', 'Articles', 'Videos', 'Classes'];
-const FACETS = {
-  Category: ['All', ...CATEGORIES.map(c => c.label), 'Safety & Consent', 'Communication', 'Rope', 'Power Exchange', 'Sensation'],
-  Level: ['Beginner', 'Intermediate', 'Advanced'],
-  Access: ['Free', 'Gold', 'Platinum', 'Paid'],
-  Format: ['Course', 'Webinar', 'Workshop', 'Live', 'Recorded', 'Online', 'In-person'],
-  Status: ['Upcoming', 'Purchased', 'Subscribed', 'In Progress', 'Completed'],
+const DEFAULT_EDU_FILTERS = {
+  access: 'All',
+  level: 'All',
+  format: 'All',
+  status: 'All',
+  categories: new Set(),
 };
+const CATEGORY_OPTIONS = [
+  'Safety & Consent',
+  'Communication',
+  'Rope',
+  'Power Exchange',
+  'Sensation',
+  ...CATEGORIES.map(c => c.label).filter(l => !['Safety & Consent', 'Communication', 'Rope', 'Power Exchange', 'Sensation'].includes(l)),
+];
 const extras = [
   { id: 'rope-safety', title: 'Rope Safety: Foundations', desc: 'Build a thoughtful foundation in rope safety, communication, and responsible practice.', type: 'Course', category: 'safety-consent', instructor: 'Jane Doe', level: 'Beginner', points: 120, rating: 4.8, img: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=900&q=80&fit=crop', isFree: false, price: 'Gold', tier: 'Gold', accessType: 'gold', duration: '4 modules · 3 hours', source: 'KC', status: 'In Progress', progress: 65, module: 'Module 2 of 4', whatYouLearn: ['Understand essential safety principles and risk awareness', 'Build clear communication and check-in habits', 'Prepare thoughtfully and recognize when to pause'], whoFor: 'Beginners who want a careful, informed foundation. No prior experience is required.', tags: ['Safety', 'Consent', 'Rope', 'Foundations'], curriculum: [
     { id: 'foundations', title: 'Module 1 — Foundations', lessons: [
@@ -89,51 +99,127 @@ export default function EducationCenterPage({ avatarUrl, onNavigate }) {
   const [saved, setSaved] = useState(() => new Set(['ux-research-methods', 'res-2', 'res-5', 'kc-class']));
   const [view, setView] = useState('all');
   const [browseType, setBrowseType] = useState('All');
-  const [facets, setFacets] = useState({});
-  // Which filter-sidebar sections (Category/Level/Access/Format/Status) are
-  // expanded — all open by default, each independently collapsible.
-  const [openFacets, setOpenFacets] = useState(() => new Set(Object.keys(FACETS)));
-  const toggleFacetOpen = group => setOpenFacets(prev => { const next = new Set(prev); next.has(group) ? next.delete(group) : next.add(group); return next; });
+  const [filters, setFilters] = useState(() => ({ ...DEFAULT_EDU_FILTERS, categories: new Set() }));
+  const [pendingF, setPendingF] = useState(() => ({ ...DEFAULT_EDU_FILTERS, categories: new Set() }));
+  const [showFilter, setShowFilter] = useState(false);
+
+  useEffect(() => {
+    if (!showFilter) return;
+    const onKeyDown = e => { if (e.key === 'Escape') setShowFilter(false); };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [showFilter]);
+
+  function openFilter() {
+    setPendingF({ ...filters, categories: new Set(filters.categories) });
+    setShowFilter(true);
+  }
+  function commitFilters(next) {
+    setFilters(next);
+    setShowFilter(false);
+  }
+  function applyFilters() {
+    commitFilters({ ...pendingF, categories: new Set(pendingF.categories) });
+  }
+  function resetFilters() {
+    const def = { ...DEFAULT_EDU_FILTERS, categories: new Set() };
+    setPendingF(def);
+    commitFilters(def);
+    setCategory('All topics');
+  }
+
+  const activeFilterCount =
+    filters.categories.size +
+    (filters.access !== 'All' ? 1 : 0) +
+    (filters.level !== 'All' ? 1 : 0) +
+    (filters.format !== 'All' ? 1 : 0) +
+    (filters.status !== 'All' ? 1 : 0);
+
   const [notice, setNotice] = useState('');
   const [dashboardSection, setDashboardSection] = useState('Overview');
   const [educatorProfile, setEducatorProfile] = useState({ displayName: 'Jane Doe', title: 'Certified Educator', location: '', bio: 'I create thoughtful, practical learning experiences for the community.', experience: '6+ years of community education experience', qualifications: 'Certified Relationship & Consent Educator; Advanced Facilitation Certificate', areas: 'Safety & Consent, Communication', specialties: 'Consent & Safety, Communication, Negotiation, Rope Foundations', website: '', profileImage: '', isPublic: true, showLocation: true });
+  const [educatorCourses, setEducatorCourses] = useState([
+    { id: 'sample-consent-course', title: 'Consent Foundations', category: 'Safety & Consent', status: 'Published', learners: 128, updated: 'Updated recently', level: 'Beginner', modules: [] },
+    { id: 'sample-communication-course', title: 'Communication & Connection', category: 'Communication', status: 'Draft', learners: 0, updated: 'Draft · not published', level: 'Intermediate', modules: [] },
+  ]);
+
   const filtered = useMemo(() => items.filter(item => {
     const textMatch = `${item.title} ${item.desc || ''} ${item.instructor}`.toLowerCase().includes(query.toLowerCase());
-    const topicMap = { 'Safety & Consent': ['safety-consent'], Communication: ['communication'], Rope: ['rope', 'safety-consent'], 'Power Exchange': ['power-exchange'], Sensation: ['sensation'] };
-    const catMatch = category === 'All topics' || categoryLabel(item.category) === category || topicMap[category]?.includes(item.category);
+    const topicMap = {
+      'Safety & Consent': ['safety-consent'],
+      Communication: ['communication'],
+      Rope: ['rope', 'safety-consent'],
+      'Power Exchange': ['power-exchange'],
+      Sensation: ['sensation']
+    };
+    const matchesCategoryName = catName => {
+      if (catName === 'All topics' || catName === 'All') return true;
+      return categoryLabel(item.category) === catName || topicMap[catName]?.includes(item.category);
+    };
+
+    let catMatch = true;
+    if (filters.categories && filters.categories.size > 0) {
+      catMatch = Array.from(filters.categories).some(catName => matchesCategoryName(catName));
+    } else if (category && category !== 'All topics') {
+      catMatch = matchesCategoryName(category);
+    }
+
     let filterMatch = browseType === 'All' || (browseType === 'Classes' ? ['Webinar', 'Workshop'].includes(item.type) : item.type === browseType.slice(0, -1));
     const format = item.format || (item.status === 'Upcoming' ? 'Live' : item.status === 'Recorded' || item.type === 'Video' ? 'Recorded' : item.type);
     const access = item.isFree ? 'Free' : item.tier || 'Paid';
-    if (facets.Level) filterMatch = filterMatch && (item.level || '').toLowerCase() === facets.Level.toLowerCase();
-    if (facets.Access) filterMatch = filterMatch && (facets.Access === 'Paid' ? !item.isFree : access === facets.Access);
-    if (facets.Format) filterMatch = filterMatch && (facets.Format === 'Online' || facets.Format === 'In-person' ? (item.format || 'Online') === facets.Format : format === facets.Format || item.type === facets.Format);
-    if (facets.Status) {
-      if (facets.Status === 'Purchased') filterMatch = filterMatch && joined.has(item.id);
-      else if (facets.Status === 'Subscribed') filterMatch = filterMatch && item.status === 'Subscribed';
-      else filterMatch = filterMatch && item.status === facets.Status;
+
+    if (filters.level && filters.level !== 'All') {
+      filterMatch = filterMatch && (item.level || '').toLowerCase() === filters.level.toLowerCase();
     }
-    if (facets.Category && facets.Category !== 'All') {
-      const topicMap = { 'Safety & Consent': ['safety-consent'], Communication: ['communication'], Rope: ['rope', 'safety-consent'], 'Power Exchange': ['power-exchange'], Sensation: ['sensation'] };
-      filterMatch = filterMatch && (categoryLabel(item.category) === facets.Category || topicMap[facets.Category]?.includes(item.category));
+    if (filters.access && filters.access !== 'All') {
+      if (filters.access === 'Paid') filterMatch = filterMatch && !item.isFree;
+      else if (filters.access === 'Free') filterMatch = filterMatch && item.isFree;
+      else filterMatch = filterMatch && access.toLowerCase() === filters.access.toLowerCase();
     }
+    if (filters.format && filters.format !== 'All') {
+      if (filters.format === 'Online' || filters.format === 'In-person') {
+        filterMatch = filterMatch && (item.format || 'Online') === filters.format;
+      } else {
+        filterMatch = filterMatch && (format === filters.format || item.type === filters.format);
+      }
+    }
+    if (filters.status && filters.status !== 'All') {
+      if (filters.status === 'Purchased') filterMatch = filterMatch && joined.has(item.id);
+      else if (filters.status === 'Subscribed') filterMatch = filterMatch && item.status === 'Subscribed';
+      else filterMatch = filterMatch && item.status === filters.status;
+    }
+
     const viewMatch = view === 'all' || (view === 'learning' ? joined.has(item.id) || item.status === 'In Progress' || item.status === 'Completed' : saved.has(item.id));
     return textMatch && catMatch && filterMatch && viewMatch;
-  }), [query, category, filter, joined, saved, view, browseType, facets]);
-  const openDiscovery = () => { setPage('discovery'); setBrowseType('All'); setFacets({}); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-  // Topic/type quick filters (the two dropdowns under the topbar) jump
-  // straight to the filtered results in Discovery, reusing its existing
-  // filter/results machinery instead of duplicating a results grid here.
+  }), [query, category, filter, joined, saved, view, browseType, filters]);
+
+  const openDiscovery = () => {
+    setPage('discovery');
+    setBrowseType('All');
+    const def = { ...DEFAULT_EDU_FILTERS, categories: new Set() };
+    setFilters(def);
+    setPendingF(def);
+    setCategory('All topics');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const applyQuickFilter = (nextCategory, nextBrowseType) => {
     setCategory(nextCategory);
     setBrowseType(nextBrowseType);
-    // Mirror the chosen topic into the sidebar's Category facet too, so the
-    // radio there shows pre-selected instead of resetting to "All" — the
-    // topic dropdown and the sidebar facet share the same label strings.
-    setFacets(nextCategory === 'All topics' ? {} : { Category: nextCategory });
+    const newCats = nextCategory === 'All topics' ? new Set() : new Set([nextCategory]);
+    const newFilters = { ...DEFAULT_EDU_FILTERS, categories: newCats };
+    setFilters(newFilters);
+    setPendingF(newFilters);
     setPage('discovery');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-  const resetQuickFilters = () => { setCategory('All topics'); setBrowseType('All'); };
+  const resetQuickFilters = () => {
+    setCategory('All topics');
+    setBrowseType('All');
+    const def = { ...DEFAULT_EDU_FILTERS, categories: new Set() };
+    setFilters(def);
+    setPendingF(def);
+  };
   const quickFiltersActive = category !== 'All topics' || browseType !== 'All';
   const openUpcoming = () => { setPage('upcoming'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   const section = (title, collection, sub = '') => <section className="ec-section" key={title}><div className="ec-section-heading"><div><h2>{title}</h2>{sub && <p>{sub}</p>}</div><button onClick={title.toLowerCase().startsWith('upcoming') ? openUpcoming : openDiscovery}>{title.toLowerCase().startsWith('upcoming') ? 'View Upcoming' : 'View All'}</button></div><div className="ec-grid">{collection.slice(0, 4).map(item => <EducationCard key={item.id} item={item} onOpen={setSelected} />)}</div></section>;
@@ -159,10 +245,11 @@ export default function EducationCenterPage({ avatarUrl, onNavigate }) {
   if (page === 'learning') return <><AnimatedNav activeId="courses" avatarUrl={avatarUrl} onNavigate={onNavigate} /><EducationMyLearningPage items={items} joined={joined} purchased={purchased} saved={saved} onRemoveSaved={id => setSaved(prev => { const next = new Set(prev); next.delete(id); return next; })} onBack={() => setPage('home')} onOpen={setSelected} onProgress={() => setPage('progress')} /></>;
   if (page === 'progress') return <><AnimatedNav activeId="courses" avatarUrl={avatarUrl} onNavigate={onNavigate} /><EducationProgressPage onBack={() => setPage('learning')} /></>;
   if (page === 'become-educator') return <><AnimatedNav activeId="courses" avatarUrl={avatarUrl} onNavigate={onNavigate} /><BecomeEducatorPage onBack={() => setPage('home')} /></>;
-  if (page === 'educator-workspace') return <><AnimatedNav activeId="courses" avatarUrl={avatarUrl} onNavigate={onNavigate} /><EducatorWorkspacePage onBack={() => setPage('home')} onOpenTool={tool => { const tabs = { 'Educator Dashboard': 'Overview', 'Create Course': 'Education', 'Course Builder': 'Education', 'Student Management': 'Students', 'Subscription Management': 'Subscriptions', Events: 'Events', Analytics: 'Analytics', Financials: 'Financial', 'KC Contribution': 'KC Contribution' }; if (tool === 'Educator Store') { setActiveEducator('Jane Doe'); setActiveStore(true); } else { setDashboardSection(tabs[tool] || 'Overview'); setPage('educator-dashboard'); } }} /></>;
-  if (page === 'educator-dashboard') return <><AnimatedNav activeId="courses" avatarUrl={avatarUrl} onNavigate={onNavigate} /><EducatorDashboardPage initialSection={dashboardSection} profile={educatorProfile} onProfileChange={updates => setEducatorProfile(prev => ({ ...prev, ...updates }))} onBack={() => setPage('home')} onOpenProfile={() => { setActiveEducator('Jane Doe'); setActiveStore(false); }} onOpenStore={() => { setActiveEducator('Jane Doe'); setActiveStore(true); }} /></>;
+  if (page === 'educator-plans') return <><AnimatedNav activeId="courses" avatarUrl={avatarUrl} onNavigate={onNavigate} /><EducatorPlansPage onBack={() => setPage('educator-workspace')} /></>;
+  if (page === 'educator-workspace') return <><AnimatedNav activeId="courses" avatarUrl={avatarUrl} onNavigate={onNavigate} /><EducatorWorkspacePage onBack={() => setPage('home')} coursesCount={educatorCourses.length} onOpenTool={tool => { if (tool === 'Plans') { setPage('educator-plans'); return; } const tabs = { 'Educator Dashboard': 'Overview', 'Create Course': 'Education', 'Total Courses': 'Education', 'Plans': 'Subscriptions', 'Course Builder': 'Education', 'Student Management': 'Students', 'Subscription Management': 'Subscriptions', Events: 'Events', Analytics: 'Analytics', Financials: 'Financial', 'KC Contribution': 'KC Contribution' }; if (tool === 'Educator Store') { setActiveEducator('Jane Doe'); setActiveStore(true); } else { setDashboardSection(tabs[tool] || 'Overview'); setPage('educator-dashboard'); } }} /></>;
+  if (page === 'educator-dashboard') return <><AnimatedNav activeId="courses" avatarUrl={avatarUrl} onNavigate={onNavigate} /><EducatorDashboardPage initialSection={dashboardSection} profile={educatorProfile} onProfileChange={updates => setEducatorProfile(prev => ({ ...prev, ...updates }))} courses={educatorCourses} onCoursesChange={setEducatorCourses} onBack={() => setPage('educator-workspace')} onOpenProfile={() => { setActiveEducator('Jane Doe'); setActiveStore(false); }} onOpenStore={() => { setActiveEducator('Jane Doe'); setActiveStore(true); }} /></>;
   return <><AnimatedNav activeId="courses" avatarUrl={avatarUrl} onNavigate={onNavigate} /><main className="ec-page">
-    <div className="ec-topbar">{page === 'discovery' && <EducationBackButton onClick={() => setPage('home')} label="Education home" className="edu-back-btn--inline" />}<label className="ec-search ec-search-compact"><SearchIcon /><input aria-label="Search education" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search education..." /></label><div className="ec-top-actions"><button className="ec-educator-cta" onClick={() => setPage('become-educator')}>Become a Certified Educator</button><button className="ec-educator-workspace-cta" onClick={() => setPage('educator-workspace')}>Educator Workspace</button><button onClick={() => setPage('learning')}><BookIcon /> My Learning</button><button className={view === 'saved' ? 'active' : ''} onClick={() => { setView(view === 'saved' ? 'all' : 'saved'); setFilter('All'); openDiscovery(); }}><HeartIcon filled={view === 'saved'} /> Saved <span>{saved.size}</span></button></div></div>
+    <div className="ec-topbar">{page === 'discovery' && <EducationBackButton onClick={() => setPage('home')} label="Education home" className="edu-back-btn--inline" />}<label className="ec-search ec-search-compact"><SearchIcon /><input aria-label="Search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search" /></label><div className="ec-top-actions"><button className="ec-educator-cta" onClick={() => setPage('become-educator')}>Become a Certified Educator</button><button className="ec-educator-workspace-cta" onClick={() => setPage('educator-workspace')}>Educator Workspace</button><button onClick={() => setPage('learning')}><BookIcon /> My Learning</button><button className={view === 'saved' ? 'active' : ''} onClick={() => { setView(view === 'saved' ? 'all' : 'saved'); setFilter('All'); openDiscovery(); }}><HeartIcon filled={view === 'saved'} /> Saved <span>{saved.size}</span></button></div></div>
     {page === 'home' && <>
     <section className="ec-hub-banner">
       <span className="ec-hub-banner-icon"><CompassIcon /></span>
@@ -206,46 +293,145 @@ export default function EducationCenterPage({ avatarUrl, onNavigate }) {
     */}
     </>}
     {page === 'discovery' && <section className="ec-center" id="education-center-results"><div className="ec-center-title"><div><h2>Education Hub</h2><p>Explore courses, articles, videos and classes from KC and independent educators.</p></div></div>
-      <div className="ec-browse-tabs">{BROWSE_TABS.map(tab => <button className={browseType === tab ? 'active' : ''} key={tab} onClick={() => setBrowseType(tab)}>{tab}</button>)}</div>
+      <div className="ec-browse-tabs-bar">
+        <div className="ec-browse-tabs">{BROWSE_TABS.map(tab => <button className={browseType === tab ? 'active' : ''} key={tab} onClick={() => setBrowseType(tab)}>{tab}</button>)}</div>
+        <button
+          type="button"
+          className={`ev-disc-filter-btn${activeFilterCount > 0 ? ' ev-disc-filter-btn--active' : ''}`}
+          onClick={openFilter}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Filters{activeFilterCount > 0 && <span className="ev-filter-badge">{activeFilterCount}</span>}
+        </button>
+      </div>
       <div className="ec-browse-layout">
-        <aside className="ec-filter-sidebar">
-          <div className="ec-filter-panel-header">
-            <span className="ec-filter-panel-title">Filters</span>
-            <button className="ec-filter-reset-btn" onClick={() => { setFacets({}); setCategory('All topics'); }}>Reset All</button>
-          </div>
-          <div className="ec-filter-panel-body">
-            {Object.entries(FACETS).map(([group, options]) => {
-              const isOpen = openFacets.has(group);
-              return (
-                <fieldset className={`ec-filter-section${isOpen ? ' ec-filter-section--open' : ''}`} key={group}>
-                  <legend className="ec-filter-section-legend">
-                    <button type="button" className="ec-filter-section-toggle" onClick={() => toggleFacetOpen(group)} aria-expanded={isOpen}>
-                      <span className="ec-filter-section-title">{group}</span>
-                      <span className="ec-filter-section-chevron"><ChevronDownIcon /></span>
-                    </button>
-                  </legend>
-                  {isOpen && <div className="ec-filter-options">
-                    {options.map(option => (
-                      <label key={option} className="ec-filter-check-label">
-                        <input
-                          type="radio"
-                          className="ec-filter-radio"
-                          name={`filter-${group}`}
-                          checked={(facets[group] || (group === 'Category' ? 'All' : '')) === option}
-                          onChange={() => { if (group === 'Category' && option === 'All') { setFacets(prev => { const next = { ...prev }; delete next.Category; return next; }); setCategory('All topics'); } else setFacets(prev => ({ ...prev, [group]: option })); }}
-                        />
-                        <span className="ec-filter-radio-dot" />
-                        {option}
-                      </label>
-                    ))}
-                  </div>}
-                </fieldset>
-              );
-            })}
-          </div>
-        </aside>
-        <div className="ec-results"><div className="ec-results-head"><span>{browseType === 'All' ? 'All education' : browseType}</span><span>{filtered.length} results</span></div>{filtered.length ? <div className="ec-grid">{filtered.map(item => <EducationCard key={item.id} item={item} onOpen={setSelected} />)}</div> : <div className="ec-empty"><b>No matches just yet</b><span>Try another topic or filter.</span><button onClick={() => { setFacets({}); setBrowseType('All'); setCategory('All topics'); setQuery(''); }}>Clear filters</button></div>}</div>
+        <div className="ec-results"><div className="ec-results-head"><span>{browseType === 'All' ? 'All education' : browseType}</span><span>{filtered.length} results</span></div>{filtered.length ? <div className="ec-grid">{filtered.map(item => <EducationCard key={item.id} item={item} onOpen={setSelected} />)}</div> : <div className="ec-empty"><b>No matches just yet</b><span>Try another topic or filter.</span><button onClick={() => { const def = { ...DEFAULT_EDU_FILTERS, categories: new Set() }; setFilters(def); setPendingF(def); setBrowseType('All'); setCategory('All topics'); setQuery(''); }}>Clear filters</button></div>}</div>
       </div></section>}
+    {showFilter && (
+      <>
+        <div className="ev-filter-backdrop" onClick={() => setShowFilter(false)} />
+        <div className="ev-filter-panel">
+          <div className="ev-filter-panel-header">
+            <span className="ev-filter-panel-title">Filters</span>
+            <div className="ev-filter-header-actions">
+              <button type="button" className="ev-filter-reset-btn" onClick={resetFilters}>Reset All</button>
+              <button type="button" className="ev-filter-apply-btn" onClick={applyFilters}>Apply Filters</button>
+              <button type="button" className="ev-filter-close-btn" onClick={() => setShowFilter(false)} aria-label="Close filters">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          </div>
+          <div className="ev-filter-panel-body">
+            {/* Access & Price */}
+            <div className="ev-filter-section">
+              <h4 className="ev-filter-section-title">Access & Price</h4>
+              <div className="ev-filter-type-row" style={{ flexWrap: 'wrap' }}>
+                {['All', 'Free', 'Paid', 'Gold', 'Platinum'].map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    className={`ev-filter-type-btn${pendingF.access === t ? ' ev-filter-type-btn--active' : ''}`}
+                    onClick={() => setPendingF(p => ({ ...p, access: t }))}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Difficulty Level */}
+            <div className="ev-filter-section">
+              <h4 className="ev-filter-section-title">Difficulty Level</h4>
+              <div className="ev-filter-type-row">
+                {['All', 'Beginner', 'Intermediate', 'Advanced'].map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    className={`ev-filter-type-btn${pendingF.level === t ? ' ev-filter-type-btn--active' : ''}`}
+                    onClick={() => setPendingF(p => ({ ...p, level: t }))}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Format */}
+            <div className="ev-filter-section">
+              <h4 className="ev-filter-section-title">Format</h4>
+              <div className="ev-filter-type-row" style={{ flexWrap: 'wrap' }}>
+                {['All', 'Course', 'Webinar', 'Workshop', 'Live', 'Recorded', 'Online', 'In-person'].map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    className={`ev-filter-type-btn${pendingF.format === t ? ' ev-filter-type-btn--active' : ''}`}
+                    onClick={() => setPendingF(p => ({ ...p, format: t }))}
+                    style={{ flex: '1 1 calc(25% - 8px)', minWidth: '70px' }}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Status */}
+            <div className="ev-filter-section">
+              <h4 className="ev-filter-section-title">Status</h4>
+              <div className="ev-filter-type-row" style={{ flexWrap: 'wrap' }}>
+                {['All', 'Upcoming', 'In Progress', 'Completed', 'Purchased'].map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    className={`ev-filter-type-btn${pendingF.status === t ? ' ev-filter-type-btn--active' : ''}`}
+                    onClick={() => setPendingF(p => ({ ...p, status: t }))}
+                    style={{ flex: '1 1 calc(33.33% - 8px)', minWidth: '85px' }}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Categories */}
+            <div className="ev-filter-section">
+              <div className="ev-filter-section-head">
+                <h4 className="ev-filter-section-title">Topics & Categories</h4>
+                {pendingF.categories.size > 0 && (
+                  <button
+                    type="button"
+                    className="ev-filter-clear-link"
+                    onClick={() => setPendingF(p => ({ ...p, categories: new Set() }))}
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
+              <div className="ev-filter-cats-grid">
+                {CATEGORY_OPTIONS.map(cat => (
+                  <label key={cat} className="ev-filter-check-label">
+                    <input
+                      type="checkbox"
+                      className="ev-filter-checkbox"
+                      checked={pendingF.categories.has(cat)}
+                      onChange={() => {
+                        setPendingF(prev => {
+                          const nextCats = new Set(prev.categories);
+                          if (nextCats.has(cat)) nextCats.delete(cat);
+                          else nextCats.add(cat);
+                          return { ...prev, categories: nextCats };
+                        });
+                      }}
+                    />
+                    <span className="ev-filter-check-box" />
+                    {cat}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    )}
     {selected && <div className="ec-modal-backdrop" onClick={() => setSelected(null)}><article className="ec-modal" onClick={e => e.stopPropagation()}><button className="ec-modal-close" onClick={() => setSelected(null)} aria-label="Close">×</button><img src={selected.img} alt=""/><div className="ec-modal-body"><span className="ec-eyebrow">{selected.source} · {selected.type}</span><h2>{selected.title}</h2><p>{selected.desc || `Build practical skills with ${selected.instructor} in this ${selected.duration} learning experience.`}</p><div className="ec-modal-meta">{selected.instructor}　·　{selected.level || selected.duration || 'Self paced'}　·　{selected.isFree ? 'Free' : selected.price || 'Premium'}</div><div className="ec-modal-actions"><button className="ec-primary" onClick={() => { if (selected.status === 'Upcoming') setNotice(`You're on the list for ${selected.title}.`); else { setJoined(prev => new Set(prev).add(selected.id)); setNotice(`${selected.title} added to My learning.`); } setSelected(null); }}>{selected.status === 'Upcoming' ? 'Reserve a spot' : joined.has(selected.id) ? 'Continue learning' : selected.isFree ? 'Start Learning' : 'View Course'}</button><button className="ec-save-btn" onClick={() => setSaved(prev => { const next = new Set(prev); next.has(selected.id) ? next.delete(selected.id) : next.add(selected.id); return next; })}>{saved.has(selected.id) ? '♥ Saved' : '♡ Save'}</button></div></div></article></div>}
     {notice && <div role="status" className="ec-toast">{notice}<button onClick={() => setNotice('')}>×</button></div>}
   </main></>;
