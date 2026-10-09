@@ -1,3 +1,152 @@
-.ec-top-actions .ec-educator-workspace-cta{border-color:#315b9b;background:#1d4ed8;color:#fff}.ec-top-actions .ec-educator-workspace-cta:hover{border-color:#5792ed;background:#2867e2;color:#fff}.ec-educator-workspace-page>.ec-back-home{display:inline-flex;margin-bottom:17px}.ec-educator-workspace-standalone{margin:0;min-height:310px;padding:30px;background:linear-gradient(115deg,#1b2a42,#151d2a)}.ec-educator-workspace-standalone .ec-educator-workspace-heading{margin-bottom:24px}.ec-educator-workspace-standalone .ec-educator-tool-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}.ec-educator-workspace-standalone .ec-educator-tool-grid button{min-height:68px}
-@media(max-width:850px){.ec-educator-workspace-standalone .ec-educator-tool-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:650px){.ec-educator-workspace-standalone{padding:19px}.ec-educator-workspace-standalone .ec-educator-workspace-heading{align-items:flex-start;flex-direction:column;gap:13px}.ec-educator-workspace-standalone .ec-educator-tool-grid{grid-template-columns:1fr}.ec-top-actions .ec-educator-workspace-cta{padding:9px 11px;font-size:10px}}
+.ec-top-actions .ec-educator-workspace-cta{border:none;border-radius:10px;background:#1d4ed8;color:#fff;font-size:12px;font-weight:600;box-shadow:0 4px 14px rgba(29,78,216,0.35);transition:all .2s ease}.ec-top-actions .ec-educator-workspace-cta:hover{background:#1e40af;color:#fff;transform:translateY(-1px);box-shadow:0 8px 24px rgba(29,78,216,0.4)}.ec-educator-workspace-page>.ec-back-home{display:inline-flex;margin-bottom:17px}.ec-educator-workspace-standalone{margin:0;min-height:310px;padding:32px;background:linear-gradient(115deg,#1b2a42,#151d2a)}.ec-educator-workspace-standalone .ec-educator-workspace-heading{margin-bottom:26px}.ec-educator-workspace-standalone .ec-educator-tool-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.ec-tool-card{display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:185px;padding:28px 24px;background:#0d1526;border:1px solid #1a273e;border-radius:16px;color:#eaf0fb;text-align:center;cursor:pointer;transition:transform .2s cubic-bezier(0.16,1,0.3,1),border-color .2s,box-shadow .2s,background .2s;position:relative}.ec-tool-card:hover{background:#121c32;border-color:#3b82f677;transform:translateY(-4px);box-shadow:0 16px 36px rgba(0,0,0,0.45)}.ec-tool-check-badge{position:absolute;top:18px;right:18px;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#153629;border:1px solid #22c55e55;color:#8ce0b2;font-size:12px;font-weight:800;flex-shrink:0}.ec-tool-card-body{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;width:100%}.ec-tool-card-title{margin:0;font-size:17px;font-weight:700;color:#f1f5f9;letter-spacing:-0.2px;text-align:center}.ec-tool-card:hover .ec-tool-card-title{color:#ffffff}.ec-tool-card-desc{margin:0;font-size:12.5px;color:#8291a8;line-height:1.5;text-align:center}@media(max-width:950px){.ec-educator-workspace-standalone .ec-educator-tool-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:650px){.ec-educator-workspace-standalone{padding:19px}.ec-educator-workspace-standalone .ec-educator-workspace-heading{align-items:flex-start;flex-direction:column;gap:13px}.ec-educator-workspace-standalone .ec-educator-tool-grid{grid-template-columns:1fr;gap:13px}.ec-tool-card{min-height:155px;padding:22px 18px}.ec-top-actions .ec-educator-workspace-cta{padding:9px 11px;font-size:10px}}.ec-educator-enabled{display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;padding:6px 13px;border:1px solid #22c55e44;border-radius:20px;background:#153629;color:#8ce0b2;font-size:11px;font-weight:700}.ec-educator-active-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;display:inline-block;flex-shrink:0}
+
+/* Status Screen Topbar & Cross Button */
+.educator-status-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(780px, 100%);
+  margin: 0 auto 16px;
+}
+
+.educator-status-page-close-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 9px;
+  border: 1px solid #334460;
+  background: #141c2c;
+  color: #c5d4ec;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.educator-status-page-close-btn:hover {
+  border-color: #3b82f6;
+  background: #1d2b44;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.educator-close-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #25354e;
+  color: #93c5fd;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.educator-status-summary-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #2b374b;
+}
+
+.educator-status-summary-row .educator-status-summary {
+  padding-bottom: 0;
+  border-bottom: 0;
+  flex: 1;
+}
+
+.educator-status-card-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #364866;
+  background: #1a2538;
+  color: #a8bada;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.educator-status-card-close-btn:hover {
+  background: #283750;
+  border-color: #ef4444;
+  color: #f87171;
+  transform: scale(1.1);
+}
+
+.ec-workspace-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ec-view-status-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 13px;
+  border-radius: 20px;
+  border: 1px solid #f0b94e44;
+  background: #302a1d;
+  color: #ffd77f;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ec-view-status-btn:hover {
+  border-color: #f0b94e88;
+  background: #3d3422;
+  transform: translateY(-1px);
+}
+
+.ec-status-review-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f0b94e;
+  box-shadow: 0 0 6px #f0b94e;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Total Courses Count Card */
+.ec-tool-card-count-stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 2px;
+}
+
+.ec-tool-card-count-num {
+  font-size: 26px;
+  font-weight: 800;
+  color: #60a5fa;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.ec-tool-card:hover .ec-tool-card-count-num {
+  color: #93c5fd;
+}
+
+.ec-tool-card-count-text {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #94a3b8;
+  line-height: 1;
+}
+
